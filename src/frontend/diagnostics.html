@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AeroTwin // Cylinder Diagnostics</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "background": "#f5f0e8", "surface": "#ffffff", "surface-subtle": "#f9f7f2",
+          "surface-muted": "#ede8df", "outline": "#e2ded6", "outline-strong": "#1a1a1a",
+          "primary": "#1a1a1a", "primary-container": "#ffcc00", "on-primary-container": "#1a1a1a",
+          "secondary": "#e63b2e", "secondary-container": "#fee2e2", "tertiary": "#0055ff",
+          "tertiary-container": "#e0edff", "on-surface": "#1a1a1a", "on-surface-variant": "#6b6762"
+        },
+        borderRadius: { "DEFAULT": "0.25rem", "md": "0.375rem", "lg": "0.5rem", "xl": "0.75rem" },
+        fontFamily: {
+          headline: ["Space Grotesk", "sans-serif"], display: ["Space Grotesk", "sans-serif"],
+          body: ["Inter", "sans-serif"],
+          mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  @layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: #d0cbc3; border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .bar-wrap { background: #ede8df; border-radius: 4px; overflow: hidden; }
+</style>
+</head>
+<body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-primary">
+
+<header class="h-14 bg-surface border-b border-outline px-5 flex items-center justify-between sticky top-0 z-40">
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">V4</div>
+      <div class="flex flex-col">
+        <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // Cylinders</span>
+        <span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+      </div>
+    </div>
+    <div class="h-5 w-px bg-outline hidden sm:block"></div>
+    <span id="connBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span id="connDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span id="connLabel">STATUS: CONNECTING</span>
+    </span>
+  </div>
+  <button class="bg-primary-container hover:brightness-105 text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="location.href='index.html'">
+    <span class="material-symbols-outlined text-[16px]">account_tree</span> Architecture
+  </button>
+</header>
+
+<div class="flex-1 flex overflow-hidden">
+  <aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+    <div class="p-3 border-b border-outline">
+      <div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
+      <nav class="space-y-0.5">
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="telemetry.html"><span class="material-symbols-outlined text-[18px]">speed</span> Telemetry Overview</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm" href="diagnostics.html"><span class="material-symbols-outlined text-[18px]">tune</span> Cylinder Diagnostics</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="index.html"><span class="material-symbols-outlined text-[18px]">account_tree</span> Architecture Map</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="faults.html"><span class="material-symbols-outlined text-[18px]">emergency_home</span> Fault Injection Lab</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="blackbox.html"><span class="material-symbols-outlined text-[18px]">data_table</span> Blackbox Logs</a>
+      </nav>
+    </div>
+    <div class="p-3 border-t border-outline bg-surface-subtle">
+      <div class="text-[10px] font-mono text-on-surface-variant">Per-cylinder balance from the live CHT/EGT arrays. Spread &gt; 40°C between hottest and coldest cylinder flags a balance fault.</div>
+    </div>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto p-5 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="cylGrid"><!-- cards injected --></div>
+
+    <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <span class="font-headline text-xs font-bold uppercase tracking-wider">Thermal Balance (CHT spread)</span>
+        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-muted border border-outline" id="spreadVal">--</span>
+      </div>
+      <svg id="spreadChart" viewBox="0 0 640 90" class="w-full h-24"></svg>
+      <div class="text-[10px] font-mono text-on-surface-variant mt-1">dashed = 40°C alert spread · solid = hottest-cylinder trace</div>
+    </div>
+  </main>
+</div>
+
+<script src="aerotwin-api.js"></script>
+<script>
+(function () {
+  const API = window.AEROTWIN_API;
+  const $ = id => document.getElementById(id);
+
+  const CONN_STYLES = {
+    live:    { label: "STATUS: LIVE",      dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    polling: { label: "STATUS: POLLING",   dot: "bg-amber-500",   chip: "bg-amber-50 text-amber-700 border-amber-200" },
+    offline: { label: "STATUS: DEMO MODE", dot: "bg-stone-400",   chip: "bg-stone-100 text-stone-600 border-stone-300" }
+  };
+  function renderStatus(st) {
+    const s = CONN_STYLES[st] || CONN_STYLES.offline;
+    $("connBadge").className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border " + s.chip;
+    $("connDot").className = "w-1.5 h-1.5 rounded-full " + s.dot + (st === "live" ? " animate-pulse" : "");
+    $("connLabel").textContent = s.label;
+  }
+
+  /*  one card per cylinder, built once  */
+  const cards = [];
+  for (let c = 0; c < 4; c++) {
+    const el = document.createElement("div");
+    el.className = "p-4 rounded-lg bg-surface border border-outline shadow-sm";
+    el.innerHTML =
+      '<div class="flex items-center justify-between mb-2">' +
+        '<span class="font-headline text-sm font-bold">Cylinder ' + (c + 1) + '</span>' +
+        '<span class="text-[10px] font-mono px-1.5 py-0.5 rounded" id="cy-st-' + c + '">--</span>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono">' +
+        '<div>CHT <b id="cy-cht-' + c + '">--</b>°C</div>' +
+        '<div>EGT <b id="cy-egt-' + c + '">--</b>°C</div>' +
+      '</div>' +
+      '<div class="mt-2 text-[10px] font-mono text-on-surface-variant">CHT</div>' +
+      '<div class="bar-wrap h-2 mt-0.5"><div id="cy-chtb-' + c + '" class="h-full bg-tertiary rounded-none" style="width:0%"></div></div>' +
+      '<div class="mt-1 text-[10px] font-mono text-on-surface-variant">EGT</div>' +
+      '<div class="bar-wrap h-2 mt-0.5"><div id="cy-egtb-' + c + '" class="h-full bg-secondary rounded-none" style="width:0%"></div></div>' +
+      '<svg id="cy-sp-' + c + '" viewBox="0 0 280 30" class="w-full h-8 mt-2"></svg>';
+    $("cylGrid").appendChild(el);
+    cards.push({
+      el,
+      hist: { cht: [], egt: [] }
+    });
+  }
+
+  const fmt = v => (v == null || isNaN(v)) ? "--" : Number(v).toFixed(1);
+
+  function cylPath(values, min, max, w, h) {
+    if (values.length < 2) return "";
+    const span = (max - min) || 1;
+    return "M" + values.map((v, i) =>
+      (i / (values.length - 1) * w).toFixed(1) + "," +
+      (h - 2 - (v - min) / span * (h - 4)).toFixed(1)).join(" L");
+  }
+
+  const spreadHist = [];
+
+  function renderFrame(f) {
+    const cht = f.cht || [], egt = f.egt || [];
+    const chtMax = Math.max(260, ...cht), egtMax = Math.max(1000, ...egt);
+
+    cht.forEach((v, c) => {
+      const h = cards[c].hist;
+      h.cht.push(v); if (h.cht.length > 90) h.cht.shift();
+      h.egt.push(egt[c]); if (h.egt.length > 90) h.egt.shift();
+
+      $("cy-cht-" + c).textContent = fmt(v);
+      $("cy-egt-" + c).textContent = fmt(egt[c]);
+      $("cy-chtb-" + c).style.width = Math.min(100, v / chtMax * 100) + "%";
+      $("cy-egtb-" + c).style.width = Math.min(100, egt[c] / egtMax * 100) + "%";
+
+      const hot = v > 220, warm = v > 190;
+      const st = $("cy-st-" + c);
+      st.textContent = hot ? "CRIT" : warm ? "HOT" : "NOMINAL";
+      st.className = "text-[10px] font-mono px-1.5 py-0.5 rounded " +
+        (hot ? "bg-rose-600 text-white" : warm ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-emerald-700");
+
+      $("cy-sp-" + c).innerHTML =
+        '<path d="' + cylPath(h.cht, 0, chtMax, 280, 30) + '" fill="none" stroke="#0055ff" stroke-width="1.6"/>' +
+        '<path d="' + cylPath(h.egt.map(e => e / 4), 0, chtMax, 280, 30) + '" fill="none" stroke="#e63b2e" stroke-width="1.2" opacity="0.7"/>';
+    });
+
+    /*  thermal spread  */
+    if (cht.length === 4) {
+      const spread = Math.max(...cht) - Math.min(...cht);
+      $("spreadVal").textContent = spread.toFixed(1) + "°C spread";
+      $("spreadVal").className = "text-[10px] font-mono px-1.5 py-0.5 rounded border " +
+        (spread > 40 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-surface-muted border-outline");
+      spreadHist.push(spread); if (spreadHist.length > 120) spreadHist.shift();
+
+      const w = 640, h = 90, span = Math.max(60, ...spreadHist) ;
+      const alertY = h - 2 - (40 / span) * (h - 4);
+      const line = cylPath(spreadHist, 0, span, w, h);
+      $("spreadChart").innerHTML =
+        '<line x1="0" y1="' + alertY.toFixed(1) + '" x2="' + w + '" y2="' + alertY.toFixed(1) + '" stroke="#e63b2e" stroke-dasharray="4 4" stroke-width="1"/>' +
+        '<path d="' + line + '" fill="none" stroke="#1a1a1a" stroke-width="1.6"/>';
+    }
+  }
+
+  API.onFrame(renderFrame);
+  API.onStatus(renderStatus);
+  API.start();
+})();
+</script>
+</body>
+</html>

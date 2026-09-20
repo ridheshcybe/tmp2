@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AeroTwin phone camera</title>
+<style>
+    body {
+        background: #0b0e13;
+        color: #dfe6ec;
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 14px;
+    }
+    h1 { font-size: 15px; margin: 0 0 10px; }
+    video {
+        width: 100%;
+        border-radius: 8px;
+        background: #000;
+        transform: scaleX(-1);
+    }
+    textarea {
+        width: 100%;
+        box-sizing: border-box;
+        height: 84px;
+        margin: 6px 0;
+        background: #10131a;
+        color: #cfd6dd;
+        border: 1px solid #3d434c;
+        border-radius: 6px;
+        padding: 8px;
+        font-size: 11px;
+        font-family: monospace;
+        word-break: break-all;
+    }
+    button {
+        width: 100%;
+        padding: 11px 0;
+        font-size: 14px;
+        border-radius: 8px;
+        border: 1px solid #4a5666;
+        background: #2c3644;
+        color: #fff;
+        margin: 4px 0;
+    }
+    .step {
+        font-size: 11px;
+        color: #9aa3ad;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin: 12px 0 2px;
+    }
+    #status { font-size: 12px; color: #8fd4ff; min-height: 18px; margin: 8px 0; }
+</style>
+</head>
+<body>
+<h1>AeroTwin phone camera</h1>
+<video id="preview" playsinline muted autoplay></video>
+<button id="startCam">1 &middot; start camera</button>
+<button id="flip">flip camera</button>
+<div class="step">2 &middot; paste the invite code from the desktop</div>
+<textarea id="invite" placeholder="paste invite code (skip this if you opened the QR link)"></textarea>
+<button id="reply">3 &middot; connect &amp; make reply code</button>
+<div class="step">4 &middot; paste this reply back on the desktop</div>
+<textarea id="replyOut" readonly placeholder="reply code appears here - tap to select all"></textarea>
+<div id="status">idle</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const status = t => $("status").textContent = t;
+let stream = null, facing = "user", pc = null;
+
+const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+
+/*
+    deflate-raw keeps the codes short enough to paste comfortably.  Both
+    sides fall back to plain base64 when CompressionStream is missing;
+    the decoder accepts either form.
+*/
+async function deflateToB64(text) {
+
+    const blob = await new Response(
+        new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"))
+    ).blob();
+
+    const bin = String.fromCharCode(...new Uint8Array(await blob.arrayBuffer()));
+
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function inflateFromB64(b64) {
+
+    const n = b64.replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(n + "=".repeat((4 - n.length % 4) % 4));
+    const bytes = new Uint8Array(bin.length);
+
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    const out = await new Response(
+        new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))
+    ).blob();
+
+    return out.text();
+}
+
+async function decodeCode(text) {
+
+    const obj = JSON.parse(decodeURIComponent(escape(atob(text.trim()))));
+
+    if (obj.c === "deflate") obj.s = await inflateFromB64(obj.s);
+
+    return obj;
+}
+
+async function encodeCode(obj) {
+
+    try {
+        obj.c = "deflate";
+        obj.s = await deflateToB64(obj.s);
+    } catch (noStream) {
+        /* older browser: plain base64, the desktop still reads it */
+    }
+
+    return enc(obj);
+}
+
+/*  The reply code must carry every candidate: the codes are pasted.  */
+function iceDone(conn) {
+
+    return new Promise(res => {
+
+        if (conn.iceGatheringState === "complete") return res();
+
+        const t = setTimeout(res, 1500);
+
+        conn.addEventListener("icegatheringstatechange", () => {
+
+            if (conn.iceGatheringState === "complete") {
+                clearTimeout(t);
+                res();
+            }
+        });
+    });
+}
+
+function stopStream() {
+
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+}
+
+async function startCamera() {
+
+    if (!navigator.mediaDevices) {
+        throw new Error("camera blocked - open this page over https (use the QR code address)");
+    }
+
+    stopStream();
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facing, width: 640, height: 480 }
+        });
+    } catch (e) {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+
+    $("preview").srcObject = stream;
+    status("camera live");
+}
+
+async function attachToPeer() {
+
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+
+    if (sender) await sender.replaceTrack(stream.getVideoTracks()[0]);
+}
+
+$("startCam").addEventListener("click", () => startCamera().catch(e => status(e.message)));
+
+$("flip").addEventListener("click", async () => {
+
+    facing = facing === "user" ? "environment" : "user";
+
+    await startCamera();
+
+    if (pc && pc.connectionState === "connected") await attachToPeer();
+});
+
+async function makeReply() {
+
+    if (!stream) await startCamera();
+
+    const invite = await decodeCode($("invite").value);
+
+    if (invite.t !== "invite" || !invite.s) throw new Error("not an invite code");
+
+    if (pc) pc.close();
+
+    pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+
+    pc.addTrack(stream.getVideoTracks()[0], stream);
+
+    await pc.setRemoteDescription({ type: "offer", sdp: invite.s });
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await iceDone(pc);
+
+    $("replyOut").value = await encodeCode({ t: "reply", s: pc.localDescription.sdp });
+    $("replyOut").focus();
+    $("replyOut").select();
+
+    pc.addEventListener("iceconnectionstatechange", () => {
+        status("peer: " + pc.iceConnectionState);
+    });
+
+    status("reply ready - paste it on the desktop");
+}
+
+$("reply").addEventListener("click", () => makeReply().catch(e => status("error: " + e.message)));
+
+$("replyOut").addEventListener("click", () => $("replyOut").select());
+
+/*
+    QR links carry the invite in the hash: opening the scanned link is
+    the whole pairing - the camera starts and the reply is generated
+    without touching anything.
+*/
+(async () => {
+
+    const m = location.hash.match(/i=([A-Za-z0-9\-_]+)/);
+
+    if (!m) return;
+
+    status("invite found in link - starting camera...");
+    $("invite").value = m[1];
+
+    try {
+        await makeReply();
+    } catch (e) {
+        status("auto-connect failed: " + (e && e.message ? e.message : String(e)));
+    }
+})();
+</script>
+</body>
+</html>

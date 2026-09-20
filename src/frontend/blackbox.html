@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AeroTwin // Blackbox Logs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "background": "#f5f0e8", "surface": "#ffffff", "surface-subtle": "#f9f7f2",
+          "surface-muted": "#ede8df", "outline": "#e2ded6", "outline-strong": "#1a1a1a",
+          "primary": "#1a1a1a", "primary-container": "#ffcc00", "on-primary-container": "#1a1a1a",
+          "secondary": "#e63b2e", "secondary-container": "#fee2e2", "tertiary": "#0055ff",
+          "tertiary-container": "#e0edff", "on-surface": "#1a1a1a", "on-surface-variant": "#6b6762"
+        },
+        borderRadius: { "DEFAULT": "0.25rem", "md": "0.375rem", "lg": "0.5rem", "xl": "0.75rem" },
+        fontFamily: {
+          headline: ["Space Grotesk", "sans-serif"], display: ["Space Grotesk", "sans-serif"],
+          body: ["Inter", "sans-serif"],
+          mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  @layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: #d0cbc3; border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-primary">
+
+<header class="h-14 bg-surface border-b border-outline px-5 flex items-center justify-between sticky top-0 z-40">
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">V4</div>
+      <div class="flex flex-col">
+        <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // Blackbox</span>
+        <span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+      </div>
+    </div>
+    <div class="h-5 w-px bg-outline hidden sm:block"></div>
+    <span id="connBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span id="connDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span id="connLabel">STATUS: CONNECTING</span>
+    </span>
+  </div>
+  <button class="bg-primary-container hover:brightness-105 text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="location.href='index.html'">
+    <span class="material-symbols-outlined text-[16px]">account_tree</span> Architecture
+  </button>
+</header>
+
+<div class="flex-1 flex overflow-hidden">
+  <aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+    <div class="p-3 border-b border-outline">
+      <div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
+      <nav class="space-y-0.5">
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="telemetry.html"><span class="material-symbols-outlined text-[18px]">speed</span> Telemetry Overview</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="diagnostics.html"><span class="material-symbols-outlined text-[18px]">tune</span> Cylinder Diagnostics</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="index.html"><span class="material-symbols-outlined text-[18px]">account_tree</span> Architecture Map</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="faults.html"><span class="material-symbols-outlined text-[18px]">emergency_home</span> Fault Injection Lab</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm" href="blackbox.html"><span class="material-symbols-outlined text-[18px]">data_table</span> Blackbox Logs</a>
+      </nav>
+    </div>
+    <div class="p-3 border-t border-outline bg-surface-subtle">
+      <div class="text-[10px] font-mono text-on-surface-variant">Every mission stores telemetry frames and health snapshots in the backend database. Pick a mission to inspect its recorded history.</div>
+    </div>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <div class="font-headline text-xs font-bold uppercase tracking-wider">Mission Log</div>
+      <button id="btnReload" class="px-3 py-1.5 rounded border border-outline bg-surface hover:bg-surface-subtle font-headline text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+        <span class="material-symbols-outlined text-[15px]">refresh</span> Reload
+      </button>
+    </div>
+
+    <div class="rounded-lg bg-surface border border-outline shadow-sm overflow-hidden">
+      <table class="w-full text-xs font-mono">
+        <thead class="bg-surface-subtle border-b border-outline text-[10px] uppercase tracking-wider text-on-surface-variant">
+          <tr>
+            <th class="text-left px-3 py-2">Mission</th>
+            <th class="text-left px-3 py-2">Engine</th>
+            <th class="text-left px-3 py-2">Status</th>
+            <th class="text-left px-3 py-2">Started</th>
+            <th class="text-right px-3 py-2">Duration</th>
+            <th class="text-right px-3 py-2"></th>
+          </tr>
+        </thead>
+        <tbody id="missionRows"></tbody>
+      </table>
+      <div id="blackboxEmpty" class="p-6 text-center text-[11px] font-mono text-on-surface-variant hidden">no missions recorded yet - start one from the Fault Lab</div>
+    </div>
+
+    <!-- Detail: summary + timeline -->
+    <div id="detailWrap" class="hidden space-y-3">
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-headline text-xs font-bold uppercase tracking-wider">Report Summary <span class="font-mono text-on-surface-variant normal-case" id="repId"></span></span>
+          <button id="btnClose" class="text-on-surface-variant hover:text-on-surface">&times;</button>
+          <a id="repDl" class="text-[11px] font-mono text-tertiary hover:underline" href="#">download json</a>
+          <a id="repCsv" class="text-[11px] font-mono text-tertiary hover:underline" href="#">download csv</a>
+        </div>
+        <pre class="bg-black/90 text-stone-200 rounded-lg p-3 text-[11px] font-mono overflow-auto max-h-72" id="repPre">loading…</pre>
+      </div>
+
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="font-headline text-xs font-bold uppercase tracking-wider mb-2">Health Index Timeline</div>
+        <svg id="timeline" viewBox="0 0 640 120" class="w-full h-32"></svg>
+        <div class="text-[10px] font-mono text-on-surface-variant mt-1">health snapshots recorded during the mission</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="aerotwin-api.js"></script>
+<script>
+(function () {
+  const API = window.AEROTWIN_API;
+  const $ = id => document.getElementById(id);
+
+  const CONN_STYLES = {
+    live:    { label: "STATUS: LIVE",      dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    polling: { label: "STATUS: POLLING",   dot: "bg-amber-500",   chip: "bg-amber-50 text-amber-700 border-amber-200" },
+    offline: { label: "STATUS: DEMO MODE", dot: "bg-stone-400",   chip: "bg-stone-100 text-stone-600 border-stone-300" }
+  };
+  function renderStatus(st) {
+    const s = CONN_STYLES[st] || CONN_STYLES.offline;
+    $("connBadge").className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border " + s.chip;
+    $("connDot").className = "w-1.5 h-1.5 rounded-full " + s.dot + (st === "live" ? " animate-pulse" : "");
+    $("connLabel").textContent = s.label;
+  }
+
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+  function load() {
+    if (API.isOffline()) {
+      $("blackboxEmpty").classList.remove("hidden");
+      $("blackboxEmpty").textContent = "backend offline - no mission history available";
+      return;
+    }
+    API.missions(100).then(r => {
+      const rows = r.missions || [];
+      $("blackboxEmpty").classList.toggle("hidden", rows.length > 0);
+      $("missionRows").innerHTML = rows.map(m =>
+        '<tr class="border-b border-outline/60 hover:bg-surface-subtle transition-colors">' +
+        '<td class="px-3 py-2 font-headline">' + esc(m.name || m.mission_id.slice(0, 8)) + '</td>' +
+        '<td class="px-3 py-2">' + esc(m.engine_id) + '</td>' +
+        '<td class="px-3 py-2">' + esc(m.status) + '</td>' +
+        '<td class="px-3 py-2">' + esc((m.started_at || "").replace("T", " ").slice(0, 19)) + '</td>' +
+        '<td class="px-3 py-2 text-right">' + esc(m.duration_s != null ? m.duration_s + "s" : "--") + '</td>' +
+        '<td class="px-3 py-2 text-right"><button class="px-2 py-1 rounded bg-primary text-white font-headline text-[10px] font-bold uppercase" data-open="' + m.mission_id + '">inspect</button></td>' +
+        '</tr>').join("");
+      $("missionRows").querySelectorAll("button[data-open]").forEach(b => {
+        b.addEventListener("click", () => openMission(b.dataset.open));
+      });
+    }).catch(e => {
+      $("blackboxEmpty").classList.remove("hidden");
+      $("blackboxEmpty").textContent = "failed to load missions: " + e.message;
+    });
+  }
+
+  function openMission(id) {
+    $("detailWrap").classList.remove("hidden");
+    $("repId").textContent = id.slice(0, 8);
+    $("repPre").textContent = "loading…";
+    $("repDl").href = "/api/reports/" + id;
+    $("repCsv").href = "/api/reports/" + id + "/download";
+
+    API.missionSummary(id).then(rep => {
+      $("repPre").textContent = JSON.stringify(rep, null, 2);
+    }).catch(e => { $("repPre").textContent = "report unavailable: " + e.message; });
+
+    API.healthTimeline(id).then(t => {
+      const pts = t.snapshots || t.points || t.timeline || [];
+      drawTimeline(pts);
+    }).catch(() => drawTimeline([]));
+  }
+
+  function drawTimeline(snaps) {
+    const svg = $("timeline");
+    if (!snaps.length) { svg.innerHTML = '<text x="320" y="60" text-anchor="middle" font-size="11" fill="#6b6762" font-family="monospace">no health snapshots for this mission</text>'; return; }
+    const w = 640, h = 120, pad = 6;
+    const vals = snaps.map(s => s.health_index == null ? null : Number(s.health_index)).filter(v => v != null);
+    if (!vals.length) { svg.innerHTML = ""; return; }
+    const span = 100;
+    const path = "M" + vals.map((v, i) =>
+      (pad + i / (vals.length - 1) * (w - 2 * pad)).toFixed(1) + "," +
+      (h - pad - (v / span) * (h - 2 * pad)).toFixed(1)).join(" L");
+    const warnY = h - pad - 0.6 * (h - 2 * pad);
+    const critY = h - pad - 0.3 * (h - 2 * pad);
+    svg.innerHTML =
+      '<line x1="0" y1="' + warnY.toFixed(1) + '" x2="' + w + '" y2="' + warnY.toFixed(1) + '" stroke="#f59e0b" stroke-dasharray="4 4" stroke-width="1"/>' +
+      '<line x1="0" y1="' + critY.toFixed(1) + '" x2="' + w + '" y2="' + critY.toFixed(1) + '" stroke="#e63b2e" stroke-dasharray="4 4" stroke-width="1"/>' +
+      '<path d="' + path + '" fill="none" stroke="#1a1a1a" stroke-width="1.6"/>';
+  }
+
+  $("btnReload").addEventListener("click", load);
+  $("btnClose").addEventListener("click", () => $("detailWrap").classList.add("hidden"));
+
+  renderStatus(API.status);
+  API.onStatus(renderStatus);
+  load();
+})();
+</script>
+</body>
+</html>

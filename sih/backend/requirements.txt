@@ -1,0 +1,37 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# AeroTwin Python Backend — FastAPI + SQLite + WebSocket
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# WebSocket
+websockets==14.2
+
+# Database
+aiosqlite==0.21.0
+
+# Data / ML
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.5.0
+joblib>=1.4.0
+
+# Pydantic
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+
+# Logging / Config
+python-dotenv==1.0.1
+structlog==24.4.0
+
+# Report generation
+jinja2==3.1.5
+
+# HTTP client (for internal service calls)
+httpx==0.28.1
+
+# Utilities
+orjson==3.10.13

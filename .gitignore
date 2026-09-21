@@ -18,6 +18,8 @@ sih/.env
 
 # ── runtime data ──
 sih/logs/
+sih/data/*.db
+sih/data/*.db-*
 *.log
 
 # ── editor / tooling ──

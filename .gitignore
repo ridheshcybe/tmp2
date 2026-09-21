@@ -24,3 +24,6 @@ sih/logs/
 .agentic_tools/
 .vscode/
 .idea/
+
+
+*.db

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=1920, height=1080" />
-<title>AeroTwin — The AI Digital Twin System</title>
+<title>AeroTwin — AI Digital Twin System — Predictive Control</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
@@ -42,7 +42,7 @@
   }
   .mono { font-family: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace; }
 
-  /* ---------- Scene 1 : The Fake-Out Hook ---------- */
+  /* ---------- Scene 1 : Transformation ---------- */
   #s1-world { position: absolute; inset: 0; }
   .cloud {
     position: absolute;
@@ -50,7 +50,7 @@
     border-radius: 40px;
     background: transparent;
   }
-  #s1-plane { position: absolute; left: 760px; top: 430px; width: 420px; height: 200px; will-change: transform; }
+  #s1-plane { position: absolute; left: 730px; top: 430px; width: 460px; height: 210px; will-change: transform; }
   #s1-fus {
     position: absolute; left: 0; top: 70px; width: 330px; height: 64px;
     border: 4px solid var(--gold); border-radius: 32px 60px 20px 20px;
@@ -64,20 +64,38 @@
     will-change: transform;
   }
   #s1-propB { left: 348px; top: 36px; width: 134px; height: 134px; border-style: dotted; opacity: 0.65; }
+  #s1-planeWire { position: absolute; left: 0; top: 0; width: 460px; height: 210px; opacity: 0; }
+  #s1-planeWire svg { display: block; overflow: visible; }
+  .pw { stroke: var(--gold); stroke-width: 2.5; fill: none; }
   #s1-title {
-    position: absolute; left: 0; right: 0; top: 640px; text-align: center;
+    position: absolute; left: 0; right: 0; top: 700px; text-align: center;
     font-size: 96px; font-weight: 700; letter-spacing: 2px; color: var(--gold);
     text-shadow: 0 0 34px rgba(255,215,0,0.55);
     opacity: 0; will-change: transform, opacity;
   }
   #s1-underline {
-    position: absolute; left: 460px; top: 776px; width: 1000px; height: 8px;
+    position: absolute; left: 460px; top: 836px; width: 1000px; height: 8px;
     background: var(--gold); transform: scaleX(0); transform-origin: left center;
     box-shadow: 0 0 18px rgba(255,215,0,0.7);
   }
+  #s1-twin {
+    position: absolute; left: 0; right: 0; top: 120px; text-align: center;
+    font-size: 112px; font-weight: 700; letter-spacing: 2px; color: var(--gold);
+    text-shadow: 0 0 42px rgba(255,215,0,0.6);
+    opacity: 0; will-change: transform, opacity;
+  }
+  #s1-twinbar {
+    position: absolute; left: 460px; top: 268px; width: 1000px; height: 6px;
+    background: var(--gold); transform: scaleX(0); transform-origin: left center;
+    box-shadow: 0 0 16px rgba(255,215,0,0.7); opacity: 0;
+  }
+  #s1-twinlab {
+    position: absolute; left: 0; right: 0; top: 300px; text-align: center;
+    font-size: 24px; letter-spacing: 9px; color: var(--dim); opacity: 0;
+  }
   #s1-flash { position: absolute; inset: 0; background: var(--gold); opacity: 0; pointer-events: none; }
 
-  /* ---------- Scene 2 : Meet the Twin ---------- */
+  /* ---------- Scene 2 : Telemetry & Twin HUD ---------- */
   #s2-world { position: absolute; inset: 0; will-change: transform; }
   #s2-halo {
     position: absolute; left: 260px; top: 60px; width: 900px; height: 900px;
@@ -88,6 +106,11 @@
   #s2-eng svg { display: block; }
   #s2-eng .st { stroke: var(--gold); stroke-width: 3; fill: none; stroke-linecap: round; }
   #s2-eng .fillp { fill: var(--gold); opacity: 0; }
+  .hm { position: absolute; border-radius: 10px; opacity: 0; will-change: opacity; mix-blend-mode: screen; }
+  #hm1 { left: 128px; top: 180px; width: 92px; height: 222px; background: linear-gradient(180deg, rgba(255,215,0,0.5), rgba(255,180,0,0.10)); }
+  #hm2 { left: 276px; top: 180px; width: 92px; height: 222px; background: linear-gradient(180deg, rgba(255,215,0,0.5), rgba(255,180,0,0.10)); }
+  #hm3 { left: 424px; top: 180px; width: 92px; height: 222px; background: linear-gradient(180deg, rgba(255,68,68,0.55), rgba(255,180,0,0.12)); box-shadow: 0 0 26px rgba(255,68,68,0.4); }
+  #hm4 { left: 572px; top: 180px; width: 92px; height: 222px; background: linear-gradient(180deg, rgba(255,215,0,0.5), rgba(255,180,0,0.10)); }
   #s2-title {
     position: absolute; right: 90px; top: 150px; text-align: right;
     font-size: 108px; font-weight: 700; letter-spacing: 2px; line-height: 1.02;
@@ -95,10 +118,13 @@
     opacity: 0; will-change: transform, opacity;
   }
   #s2-cap {
-    position: absolute; right: 94px; top: 410px;
+    position: absolute; right: 94px; top: 400px;
     font-size: 24px; letter-spacing: 6px; color: var(--dim);
     opacity: 0;
   }
+  #s2-rail { position: absolute; right: 70px; top: 490px; text-align: right; }
+  #s2-rail div { font-size: 21px; line-height: 2.05; color: var(--gold); opacity: 0; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+  #s2-rail div.warn { color: var(--warn); }
   .ro {
     position: absolute; bottom: 110px; width: 330px; padding: 20px 26px;
     border: 2px solid rgba(255,215,0,0.55); border-radius: 14px;
@@ -112,7 +138,7 @@
   }
   #r-rpm { left: 150px; } #r-cht { left: 795px; } #r-oil { left: 1440px; }
 
-  /* ---------- Scene 3 : AI vs Human ---------- */
+  /* ---------- Scene 3 : Predictive Alert ---------- */
   #s3-title {
     position: absolute; left: 0; right: 0; top: 70px; text-align: center;
     font-size: 72px; font-weight: 700; letter-spacing: 3px; color: var(--gold);
@@ -124,80 +150,135 @@
     border-radius: 22px; will-change: transform, opacity;
   }
   #s3-left { left: 80px; background: var(--panel); border: 2px solid #2c2c2c; }
-  #s3-right { left: 1000px; background: #050505; border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(255,215,0,0.18); }
-  /* sleepy operator (pure shapes) */
-  #op-chair { position: absolute; left: 120px; top: 300px; width: 200px; height: 260px; border: 5px solid #3a3a3a; border-radius: 24px; }
-  #op-body { position: absolute; left: 170px; top: 360px; width: 110px; height: 150px; background: #2a2a2a; border-radius: 50px 50px 18px 18px; transform: rotate(8deg); }
-  #op-head { position: absolute; left: 196px; top: 318px; width: 66px; height: 66px; background: #2a2a2a; border-radius: 50%; transform: rotate(14deg); }
-  #op-cup { position: absolute; left: 360px; top: 470px; width: 74px; height: 56px; border: 4px solid #4a4a4a; border-top: none; border-radius: 0 0 14px 14px; }
-  #op-cup::after { content: ''; position: absolute; right: -26px; top: 6px; width: 22px; height: 30px; border: 4px solid #4a4a4a; border-left: none; border-radius: 0 14px 14px 0; }
-  #op-steam { position: absolute; left: 384px; top: 420px; width: 26px; height: 44px; }
-  #op-steam path { stroke: #555; stroke-width: 3; fill: none; stroke-dasharray: 6 7; }
-  .zz { position: absolute; font-size: 40px; color: #666; font-weight: 700; opacity: 0; will-change: transform, opacity; }
-  #zz1 { left: 274px; top: 280px; } #zz2 { left: 306px; top: 236px; font-size: 48px; } #zz3 { left: 342px; top: 196px; font-size: 56px; }
-  #s3-humanlab { position: absolute; left: 0; right: 0; top: 640px; text-align: center; font-size: 30px; letter-spacing: 5px; color: #9a9a9a; opacity: 0; }
-  #s3-coffee { position: absolute; left: 0; right: 0; top: 690px; text-align: center; font-size: 21px; letter-spacing: 3px; color: #757575; opacity: 0; }
-  /* terminal */
+  #s3-right { left: 1000px; background: #050505; border: 2px solid var(--red); box-shadow: 0 0 30px rgba(255,68,68,0.18); }
   #s3-term { position: absolute; inset: 0; padding: 34px 40px; }
   #s3-termhead { font-size: 22px; letter-spacing: 3px; color: var(--gold); border-bottom: 2px solid rgba(255,215,0,0.4); padding-bottom: 14px; opacity: 0; }
   .tl-row { display: flex; align-items: center; height: 66px; font-size: 33px; color: var(--gold); opacity: 0; font-variant-numeric: tabular-nums; white-space: pre; }
   .tl-row.warn { color: var(--warn); }
   .caret { display: inline-block; width: 18px; height: 38px; background: var(--gold); margin-left: 4px; opacity: 0; }
+  #s3-card {
+    position: absolute; left: 50px; right: 50px; top: 70px;
+    border: 3px solid var(--red); border-radius: 16px;
+    padding: 26px 20px 30px; text-align: center;
+    background: rgba(255,68,68,0.06);
+    opacity: 0; will-change: transform, opacity;
+  }
+  #s3-card .lab { font-size: 20px; letter-spacing: 5px; color: var(--red); }
+  #s3-tminus {
+    font-size: 88px; font-weight: 700; color: var(--warn);
+    text-shadow: 0 0 26px rgba(255,255,0,0.55);
+    font-variant-numeric: tabular-nums; margin-top: 10px;
+  }
+  #s3-card .lab2 { font-size: 16px; letter-spacing: 4px; color: #b56a6a; margin-top: 12px; }
+  #s3-simlab {
+    position: absolute; left: 50px; right: 50px; top: 315px; text-align: center;
+    font-size: 24px; color: var(--gold); opacity: 0; font-variant-numeric: tabular-nums;
+  }
+  #s3-simwrap {
+    position: absolute; left: 50px; right: 50px; top: 360px; height: 14px;
+    border: 2px solid rgba(255,215,0,0.55); border-radius: 8px; opacity: 0;
+  }
+  #s3-simbar { height: 100%; width: 0%; background: var(--gold); border-radius: 5px; box-shadow: 0 0 12px rgba(255,215,0,0.6); }
   #s3-badge {
-    position: absolute; left: 1090px; top: 800px; padding: 18px 34px;
+    position: absolute; left: 0; right: 0; top: 420px; margin: 0 auto; width: max-content;
+    padding: 18px 34px;
     background: var(--gold); color: #000; font-weight: 700; font-size: 34px;
     letter-spacing: 2px; border-radius: 12px; opacity: 0; will-change: transform, opacity;
   }
   #s3-ring {
-    position: absolute; left: 1070px; top: 778px; width: 340px; height: 90px;
+    position: absolute; left: 0; right: 0; top: 398px; margin: 0 auto; width: 420px; height: 90px;
     border: 3px solid var(--gold); border-radius: 14px; opacity: 0; will-change: transform, opacity;
   }
-
-  /* ---------- Scene 4 : Climax ---------- */
-  #s4-stage { position: absolute; inset: 0; will-change: transform; }
-  #s4-banner {
-    position: absolute; left: 40px; right: 40px; top: 170px; height: 240px;
-    background: var(--warn); border: 6px solid var(--amber); border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; gap: 40px;
-    will-change: transform;
-    box-shadow: 0 0 60px rgba(255,255,0,0.35);
-  }
-  #s4-tri { position: relative; width: 120px; height: 104px; background: #000; clip-path: polygon(50% 0, 100% 100%, 0 100%); display: grid; place-items: end center; }
-  #s4-tri span { color: var(--warn); font-weight: 700; font-size: 62px; line-height: 1.1; transform: translateY(-6px); }
-  #s4-btext { color: #000; font-size: 62px; font-weight: 700; letter-spacing: 1px; text-align: left; line-height: 1.18; }
-  #s4-sub {
-    position: absolute; left: 0; right: 0; top: 448px; text-align: center;
-    font-size: 34px; letter-spacing: 4px; color: var(--amber); opacity: 0;
-  }
-  #s4-tminus { color: var(--warn); font-weight: 700; font-variant-numeric: tabular-nums; }
-  #s4-world { position: absolute; left: 780px; top: 560px; }
+  #s3-card { will-change: transform, opacity, background-color; }
+  #s3-card .lab2 { color: #cc8888; }
+  #s4-world { position: absolute; left: 560px; top: 730px; transform: scale(0.75); transform-origin: top left; }
   #s4-world svg { display: block; overflow: visible; }
   #s4-world .st2 { stroke: var(--gold); stroke-width: 3; fill: none; stroke-linecap: round; }
   #s4-cyl3 { position: absolute; left: 262px; top: -46px; width: 72px; height: 84px; border: 4px solid var(--red); border-radius: 10px; opacity: 0; will-change: transform, opacity; box-shadow: 0 0 20px rgba(255,68,68,0.5); }
   #s4-cylnew { position: absolute; left: 262px; top: -46px; width: 72px; height: 84px; border: 4px solid var(--gold); border-radius: 10px; opacity: 0; will-change: transform, opacity; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
   #s4-maint {
-    position: absolute; left: 0; right: 0; top: 820px; text-align: center;
-    font-size: 30px; letter-spacing: 4px; color: var(--gold); opacity: 0; will-change: transform, opacity;
+    position: absolute; left: 1000px; right: 80px; top: 740px; text-align: center;
+    font-size: 24px; letter-spacing: 3px; color: var(--gold); opacity: 0; will-change: transform, opacity;
   }
   #s4-title {
-    position: absolute; left: 0; right: 0; top: 900px; text-align: center;
+    position: absolute; left: 0; right: 0; top: 960px; text-align: center;
     font-size: 64px; font-weight: 700; letter-spacing: 2px; color: var(--gold);
     text-shadow: 0 0 30px rgba(255,215,0,0.5);
     opacity: 0; will-change: transform, opacity;
   }
 
-  /* ---------- Scene 5 : Outro ---------- */
+  /* ---------- Scene 4 : Neural fault isolation ---------- */
+  #nn-maint {
+    position: absolute; left: 0; right: 0; top: 820px; text-align: center;
+    font-size: 30px; letter-spacing: 4px; color: var(--gold); opacity: 0; will-change: transform, opacity;
+  }
+  #nn-title {
+    position: absolute; left: 0; right: 0; top: 900px; text-align: center;
+    font-size: 64px; font-weight: 700; letter-spacing: 2px; color: var(--gold);
+    text-shadow: 0 0 30px rgba(255,215,0,0.5);
+    opacity: 0; will-change: transform, opacity;
+  }
+  #s4-net { position: absolute; inset: 0; }
+  #s4-net svg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+  .ne { stroke: rgba(255,215,0,0.35); stroke-width: 2; fill: none; }
+  .nn {
+    position: absolute; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--gold); box-shadow: 0 0 18px rgba(255,215,0,0.65);
+    opacity: 0; will-change: transform, opacity;
+  }
+  #n1 { left: 157px; top: 237px; }
+  #n2 { left: 487px; top: 147px; }
+  #n3 { left: 817px; top: 237px; }
+  #n4 { left: 1147px; top: 147px; }
+  #n5 { left: 1477px; top: 237px; }
+  #n6 { left: 322px; top: 507px; }
+  #n7 { left: 652px; top: 507px; }
+  #n8 { left: 982px; top: 507px; background: var(--red); box-shadow: 0 0 22px rgba(255,68,68,0.7); }
+  #n9 { left: 1312px; top: 507px; }
+  #n10 { left: 487px; top: 787px; }
+  #n11 { left: 817px; top: 787px; }
+  #n12 { left: 1147px; top: 787px; }
+  #n8glow {
+    position: absolute; left: 965px; top: 490px; width: 60px; height: 60px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,68,68,0.65), transparent 70%); opacity: 0;
+  }
+  #n8-ring {
+    position: absolute; left: 951px; top: 476px; width: 88px; height: 88px;
+    border: 3px solid var(--red); border-radius: 50%; opacity: 0; will-change: transform, opacity;
+  }
+  #n8new {
+    position: absolute; left: 982px; top: 507px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--gold); box-shadow: 0 0 18px rgba(255,215,0,0.65); opacity: 0; will-change: transform, opacity;
+  }
+  .imp {
+    position: absolute; width: 14px; height: 14px; border-radius: 50%;
+    background: #000; border: 2px solid var(--gold); opacity: 0; will-change: transform, opacity;
+  }
+  #imp1 { left: 0; top: 0; } #imp2 { left: 0; top: 0; } #imp3 { left: 0; top: 0; }
+  #imp4 { left: 0; top: 0; } #imp5 { left: 0; top: 0; } #imp6 { left: 0; top: 0; }
+
+  /* ---------- Scene 5 : Impact outro ---------- */
   #s5-inner { position: absolute; inset: 0; display: grid; place-items: center; will-change: transform; }
   #s5-stack { text-align: center; }
-  #s5-l1 { font-size: 118px; font-weight: 700; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 40px rgba(255,215,0,0.55); opacity: 0; will-change: transform, opacity; }
-  #s5-l2 { font-size: 46px; font-weight: 500; color: #d8d8d8; letter-spacing: 8px; margin-top: 34px; opacity: 0; will-change: transform, opacity; }
+  #s5-l1 { font-size: 96px; font-weight: 700; color: var(--gold); letter-spacing: 4px; text-shadow: 0 0 40px rgba(255,215,0,0.55); opacity: 0; will-change: transform, opacity; }
+  #s5-l2 { font-size: 44px; font-weight: 500; color: var(--gold); letter-spacing: 14px; margin-top: 34px; opacity: 0; will-change: transform, opacity; }
+  #s5-bar {
+    width: 700px; height: 6px; background: var(--gold); margin: 36px auto 0;
+    transform: scaleX(0); transform-origin: center;
+    box-shadow: 0 0 16px rgba(255,215,0,0.7); opacity: 0;
+  }
+  .spark {
+    position: absolute; left: 952px; top: 492px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); box-shadow: 0 0 12px rgba(255,215,0,0.8);
+    opacity: 0; will-change: transform, opacity;
+  }
 </style>
 </head>
 <body>
-<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="30">
+<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="60">
 
-  <!-- ================= SCENE 1 — The Fake-Out Hook (0 – 6.5) ================= -->
-  <section id="s1" class="clip" data-start="0" data-duration="6.5" data-layout-allow-overflow data-track-index="0">
+  <!-- ================= CLIP 1 — THE TRANSFORMATION (0 – 10) ================= -->
+  <section id="s1" class="clip" data-start="0" data-duration="10" data-layout-allow-overflow data-track-index="0">
     <div id="s1-world">
       <div class="cloud" style="left:0; top:150px; width:260px; height:90px;"></div>
       <div class="cloud" style="left:0; top:330px; width:340px; height:110px;"></div>
@@ -211,15 +292,32 @@
         <div id="s1-tail"></div>
         <div class="prop" id="s1-propA"></div>
         <div class="prop" id="s1-propB"></div>
+        <div id="s1-planeWire">
+          <svg width="460" height="210" viewBox="0 0 460 210">
+            <path class="pw" d="M10 74 h296 a30 30 0 0 1 30 30 v0 a30 30 0 0 1 -30 30 h-296 a22 22 0 0 1 -22 -22 v-16 a22 22 0 0 1 22 -22 z" />
+            <path class="pw" d="M84 102 h216" />
+            <path class="pw" d="M300 12 v64" />
+            <path class="pw" d="M292 76 h26 v-52" />
+            <circle class="pw" cx="392" cy="104" r="46" />
+            <circle class="pw" cx="392" cy="104" r="30" />
+            <circle class="pw" cx="150" cy="88" r="5" />
+            <circle class="pw" cx="240" cy="88" r="5" />
+            <circle class="pw" cx="150" cy="120" r="5" />
+            <circle class="pw" cx="240" cy="120" r="5" />
+          </svg>
+        </div>
       </div>
       <div id="s1-underline"></div>
       <div id="s1-title">FLIGHT 404: OPERATOR ERROR?</div>
+      <div id="s1-twin">MEET THE TWIN.</div>
+      <div id="s1-twinbar"></div>
+      <div id="s1-twinlab" class="mono">DIGITAL CLONE // SYNCHRONIZED</div>
     </div>
     <div id="s1-flash"></div>
   </section>
 
-  <!-- ================= SCENE 2 — MEET THE TWIN (6.5 – 13.4) ================= -->
-  <section id="s2" class="clip" data-start="6.5" data-duration="6.9" data-layout-allow-overflow data-track-index="1">
+  <!-- ================= CLIP 2 — TELEMETRY & TWIN HUD (10 – 25) ================= -->
+  <section id="s2" class="clip" data-start="10" data-duration="15" data-layout-allow-overflow data-track-index="1">
     <div id="s2-world">
       <div id="s2-halo"></div>
       <div id="s2-eng">
@@ -244,31 +342,33 @@
           <!-- crank shaft -->
           <path class="st p" d="M54 504 h672" />
         </svg>
+        <div class="hm" id="hm1"></div>
+        <div class="hm" id="hm2"></div>
+        <div class="hm" id="hm3"></div>
+        <div class="hm" id="hm4"></div>
       </div>
-      <div id="s2-title">MEET<br />THE TWIN.</div>
+      <div id="s2-title">LIVE<br />TELEMETRY.</div>
       <div id="s2-cap" class="mono">REAL-TIME SOFTWARE CLONE // 20+ CHANNELS @ 10&nbsp;HZ</div>
+      <div id="s2-rail" class="mono">
+        <div>rpm&nbsp;&nbsp;2450 ▲</div>
+        <div>cht&nbsp;&nbsp;96.2°C</div>
+        <div>egt&nbsp;&nbsp;720°C</div>
+        <div>oil_p 45.2 psi</div>
+        <div>fuel&nbsp;11.8 gph</div>
+        <div>vib&nbsp;&nbsp;0.14 g</div>
+        <div>map&nbsp;&nbsp;29.9 inHg</div>
+        <div class="warn">sim_loop: ∞</div>
+      </div>
       <div class="ro mono" id="r-rpm"><div class="lab">RPM</div><div class="val" id="rv-rpm">0</div></div>
       <div class="ro mono" id="r-cht"><div class="lab">PEAK CHT</div><div class="val" id="rv-cht">0.0</div></div>
       <div class="ro mono" id="r-oil"><div class="lab">OIL PRESSURE</div><div class="val" id="rv-oil">0.0</div></div>
     </div>
   </section>
 
-  <!-- ================= SCENE 3 — AI vs. HUMAN REFLEXES (13.4 – 20.2) ================= -->
-  <section id="s3" class="clip" data-start="13.4" data-duration="6.8" data-layout-allow-overflow data-track-index="2">
-    <div id="s3-title">AI vs. HUMAN REFLEXES</div>
+  <!-- ================= CLIP 3 — PREDICTIVE ALERT (25 – 40) ================= -->
+  <section id="s3" class="clip" data-start="25" data-duration="15" data-layout-allow-overflow data-track-index="2">
+    <div id="s3-title">PREDICTIVE ALERT</div>
     <div id="s3-left">
-      <div id="op-chair"></div>
-      <div id="op-body"></div>
-      <div id="op-head"></div>
-      <div id="op-cup"></div>
-      <svg id="op-steam" viewBox="0 0 26 44"><path d="M6 42 C 2 32, 12 28, 8 18 C 5 10, 14 8, 12 2" /></svg>
-      <div class="zz" id="zz1">z</div>
-      <div class="zz" id="zz2">z</div>
-      <div class="zz" id="zz3">z</div>
-      <div id="s3-humanlab" class="mono">HUMAN: 1 SIP DEEP</div>
-      <div id="s3-coffee" class="mono">coffee_status: COLD &nbsp;// response_time: SLOW</div>
-    </div>
-    <div id="s3-right">
       <div id="s3-term" class="mono">
         <div id="s3-termhead">AEROTWIN://MISSION-CONTROL — LIVE</div>
         <div class="tl-row" id="tl1"><span class="txt"></span><span class="caret"></span></div>
@@ -280,18 +380,18 @@
         <div class="tl-row" id="tl7"><span class="txt"></span><span class="caret"></span></div>
       </div>
     </div>
-    <div id="s3-ring"></div>
-    <div id="s3-badge">10,000 SIMULATIONS RUN</div>
-  </section>
-
-  <!-- ================= SCENE 4 — THE CLIMAX (20.2 – 27.6) ================= -->
-  <section id="s4" class="clip" data-start="20.2" data-duration="7.4" data-layout-allow-overflow data-track-index="3">
-    <div id="s4-stage">
-      <div id="s4-banner">
-        <div id="s4-tri"><span>!</span></div>
-        <div id="s4-btext">CRITICAL FAILURE PREDICTED:<br />42 MINUTES REMAINING</div>
+    <div id="s3-right">
+      <div id="s3-card" class="mono">
+        <div class="lab">STRUCTURAL IMPACT WINDOW</div>
+        <div id="s3-tminus">T-42:00.00</div>
+        <div class="lab2">ALARM T-MINUS: HUMAN SENSES — NOT YET</div>
       </div>
-      <div id="s4-sub" class="mono">PREDICTED TIME TO FAILURE — <span id="s4-tminus">T-42:00</span></div>
+      <div id="s3-simlab" class="mono">simulations_run: 9,847</div>
+      <div id="s3-simwrap"><div id="s3-simbar"></div></div>
+      <div id="s3-ring"></div>
+      <div id="s3-badge">10,000 SIMULATIONS RUN</div>
+    </div>
+    <div id="s4-stage">
       <div id="s4-world">
         <svg width="360" height="240" viewBox="0 0 360 240">
           <path class="st2 p2" d="M20 150 h320 a18 18 0 0 1 18 18 v40 a18 18 0 0 1 -18 18 h-320 a18 18 0 0 1 -18 -18 v-40 a18 18 0 0 1 18 -18 z" />
@@ -303,73 +403,124 @@
         <div id="s4-cyl3"></div>
         <div id="s4-cylnew"></div>
       </div>
-      <div id="s4-maint" class="mono">MAINTENANCE ORCHESTRATED — DOWNTIME: 0 MIN</div>
+      <div id="s4-maint" class="mono">COMPONENT SWAP ORCHESTRATED — DOWNTIME: 0 MIN</div>
       <div id="s4-title">FAILURE PREDICTED BEFORE IT HAPPENS</div>
+  </section>
+
+  <!-- ================= CLIP 4 — NEURAL FAULT ISOLATION (40 – 50) ================= -->
+  <section id="s4n" class="clip" data-start="40" data-duration="10" data-layout-allow-overflow data-track-index="3">
+    <div id="s4-net">
+      <svg>
+        <line class="ne" id="e1"  x1="170"  y1="250" x2="335"  y2="520" />
+        <line class="ne" id="e2"  x1="170"  y1="250" x2="665"  y2="520" />
+        <line class="ne" id="e3"  x1="500"  y1="160" x2="665"  y2="520" />
+        <line class="ne" id="e4"  x1="500"  y1="160" x2="995"  y2="520" />
+        <line class="ne" id="e5"  x1="830"  y1="250" x2="995"  y2="520" />
+        <line class="ne" id="e6"  x1="830"  y1="250" x2="1325" y2="520" />
+        <line class="ne" id="e7"  x1="1160" y1="160" x2="995"  y2="520" />
+        <line class="ne" id="e8"  x1="1160" y1="160" x2="1325" y2="520" />
+        <line class="ne" id="e9"  x1="1490" y1="250" x2="1325" y2="520" />
+        <line class="ne" id="e10" x1="335"  y1="520" x2="500"  y2="800" />
+        <line class="ne" id="e11" x1="665"  y1="520" x2="830"  y2="800" />
+        <line class="ne" id="e12" x1="995"  y1="520" x2="830"  y2="800" />
+        <line class="ne" id="e13" x1="1325" y1="520" x2="1160" y2="800" />
+      </svg>
+      <div class="nn" id="n1"></div><div class="nn" id="n2"></div><div class="nn" id="n3"></div>
+      <div class="nn" id="n4"></div><div class="nn" id="n5"></div><div class="nn" id="n6"></div>
+      <div class="nn" id="n7"></div><div class="nn" id="n8"></div><div class="nn" id="n9"></div>
+      <div class="nn" id="n10"></div><div class="nn" id="n11"></div><div class="nn" id="n12"></div>
+      <div id="n8glow"></div>
+      <div id="n8-ring"></div>
+      <div id="n8new"></div>
+      <div class="imp" id="imp1"></div><div class="imp" id="imp2"></div><div class="imp" id="imp3"></div>
+      <div class="imp" id="imp4"></div><div class="imp" id="imp5"></div><div class="imp" id="imp6"></div>
+      <div id="nn-maint" class="mono">FAULT QUARANTINED — MAINTENANCE DISPATCHED — DOWNTIME: 0 MIN</div>
+      <div id="nn-title">ZERO DOWNTIME. EVERY TIME.</div>
     </div>
   </section>
 
-  <!-- ================= SCENE 5 — Outro (27.6 – 30) ================= -->
-  <section id="s5" class="clip" data-start="27.6" data-duration="2.4" data-layout-allow-overflow data-track-index="4">
+  <!-- ================= CLIP 5 — IMPACT OUTRO (50 – 60) ================= -->
+  <section id="s5" class="clip" data-start="50" data-duration="10" data-layout-allow-overflow data-track-index="4">
+    <div id="s5-sparks">
+      <div class="spark"></div><div class="spark"></div><div class="spark"></div>
+      <div class="spark"></div><div class="spark"></div><div class="spark"></div>
+      <div class="spark"></div><div class="spark"></div><div class="spark"></div>
+      <div class="spark"></div><div class="spark"></div><div class="spark"></div>
+      <div class="spark"></div><div class="spark"></div><div class="spark"></div>
+      <div class="spark"></div><div class="spark"></div><div class="spark"></div>
+    </div>
     <div id="s5-inner">
       <div id="s5-stack">
-        <div id="s5-l1">Let's Build It.</div>
-        <div id="s5-l2" class="mono">WELCOME TO THE PRESENTATION</div>
+        <div id="s5-l1">AI DIGITAL TWIN SYSTEM</div>
+        <div id="s5-l2" class="mono">PREDICTIVE CONTROL</div>
+        <div id="s5-bar"></div>
       </div>
     </div>
   </section>
 
   <!-- ================= AUDIO ================= -->
-  <!-- Music bed, ducked under every VO line, swell after the swap, hard cut at 29.95 -->
+  <!-- Music bed, ducked under every VO line, swap swell 36.5, outro riser 55→59.4, hard cut 59.9 -->
   <audio
     id="music-bed"
     src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"
     data-start="0"
-    data-duration="29.95"
+    data-duration="59.9"
     data-track-index="10"
     data-volume="0.9"
     data-automation='{"version":1,"lanes":[{"target":"volume","points":[
-      {"t":0,"v":0},{"t":0.8,"v":0.45},
-      {"t":1.6,"v":0.45},{"t":2.0,"v":0.14},{"t":5.4,"v":0.14},{"t":6.2,"v":0.35},
-      {"t":6.8,"v":0.35},{"t":7.2,"v":0.14},{"t":12.4,"v":0.14},{"t":13.2,"v":0.32},
-      {"t":13.7,"v":0.32},{"t":14.1,"v":0.14},{"t":18.9,"v":0.14},{"t":19.6,"v":0.35},
-      {"t":20.4,"v":0.35},{"t":20.9,"v":0.16},{"t":23.8,"v":0.16},{"t":25.2,"v":0.42},
-      {"t":26.4,"v":0.5},{"t":27.4,"v":0.5},{"t":27.8,"v":0.3},{"t":28.9,"v":0.3},
-      {"t":29.3,"v":0.6},{"t":29.75,"v":0.6},{"t":29.95,"v":0}
+      {"t":0,"v":0},{"t":0.8,"v":0.45},{"t":1.3,"v":0.14},{"t":5.6,"v":0.14},
+      {"t":6.0,"v":0.34},{"t":6.4,"v":0.14},{"t":10.1,"v":0.14},{"t":10.4,"v":0.32},
+      {"t":10.9,"v":0.14},{"t":16.1,"v":0.14},{"t":16.4,"v":0.30},{"t":16.9,"v":0.14},
+      {"t":20.5,"v":0.16},{"t":24.9,"v":0.14},{"t":25.5,"v":0.35},{"t":26.2,"v":0.14},
+      {"t":29.7,"v":0.28},{"t":30.5,"v":0.14},{"t":35.6,"v":0.14},{"t":36.5,"v":0.50},
+      {"t":38.5,"v":0.42},{"t":40.3,"v":0.42},{"t":40.8,"v":0.18},{"t":46.3,"v":0.30},
+      {"t":49.6,"v":0.30},{"t":50.3,"v":0.16},{"t":50.7,"v":0.14},{"t":53.5,"v":0.14},
+      {"t":54.5,"v":0.30},{"t":55.5,"v":0.45},{"t":57.5,"v":0.65},{"t":59.4,"v":0.85},
+      {"t":59.9,"v":0}
     ]}]}'
   ></audio>
 
-  <!-- Voiceover — five lines, scene-local starts (regenerated 30s re-cut) -->
-  <audio id="vo1" src="assets/vo1.wav" data-start="0.6"  data-track-index="11" data-volume="1"></audio>
-  <audio id="vo2" src="assets/vo2.wav" data-start="7.0"  data-track-index="12" data-volume="1"></audio>
-  <audio id="vo3" src="assets/vo3.wav" data-start="13.9" data-track-index="13" data-volume="1"></audio>
-  <audio id="vo4" src="assets/vo4.wav" data-start="20.7" data-track-index="14" data-volume="1"></audio>
-  <audio id="vo5" src="assets/vo5.wav" data-start="28.1" data-track-index="15" data-volume="1"></audio>
+  <!-- Voiceover — eight lines (60s master-prompt cut) -->
+  <audio id="vo1" src="assets/vo60-1.wav" data-start="0.7"  data-track-index="11" data-volume="1"></audio>
+  <audio id="vo2" src="assets/vo60-2.wav" data-start="6.1"  data-track-index="12" data-volume="1"></audio>
+  <audio id="vo3" src="assets/vo60-3.wav" data-start="10.6" data-track-index="13" data-volume="1"></audio>
+  <audio id="vo4" src="assets/vo60-4.wav" data-start="16.6" data-track-index="14" data-volume="1"></audio>
+  <audio id="vo5" src="assets/vo60-5.wav" data-start="25.6" data-track-index="15" data-volume="1"></audio>
+  <audio id="vo6" src="assets/vo60-6.wav" data-start="30.3" data-track-index="16" data-volume="1"></audio>
+  <audio id="vo7" src="assets/vo60-7.wav" data-start="40.6" data-track-index="17" data-volume="1"></audio>
+  <audio id="vo8" src="assets/vo60-8.wav" data-start="50.6" data-track-index="18" data-volume="1"></audio>
 
-  <!-- SFX — motion-matched; strong cues beat-locked (see timeline comments) -->
+  <!-- SFX — motion-matched -->
   <audio id="sfx-freeze"  src="assets/sfx/impact/impactSoft_heavy_003.ogg"  data-start="3.40" data-track-index="20" data-volume="0.9"></audio>
   <audio id="sfx-gl1"     src="assets/sfx/interface/glitch_002.ogg"         data-start="3.46" data-track-index="21" data-volume="0.8"></audio>
   <audio id="sfx-gl2"     src="assets/sfx/interface/glitch_004.ogg"         data-start="3.52" data-track-index="22" data-volume="0.8"></audio>
   <audio id="sfx-gl3"     src="assets/sfx/interface/glitch_002.ogg"         data-start="3.58" data-track-index="23" data-volume="0.75"></audio>
   <audio id="sfx-gl4"     src="assets/sfx/interface/glitch_004.ogg"         data-start="3.65" data-track-index="24" data-volume="0.7"></audio>
   <audio id="sfx-slam1"   src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="4.00" data-track-index="25" data-volume="0.9"></audio>
-  <audio id="sfx-bong"    src="assets/sfx/interface/bong_001.ogg"           data-start="6.50" data-track-index="26" data-volume="0.5"></audio>
-  <audio id="sfx-bell1"   src="assets/sfx/impact/impactBell_heavy_000.ogg"  data-start="9.02" data-track-index="27" data-volume="1"></audio>
-  <audio id="sfx-k1" src="assets/sfx/keyboard/keypress-001.wav" data-start="14.4" data-track-index="28" data-volume="0.7"></audio>
-  <audio id="sfx-k2" src="assets/sfx/keyboard/keypress-003.wav" data-start="14.95" data-track-index="29" data-volume="0.7"></audio>
-  <audio id="sfx-k3" src="assets/sfx/keyboard/keypress-005.wav" data-start="15.5" data-track-index="30" data-volume="0.7"></audio>
-  <audio id="sfx-k4" src="assets/sfx/keyboard/keypress-007.wav" data-start="16.05" data-track-index="31" data-volume="0.7"></audio>
-  <audio id="sfx-k5" src="assets/sfx/keyboard/keypress-001.wav" data-start="16.6" data-track-index="32" data-volume="0.7"></audio>
-  <audio id="sfx-k6" src="assets/sfx/keyboard/keypress-003.wav" data-start="17.15" data-track-index="33" data-volume="0.7"></audio>
-  <audio id="sfx-k7" src="assets/sfx/keyboard/keypress-005.wav" data-start="17.7" data-track-index="34" data-volume="0.7"></audio>
-  <audio id="sfx-lock1"   src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="18.8" data-track-index="35" data-volume="0.7"></audio>
-  <audio id="sfx-bell2"   src="assets/sfx/impact/impactBell_heavy_003.ogg"  data-start="20.6" data-track-index="36" data-volume="1"></audio>
-  <audio id="sfx-ck1" src="assets/sfx/keyboard/keypress-003.wav" data-start="22.05" data-track-index="37" data-volume="0.5"></audio>
-  <audio id="sfx-ck2" src="assets/sfx/keyboard/keypress-005.wav" data-start="23.05" data-track-index="38" data-volume="0.5"></audio>
-  <audio id="sfx-ck3" src="assets/sfx/keyboard/keypress-007.wav" data-start="24.05" data-track-index="39" data-volume="0.5"></audio>
-  <audio id="sfx-ck4" src="assets/sfx/keyboard/keypress-001.wav" data-start="25.0" data-track-index="40" data-volume="0.5"></audio>
-  <audio id="sfx-chime"   src="assets/sfx/interface/bong_001.ogg"           data-start="26.4" data-track-index="41" data-volume="0.8"></audio>
-  <audio id="sfx-cut"     src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="27.6" data-track-index="42" data-volume="0.8"></audio>
-  <audio id="sfx-l2"      src="assets/sfx/impact/impactBell_heavy_000.ogg"  data-start="28.9" data-track-index="43" data-volume="0.6"></audio>
+  <audio id="sfx-bell1"   src="assets/sfx/impact/impactBell_heavy_000.ogg"  data-start="7.20" data-track-index="26" data-volume="1"></audio>
+  <audio id="sfx-bong"    src="assets/sfx/interface/bong_001.ogg"           data-start="10.00" data-track-index="27" data-volume="0.5"></audio>
+  <audio id="sfx-bell2"   src="assets/sfx/impact/impactBell_heavy_003.ogg"  data-start="10.20" data-track-index="28" data-volume="1"></audio>
+  <audio id="sfx-slam2"   src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="25.60" data-track-index="36" data-volume="0.9"></audio>
+  <audio id="sfx-k1" src="assets/sfx/keyboard/keypress-001.wav" data-start="25.90" data-track-index="29" data-volume="0.7"></audio>
+  <audio id="sfx-k2" src="assets/sfx/keyboard/keypress-003.wav" data-start="26.45" data-track-index="30" data-volume="0.7"></audio>
+  <audio id="sfx-k3" src="assets/sfx/keyboard/keypress-005.wav" data-start="27.00" data-track-index="31" data-volume="0.7"></audio>
+  <audio id="sfx-k4" src="assets/sfx/keyboard/keypress-007.wav" data-start="27.55" data-track-index="32" data-volume="0.7"></audio>
+  <audio id="sfx-k5" src="assets/sfx/keyboard/keypress-001.wav" data-start="28.10" data-track-index="33" data-volume="0.7"></audio>
+  <audio id="sfx-k6" src="assets/sfx/keyboard/keypress-003.wav" data-start="28.65" data-track-index="34" data-volume="0.7"></audio>
+  <audio id="sfx-k7" src="assets/sfx/keyboard/keypress-005.wav" data-start="29.20" data-track-index="35" data-volume="0.7"></audio>
+  <audio id="sfx-ck1" src="assets/sfx/keyboard/keypress-003.wav" data-start="30.90" data-track-index="38" data-volume="0.5"></audio>
+  <audio id="sfx-ck2" src="assets/sfx/keyboard/keypress-005.wav" data-start="31.90" data-track-index="39" data-volume="0.5"></audio>
+  <audio id="sfx-ck3" src="assets/sfx/keyboard/keypress-007.wav" data-start="32.90" data-track-index="40" data-volume="0.5"></audio>
+  <audio id="sfx-ck4" src="assets/sfx/keyboard/keypress-001.wav" data-start="33.90" data-track-index="41" data-volume="0.5"></audio>
+  <audio id="sfx-bell3"   src="assets/sfx/impact/impactBell_heavy_003.ogg"  data-start="32.70" data-track-index="37" data-volume="1"></audio>
+  <audio id="sfx-chime"   src="assets/sfx/interface/bong_001.ogg"           data-start="36.50" data-track-index="42" data-volume="0.8"></audio>
+  <audio id="sfx-glitch5" src="assets/sfx/interface/glitch_004.ogg"         data-start="44.40" data-track-index="43" data-volume="0.8"></audio>
+  <audio id="sfx-slam3"   src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="45.15" data-track-index="44" data-volume="0.7"></audio>
+  <audio id="sfx-chime2"  src="assets/sfx/interface/bong_001.ogg"           data-start="45.70" data-track-index="45" data-volume="0.8"></audio>
+  <audio id="sfx-bell4"   src="assets/sfx/impact/impactBell_heavy_000.ogg"  data-start="46.60" data-track-index="46" data-volume="0.8"></audio>
+  <audio id="sfx-bell5"   src="assets/sfx/impact/impactBell_heavy_000.ogg"  data-start="52.00" data-track-index="47" data-volume="1"></audio>
+  <audio id="sfx-glitch6" src="assets/sfx/interface/glitch_002.ogg"         data-start="52.35" data-track-index="48" data-volume="0.6"></audio>
+  <audio id="sfx-l2"      src="assets/sfx/impact/impactBell_heavy_000.ogg"  data-start="58.90" data-track-index="49" data-volume="0.6"></audio>
 
   <script>
   (function () {
@@ -383,9 +534,8 @@
     }
     function ease3(p) { return 1 - Math.pow(1 - p, 3); }
 
-    /* ============ SCENE 1 (0 – 6.5) : sputtering plane → freeze → title ============ */
+    /* ============ CLIP 1 (0 – 10) : sputter → freeze → disintegrate → twin ============ */
     // clouds drift left (single finite pass, freeze at 3.4)
-    ['#s1-world .cloud'].forEach(function () {});
     var clouds = gsap.utils.toArray('#s1-world .cloud');
     clouds.forEach(function (c, i) {
       tl.fromTo(c, { x: 2000 + i * 160 }, { x: -520 - i * 120, duration: 3.35, ease: 'none' }, 0.05 + i * 0.18);
@@ -403,95 +553,170 @@
     // 3.4 : FREEZE — flash frame + needle-stop glitch SFX (3.40–3.65)
     tl.fromTo('#s1-flash', { opacity: 0 }, { opacity: 0.85, duration: 0.04, ease: 'none' }, 3.4);
     tl.to('#s1-flash', { opacity: 0, duration: 0.2, ease: 'power2.out' }, 3.46);
-    // beat-locked: title slam on music beat 4.02 // beat-locked
+    // title slam on music beat 4.02 // beat-locked
     tl.fromTo('#s1-title', { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.22, ease: 'back.out(1.6)' }, 4.0);
     tl.fromTo('#s1-underline', { scaleX: 0 }, { scaleX: 1, duration: 0.32, ease: 'power2.out' }, 4.35);
+    // 6.05 : DIGITAL DISSOLUTION — solid parts scatter, wireframe twin draws
+    tl.to('#s1-planeWire', { opacity: 1, duration: 0.1, ease: 'none' }, 6.05);
+    var wire = gsap.utils.toArray('#s1-planeWire .pw');
+    wire.forEach(function (p, i) {
+      var len = p.getTotalLength();
+      gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
+      tl.to(p, { strokeDashoffset: 0, duration: 0.55, ease: 'power2.out' }, 6.1 + i * 0.08);
+    });
+    ['#s1-fus', '#s1-wing', '#s1-tail', '#s1-propA', '#s1-propB'].forEach(function (id, i) {
+      tl.to(id, { x: [-160, -60, 140, 220, 260][i], y: [-40, 120, -90, -60, 40][i],
+        rotation: [-14, 22, -30, 180, -160][i], opacity: 0, duration: 0.5,
+        ease: 'power2.in', immediateRender: false }, 6.1 + i * 0.04);
+    });
+    // second flash as the wireframe locks
+    tl.fromTo('#s1-flash', { opacity: 0 }, { opacity: 0.55, duration: 0.05, ease: 'none' }, 6.6);
+    tl.to('#s1-flash', { opacity: 0, duration: 0.25, ease: 'power2.out' }, 6.68);
+    // twin title slam
+    tl.fromTo('#s1-twin', { scale: 1.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.32, ease: 'back.out(1.7)' }, 7.2);
+    tl.fromTo('#s1-twinbar', { opacity: 0 }, { opacity: 1, duration: 0.1 }, 7.2);
+    tl.fromTo('#s1-twinbar', { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power2.out' }, 7.3);
+    tl.fromTo('#s1-twinlab', { opacity: 0 }, { opacity: 0.9, duration: 0.5 }, 7.9);
 
-    /* ============ SCENE 2 (6.5 – 13.4) : wireframe draw → reveal → telemetry ============ */
-    tl.fromTo('#s2-world', { scale: 1.18 }, { scale: 1, duration: 1.4, ease: 'power3.out' }, 6.5);
+    /* ============ CLIP 2 (10 – 25) : wireframe engine → HUD → heatmaps → rail ============ */
+    tl.fromTo('#s2-world', { scale: 1.18 }, { scale: 1, duration: 1.4, ease: 'power3.out' }, 10.0);
     // engine outline draws itself (svg-path-draw)
     var paths2 = gsap.utils.toArray('#s2-eng .st.p');
     paths2.forEach(function (p, i) {
       var len = p.getTotalLength();
       gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
-      tl.to(p, { strokeDashoffset: 0, duration: i === 0 ? 0.7 : 0.5, ease: 'power2.out' }, 6.8 + i * 0.14);
+      tl.to(p, { strokeDashoffset: 0, duration: i === 0 ? 0.7 : 0.5, ease: 'power2.out' }, 10.3 + i * 0.14);
     });
     // pistons fill in
     var pistons = gsap.utils.toArray('#s2-eng .fillp');
     pistons.forEach(function (p, i) {
-      tl.fromTo(p, { opacity: 0 }, { opacity: 0.9, duration: 0.3, ease: 'power1.out' }, 7.7 + i * 0.09);
+      tl.fromTo(p, { opacity: 0 }, { opacity: 0.9, duration: 0.3, ease: 'power1.out' }, 11.2 + i * 0.09);
     });
-    // beat-locked: "MEET THE TWIN." slams on strong cue 9.02 // beat-locked
-    tl.fromTo('#s2-title', { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.7)' }, 9.02);
-    tl.fromTo('#s2-cap', { opacity: 0 }, { opacity: 0.9, duration: 0.5 }, 12.2);
+    // beat-locked: "LIVE TELEMETRY." slams // beat-locked
+    tl.fromTo('#s2-title', { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.7)' }, 11.6);
+    tl.fromTo('#s2-cap', { opacity: 0 }, { opacity: 0.9, duration: 0.5 }, 12.4);
     // telemetry chips arrive, count up
     ['#r-rpm', '#r-cht', '#r-oil'].forEach(function (id, i) {
-      tl.fromTo(id, { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, 9.6 + i * 0.25);
+      tl.fromTo(id, { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, 11.0 + i * 0.25);
+    });
+    // stress heatmaps glow over cylinders (VO4: "stress maps glow")
+    var hms = gsap.utils.toArray('.hm');
+    hms.forEach(function (h, i) {
+      tl.fromTo(h, { opacity: 0 }, { opacity: i === 2 ? 0.95 : 0.7, duration: 0.35, ease: 'power1.out' }, 16.6 + i * 0.15);
+      tl.fromTo(h, { opacity: i === 2 ? 0.95 : 0.7 }, { opacity: 0.3, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 3, immediateRender: false }, 17.2 + i * 0.12);
+    });
+    // telemetry code rail types in
+    gsap.utils.toArray('#s2-rail div').forEach(function (r, i) {
+      tl.fromTo(r, { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: 'power2.out' }, 12.3 + i * 0.1);
     });
     // engine idle: gentle 3D tilt + pistons bob (finite)
-    tl.fromTo('#s2-eng', { rotationY: -7 }, { rotationY: 7, duration: 2.2, ease: 'sine.inOut', yoyo: true, repeat: 1, transformPerspective: 900 }, 10.5);
+    tl.fromTo('#s2-eng', { rotationY: -7 }, { rotationY: 7, duration: 2.2, ease: 'sine.inOut', yoyo: true, repeat: 1, transformPerspective: 900 }, 13.0);
     pistons.forEach(function (p, i) {
-      tl.fromTo(p, { y: 0 }, { y: 10, duration: 0.55, ease: 'sine.inOut', yoyo: true, repeat: 5, immediateRender: false }, 10.5 + i * 0.28);
+      tl.fromTo(p, { y: 0 }, { y: 10, duration: 0.55, ease: 'sine.inOut', yoyo: true, repeat: 5, immediateRender: false }, 13.0 + i * 0.28);
     });
 
-    /* ============ SCENE 3 (13.4 – 20.2) : split screen, sleepy human vs terminal ============ */
-    tl.fromTo('#s3-title', { y: -60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, 13.5);
-    // book-open split entry
-    tl.fromTo('#s3-left', { x: -720, rotationY: -12, opacity: 0 }, { x: 0, rotationY: 0, opacity: 1, duration: 0.7, ease: 'back.out(1.1)' }, 13.6);
-    tl.fromTo('#s3-right', { x: 720, rotationY: 12, opacity: 0 }, { x: 0, rotationY: 0, opacity: 1, duration: 0.7, ease: 'back.out(1.1)' }, 13.8);
+    /* ============ CLIP 3 (25 – 40) : alert slam → countdown → sims → swap ============ */
+    tl.fromTo('#s3-title', { y: -60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, 25.1);
+    tl.fromTo('#s3-left', { x: -720, rotationY: -12, opacity: 0 }, { x: 0, rotationY: 0, opacity: 1, duration: 0.7, ease: 'back.out(1.1)' }, 25.3);
+    tl.fromTo('#s3-right', { x: 720, rotationY: 12, opacity: 0 }, { x: 0, rotationY: 0, opacity: 1, duration: 0.7, ease: 'back.out(1.1)' }, 25.45);
     gsap.set('#s3-left', { transformPerspective: 900 });
     gsap.set('#s3-right', { transformPerspective: 900 });
-    // operator props
-    ['#op-chair', '#op-body', '#op-head', '#op-cup'].forEach(function (id, i) {
-      tl.fromTo(id, { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out' }, 14.4 + i * 0.12);
-    });
-    tl.fromTo('#s3-humanlab', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 15.2);
-    tl.fromTo('#s3-coffee', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 16.0);
-    // steam shimmers (finite yoyo)
-    tl.fromTo('#op-steam', { opacity: 0.9 }, { opacity: 0.25, duration: 0.8, ease: 'sine.inOut', yoyo: true, repeat: 5 }, 14.9);
-    // Zzz float up, staggered, finite cycles each
-    ['#zz1', '#zz2', '#zz3'].forEach(function (id, i) {
-      tl.fromTo(id, { y: 30, opacity: 0 }, { y: -46, opacity: 0.85, duration: 1.1, ease: 'sine.out',
-        yoyo: true, repeat: 3 }, 15.7 + i * 0.5);
-    });
-    // terminal header
-    tl.fromTo('#s3-termhead', { opacity: 0 }, { opacity: 1, duration: 0.35 }, 14.3);
-    // 10,000 badge payoff
-    tl.fromTo('#s3-badge', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(2)' }, 18.8);
-    tl.fromTo('#s3-ring', { scale: 0.7, opacity: 0.8 }, { scale: 1.5, opacity: 0, duration: 0.55, ease: 'power2.out' }, 18.8);
-
-    /* ============ SCENE 4 (20.2 – 27.6) : warning slam → countdown → swap → payoff ============ */
-    // banner slams as VO4 says "Failure predicted" (20.6)
-    tl.fromTo('#s4-banner', { y: -280 }, { y: 0, duration: 0.3, ease: 'power4.in' }, 20.6);
-    // stage shake on impact
+    tl.fromTo('#s3-termhead', { opacity: 0 }, { opacity: 1, duration: 0.35 }, 25.7);
+    // impact card: enters as a panel, then SLAMS to solid yellow as VO5 says "42 minutes" // beat-locked
+    tl.fromTo('#s3-card', { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.5)' }, 25.75);
+    tl.to('#s3-card', { backgroundColor: 'rgba(255,255,0,1)', borderColor: 'rgba(255,176,32,1)', boxShadow: '0 0 60px rgba(255,255,0,0.5)', duration: 0.12, ease: 'power4.in' }, 25.6);
+    tl.to('#s3-card', { backgroundColor: 'rgba(20,20,20,1)', borderColor: 'rgba(255,68,68,1)', boxShadow: 'none', duration: 0.5, ease: 'power2.out', immediateRender: false }, 27.2);
+    // stage shake on the slam (after the entrance settles)
     [-10, 8, -5, 3, 0].forEach(function (dx, i) {
-      tl.fromTo('#s4-stage', { x: i === 0 ? 0 : [-10, 8, -5, 3][i - 1] }, { x: dx, duration: 0.07, ease: 'power1.inOut', immediateRender: false }, 20.9 + i * 0.07);
+      tl.fromTo('#s3-right', { x: i === 0 ? 0 : [-10, 8, -5, 3][i - 1] }, { x: dx, duration: 0.07, ease: 'power1.inOut', immediateRender: false }, 26.2 + i * 0.07);
     });
-    tl.fromTo('#s4-sub', { opacity: 0 }, { opacity: 1, duration: 0.35 }, 21.3);
-    // banner docks to make room for the engine
-    tl.fromTo('#s4-banner', { y: 0, scale: 1 }, { y: -78, scale: 0.88, duration: 0.5, ease: 'power3.inOut', immediateRender: false }, 23.9);
-    tl.fromTo('#s4-sub', { y: 0 }, { y: -46, duration: 0.5, ease: 'power3.inOut', immediateRender: false }, 23.9);
-    // mini engine draws
+    // sim meter
+    tl.fromTo('#s3-simlab', { opacity: 0 }, { opacity: 1, duration: 0.35 }, 28.0);
+    tl.fromTo('#s3-simwrap', { opacity: 0 }, { opacity: 1, duration: 0.35 }, 28.0);
+    tl.fromTo('#s3-simbar', { width: '0%' }, { width: '96%', duration: 4.6, ease: 'none' }, 28.1);
+    // 10,000 badge payoff — lands as the sim counter reaches 10,000
+    tl.fromTo('#s3-badge', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(2)' }, 32.7);
+    tl.fromTo('#s3-ring', { scale: 0.7, opacity: 0.8 }, { scale: 1.5, opacity: 0, duration: 0.55, ease: 'power2.out' }, 32.7);
+    // mini engine draws in the left panel, under the terminal rows
     var paths4 = gsap.utils.toArray('#s4-world .st2.p2');
     paths4.forEach(function (p, i) {
       var len = p.getTotalLength();
       gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
-      tl.to(p, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.out' }, 24.1 + i * 0.12);
+      tl.to(p, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.out' }, 33.5 + i * 0.12);
     });
     // faulty cylinder (red) pulses, then swaps out
-    tl.fromTo('#s4-cyl3', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 24.9);
-    tl.fromTo('#s4-cyl3', { opacity: 1 }, { opacity: 0.35, duration: 0.35, ease: 'sine.inOut', yoyo: true, repeat: 1, immediateRender: false }, 25.2);
-    tl.fromTo('#s4-cyl3', { x: 0, opacity: 1 }, { x: 300, opacity: 0, duration: 0.55, ease: 'power2.in', immediateRender: false }, 25.9);
-    // fresh yellow cylinder slides in — chime on lock-in (26.4)
-    tl.fromTo('#s4-cylnew', { x: -300, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }, 26.0);
-    tl.fromTo('#s4-maint', { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, 26.5);
-    // big payoff title
-    tl.fromTo('#s4-title', { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, 26.9);
+    tl.fromTo('#s4-cyl3', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 34.4);
+    tl.fromTo('#s4-cyl3', { opacity: 1 }, { opacity: 0.35, duration: 0.35, ease: 'sine.inOut', yoyo: true, repeat: 1, immediateRender: false }, 34.7);
+    tl.fromTo('#s4-cyl3', { x: 0, opacity: 1 }, { x: 300, opacity: 0, duration: 0.55, ease: 'power2.in', immediateRender: false }, 35.5);
+    // fresh yellow cylinder slides in — chime on lock-in (36.5)
+    tl.fromTo('#s4-cylnew', { x: -300, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }, 36.0);
+    tl.fromTo('#s4-maint', { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, 37.0);
+    tl.fromTo('#s4-title', { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, 38.0);
+    // engine floats (finite)
+    tl.fromTo('#s4-world', { y: 0 }, { y: -10, duration: 0.9, ease: 'sine.inOut', yoyo: true, repeat: 1, immediateRender: false }, 37.6);
 
-    /* ============ SCENE 5 (27.6 – 30) : clean outro lockup ============ */
-    tl.fromTo('#s5-l1', { y: 46, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, 28.0);
-    tl.fromTo('#s5-l2', { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, 28.9);
-    tl.fromTo('#s5-inner', { scale: 1 }, { scale: 1.04, duration: 0.8, ease: 'sine.inOut', immediateRender: false }, 29.2);
+    /* ============ CLIP 4 (40 – 50) : neural net → fault → quarantine → replace ============ */
+    var nodes = gsap.utils.toArray('.nn');
+    nodes.forEach(function (n, i) {
+      tl.fromTo(n, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.8)' }, 40.8 + i * 0.05);
+    });
+    var edges = gsap.utils.toArray('.ne');
+    edges.forEach(function (e, i) {
+      var len = e.getTotalLength();
+      gsap.set(e, { strokeDasharray: len, strokeDashoffset: len });
+      tl.to(e, { strokeDashoffset: 0, duration: 0.35, ease: 'power1.out' }, 41.4 + i * 0.08);
+    });
+    // signal impulses along edges
+    function impulse(id, x1, y1, x2, y2, t0) {
+      tl.fromTo(id, { x: x1, y: y1 }, { x: x2, y: y2, duration: 0.55, ease: 'none' }, t0);
+      tl.fromTo(id, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: 'none' }, t0);
+      tl.to(id, { opacity: 0, duration: 0.15, ease: 'none' }, t0 + 0.4);
+    }
+    impulse('#imp1', 170, 250, 335, 520, 41.9);
+    impulse('#imp2', 500, 160, 665, 520, 42.2);
+    impulse('#imp3', 830, 250, 995, 520, 42.5);
+    impulse('#imp4', 1160, 160, 1325, 520, 42.8);
+    impulse('#imp5', 665, 520, 830, 800, 43.1);
+    impulse('#imp6', 1325, 520, 1160, 800, 43.4);
+    // fault: red hub flares (VO7: "isolate the fault")
+    tl.fromTo('#n8glow', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out' }, 44.3);
+    tl.fromTo('#n8', { scale: 1 }, { scale: 1.35, duration: 0.3, ease: 'sine.inOut', yoyo: true, repeat: 3, immediateRender: false }, 44.4);
+    // quarantine ring
+    tl.fromTo('#n8-ring', { scale: 0.3, opacity: 0.9 }, { scale: 1.7, opacity: 0, duration: 0.5, ease: 'power2.out' }, 45.1);
+    tl.fromTo('#n8glow', { opacity: 1 }, { opacity: 0.35, duration: 0.3, yoyo: true, repeat: 1, immediateRender: false }, 44.8);
+    // bad node ejected
+    tl.to('#n8', { x: 90, y: 60, opacity: 0, duration: 0.45, ease: 'power2.in' }, 45.4);
+    tl.to('#n8glow', { opacity: 0, duration: 0.3 }, 45.4);
+    // gold replacement snaps in — chime (45.7)
+    tl.fromTo('#n8new', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)' }, 45.7);
+    tl.fromTo('#nn-maint', { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, 46.6);
+    tl.fromTo('#nn-title', { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, 47.8);
+
+    /* ============ CLIP 5 (50 – 60) : pull-back → sparks → title lockup ============ */
+    tl.fromTo('#s5-inner', { scale: 1.14 }, { scale: 1, duration: 1.2, ease: 'power3.out' }, 50.0);
+    tl.fromTo('#s5-l1', { scale: 1.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.8)' }, 52.6);
+    tl.fromTo('#s5-l2', { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, 53.6);
+    tl.fromTo('#s5-bar', { opacity: 0 }, { opacity: 1, duration: 0.1 }, 54.3);
+    tl.fromTo('#s5-bar', { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: 'power2.out' }, 54.4);
+    // electric spark bursts (deterministic angles)
+    var sparks = gsap.utils.toArray('.spark');
+    sparks.forEach(function (sp, i) {
+      var a = hash(i * 3.1 + 1) * Math.PI * 2;
+      var r = 240 + hash(i * 7.7 + 5) * 340;
+      var tx = Math.cos(a) * r, ty = Math.sin(a) * r * 0.62;
+      tl.fromTo(sp, { x: 0, y: 0, scale: 0, opacity: 0 }, { x: tx, y: ty, scale: 1, opacity: 1, duration: 0.55, ease: 'power2.out' }, 52.4 + (i % 3) * 0.05);
+      tl.to(sp, { opacity: 0, duration: 0.4, ease: 'power1.in' }, 52.95 + (i % 3) * 0.05);
+    });
+    // second spark wave
+    sparks.forEach(function (sp, i) {
+      var a = hash(i * 5.3 + 9) * Math.PI * 2;
+      var r = 320 + hash(i * 2.9 + 3) * 380;
+      var tx = Math.cos(a) * r, ty = Math.sin(a) * r * 0.62;
+      tl.fromTo(sp, { x: 0, y: 0, scale: 0, opacity: 0 }, { x: tx, y: ty, scale: 1, opacity: 0.9, duration: 0.6, ease: 'power2.out', immediateRender: false }, 55.2 + (i % 4) * 0.05);
+      tl.to(sp, { opacity: 0, duration: 0.45, ease: 'power1.in', immediateRender: false }, 55.85 + (i % 4) * 0.05);
+    });
+    // slow push-in to the cut
+    tl.fromTo('#s5-inner', { scale: 1 }, { scale: 1.06, duration: 4.0, ease: 'sine.inOut', immediateRender: false }, 55.4);
 
     /* ============ deterministic per-frame state (pure function of tl.time()) ============ */
     var rms = { hop: 0.25, values: [0.8] };
@@ -503,13 +728,13 @@
     } catch (e) { /* fallback constant glow */ }
 
     var lines = [
-      { id: 'tl1', start: 14.4,  text: '> boot twin_core --channels=20' },
-      { id: 'tl2', start: 14.95, text: '> anomaly_score: 0.91 \u25B2' },
-      { id: 'tl3', start: 15.5,  text: '> fault_class: OVERHEATING (0.85)' },
-      { id: 'tl4', start: 16.05, text: '> EGT_C3: +220\u00B0C' },
-      { id: 'tl5', start: 16.6,  text: '> inject_fault(sim) \u2026done' },
-      { id: 'tl6', start: 17.15, text: '> failure_window: 42 min' },
-      { id: 'tl7', start: 17.7,  text: '> simulations_run: 10,000' }
+      { id: 'tl1', start: 25.90, text: '> boot twin_core --channels=20' },
+      { id: 'tl2', start: 26.45, text: '> anomaly_score: 0.91 \u25B2' },
+      { id: 'tl3', start: 27.00, text: '> fault_class: OVERHEATING (0.85)' },
+      { id: 'tl4', start: 27.55, text: '> EGT_C3: +220\u00B0C' },
+      { id: 'tl5', start: 28.10, text: '> inject_fault(sim) \u2026done' },
+      { id: 'tl6', start: 28.65, text: '> failure_window: 42 min' },
+      { id: 'tl7', start: 29.20, text: '> simulations_run: 10,000' }
     ];
     var lineEls = lines.map(function (L) {
       var row = document.getElementById(L.id);
@@ -521,18 +746,19 @@
     var rpmEl = document.getElementById('rv-rpm');
     var chtEl = document.getElementById('rv-cht');
     var oilEl = document.getElementById('rv-oil');
-    var tminusEl = document.getElementById('s4-tminus');
+    var cardMinusEl = document.getElementById('s3-tminus');
+    var simLabEl = document.getElementById('s3-simlab');
 
     function tick() {
       var t = tl.time();
 
-      /* audio-reactive engine glow — music RMS, 9.0–13.4s (scene 2) only */
-      if (t >= 9.0 && t < 13.4 && rms.values.length) {
+      /* audio-reactive engine glow — music RMS, 10.0–25.0s (clip 2) only */
+      if (t >= 10.0 && t < 25.0 && rms.values.length) {
         var idx = Math.min(rms.values.length - 1, Math.floor(t / rms.hop));
         var g = rms.values[idx];
         halo.style.opacity = (0.18 + 0.5 * g).toFixed(3);
         eng.style.filter = 'drop-shadow(0 0 ' + (10 + 24 * g).toFixed(1) + 'px rgba(255,215,0,0.55))';
-      } else if (t < 9.0) {
+      } else if (t < 10.0) {
         halo.style.opacity = 0;
         eng.style.filter = 'none';
       }
@@ -573,17 +799,24 @@
         }
         el.textContent = dec === 0 ? Math.round(v).toLocaleString('en-US') : v.toFixed(dec);
       }
-      ro(rpmEl, 5600, 0, 9.6, 1);
-      ro(chtEl, 96.2, 1, 9.85, 2);
-      ro(oilEl, 45.2, 1, 10.1, 3);
+      ro(rpmEl, 5600, 0, 11.0, 1);
+      ro(chtEl, 96.2, 1, 11.25, 2);
+      ro(oilEl, 45.2, 1, 11.5, 3);
 
-      /* RUL countdown steps: 42:00 → 41:59 → 41:58 → 41:57, then holds */
-      if (t < 22.0) { tminusEl.textContent = 'T-42:00'; }
+      /* impact-window countdown: 1s of clock per 0.5s, centiseconds snap */
+      if (t < 25.6) { cardMinusEl.textContent = 'T-42:00.00'; }
       else {
-        var step = Math.min(3, Math.floor(t - 22.0));
-        var total = 42 * 60 - step;
+        var steps = (t - 25.6) * 2;
+        var total = 42 * 60 - Math.floor(steps);
         var mm = Math.floor(total / 60), ss = total % 60;
-        tminusEl.textContent = 'T-' + mm + ':' + (ss < 10 ? '0' : '') + ss;
+        var cs = (steps % 1) >= 0.5 ? 50 : 0;
+        cardMinusEl.textContent = 'T-' + mm + ':' + (ss < 10 ? '0' : '') + ss + '.' + (cs < 10 ? '0' : '') + cs;
+      }
+      /* live simulation counter 9,847 → 10,000 (lands as the badge hits) */
+      if (t < 25.8) { simLabEl.textContent = 'simulations_run: 9,847'; }
+      else {
+        var sv = Math.min(10000, 9847 + Math.floor((t - 25.8) * 34));
+        simLabEl.textContent = 'simulations_run: ' + sv.toLocaleString('en-US');
       }
     }
     tl.eventCallback('onUpdate', tick);

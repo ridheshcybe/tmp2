@@ -1,0 +1,8 @@
+# Root workspace dependencies.
+#
+# The standalone viewer (src/frontend, launched by run.bat) is standard-library
+# only and needs no packages. The SIH digital twin manages its own dependencies
+# in sih/requirements.txt and sih/backend/requirements.txt.
+#
+# Note: torch/xgboost were only ever needed by the archived placeholder
+# training scripts and are intentionally not installed by setup.bat.

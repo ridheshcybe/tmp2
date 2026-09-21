@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AeroTwin — Documentation</title>
+<meta name="description" content="AeroTwin — AI-Enabled Real-Time Digital Twin for aero piston engine health monitoring, fault prediction and mission reliability. Complete documentation." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   AeroTwin docs — dark "flight deck" theme
+   gold #FFD700 on near-black, amber #FFB020 warnings
+   ============================================================ */
+:root {
+  --bg: #0a0a0b;
+  --bg-soft: #101012;
+  --surface: #141416;
+  --surface-2: #1a1a1e;
+  --line: #26262b;
+  --line-soft: #1f1f24;
+  --gold: #FFD700;
+  --gold-soft: rgba(255, 215, 0, 0.12);
+  --amber: #FFB020;
+  --red: #FF5757;
+  --green: #4ADE80;
+  --blue: #60A5FA;
+  --text: #ECECEA;
+  --muted: #9A9AA0;
+  --faint: #6B6B72;
+  --radius: 14px;
+  --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --display: 'Space Grotesk', 'Inter', sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: rgba(255,215,0,0.25); }
+
+/* ---------- reading progress ---------- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--amber), var(--gold));
+  z-index: 100; transition: width 0.1s linear;
+  box-shadow: 0 0 12px rgba(255,215,0,0.5);
+}
+
+/* ---------- layout ---------- */
+.shell { display: flex; max-width: 1460px; margin: 0 auto; }
+aside {
+  width: 264px; flex: 0 0 264px;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  padding: 28px 18px 40px;
+  border-right: 1px solid var(--line-soft);
+  scrollbar-width: thin; scrollbar-color: #2c2c31 transparent;
+}
+main { flex: 1; min-width: 0; padding: 0 48px 120px; max-width: 1010px; }
+
+@media (max-width: 980px) {
+  .shell { flex-direction: column; }
+  aside {
+    position: static; width: auto; flex: none; height: auto;
+    border-right: none; border-bottom: 1px solid var(--line-soft);
+    padding: 18px 20px;
+  }
+  main { padding: 28px 20px 90px; }
+}
+
+/* ---------- brand ---------- */
+.brand { display: flex; align-items: center; gap: 12px; padding: 4px 10px 20px; border-bottom: 1px solid var(--line-soft); margin-bottom: 18px; }
+.brand-mark {
+  width: 40px; height: 40px; border-radius: 11px; flex: none;
+  background: linear-gradient(135deg, #FFD700, #FFB020);
+  display: grid; place-items: center;
+  box-shadow: 0 0 22px rgba(255,215,0,0.35);
+}
+.brand-mark svg { width: 24px; height: 24px; }
+.brand h1 { font-family: var(--display); font-size: 21px; margin: 0; letter-spacing: 0.5px; color: var(--text); }
+.brand small { display: block; color: var(--faint); font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 1px; }
+
+/* ---------- nav ---------- */
+nav .nav-group { margin-bottom: 4px; }
+nav .nav-label {
+  font-size: 10.5px; letter-spacing: 2.2px; text-transform: uppercase;
+  color: var(--faint); padding: 16px 12px 6px;
+}
+nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 9px;
+  color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s;
+}
+nav a .idx { font-family: var(--mono); font-size: 10.5px; color: var(--faint); width: 18px; flex: none; }
+nav a:hover { background: var(--surface); color: var(--text); }
+nav a.active { background: var(--gold-soft); color: var(--gold); border-left-color: var(--gold); }
+nav a.active .idx { color: var(--gold); }
+.doc-links { padding: 18px 12px 0; border-top: 1px solid var(--line-soft); margin-top: 16px; }
+.doc-links a { font-size: 12.5px; font-family: var(--mono); }
+
+/* ---------- hero ---------- */
+.hero {
+  padding: 64px 0 46px;
+  border-bottom: 1px solid var(--line-soft);
+  position: relative;
+}
+.hero .kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: 2px;
+  color: var(--amber); border: 1px solid rgba(255,176,32,0.35);
+  background: rgba(255,176,32,0.07);
+  padding: 6px 14px; border-radius: 99px; margin-bottom: 22px;
+}
+.hero .kicker .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+.hero h2 {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(34px, 5vw, 56px); line-height: 1.06;
+  margin: 0 0 18px; letter-spacing: -0.5px;
+}
+.hero h2 .gold { color: var(--gold); text-shadow: 0 0 40px rgba(255,215,0,0.35); }
+.hero p.lede { color: var(--muted); font-size: 17.5px; max-width: 720px; margin: 0 0 30px; }
+.hero .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--display); font-weight: 600; font-size: 14.5px;
+  padding: 11px 22px; border-radius: 11px; text-decoration: none;
+  border: 1px solid var(--line); color: var(--text); background: var(--surface);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.btn:hover { transform: translateY(-2px); border-color: #3a3a41; }
+.btn.primary { background: var(--gold); color: #000; border-color: var(--gold); box-shadow: 0 6px 26px rgba(255,215,0,0.25); }
+.btn.primary:hover { box-shadow: 0 10px 34px rgba(255,215,0,0.4); }
+.stat-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 34px; }
+.stat {
+  border: 1px solid var(--line); background: var(--surface);
+  border-radius: 12px; padding: 12px 18px; min-width: 128px;
+}
+.stat b { display: block; font-family: var(--display); font-size: 21px; color: var(--gold); letter-spacing: 0.3px; }
+.stat span { font-size: 11.5px; color: var(--faint); letter-spacing: 1.4px; text-transform: uppercase; }
+
+/* ---------- sections ---------- */
+section.doc { padding-top: 74px; scroll-margin-top: 24px; }
+.sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; }
+.sec-num {
+  font-family: var(--mono); font-size: 13px; color: var(--gold);
+  border: 1px solid rgba(255,215,0,0.4); border-radius: 8px; padding: 3px 9px;
+  background: var(--gold-soft); flex: none;
+}
+.sec-head h3 { font-family: var(--display); font-size: 30px; margin: 0; letter-spacing: -0.3px; }
+.sec-sub { color: var(--muted); margin: 0 0 28px; max-width: 780px; }
+h4 {
+  font-family: var(--display); font-size: 19px; margin: 36px 0 12px;
+  color: var(--text); letter-spacing: 0.2px;
+}
+h4::before { content: '// '; color: var(--faint); font-family: var(--mono); font-size: 15px; }
+p { color: #C9C9C6; }
+strong { color: var(--text); }
+a.txt { color: var(--gold); text-decoration: none; border-bottom: 1px dashed rgba(255,215,0,0.4); }
+a.txt:hover { border-bottom-style: solid; }
+ul.plain { padding-left: 20px; color: #C9C9C6; }
+ul.plain li { margin: 7px 0; }
+ul.plain li::marker { color: var(--gold); }
+code.inline {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--surface-2); border: 1px solid var(--line-soft);
+  padding: 1.5px 7px; border-radius: 6px; color: var(--gold); white-space: nowrap;
+}
+
+/* ---------- reveal animation ---------- */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ---------- cards & grids ---------- */
+.grid { display: grid; gap: 14px; margin: 18px 0; }
+.grid.g2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid.g3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 20px 22px;
+}
+.card h5 { margin: 0 0 8px; font-family: var(--display); font-size: 16px; color: var(--gold); letter-spacing: 0.3px; display: flex; align-items: center; gap: 9px; }
+.card h5 .ico { font-size: 18px; }
+.card p, .card li { font-size: 14.2px; color: var(--muted); margin: 5px 0; }
+.card b { color: var(--text); }
+.card .path { font-family: var(--mono); font-size: 12.5px; color: var(--amber); }
+
+/* ---------- tables ---------- */
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); margin: 16px 0; background: var(--surface); }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13.8px; min-width: 560px; }
+table.tbl th {
+  text-align: left; font-family: var(--display); font-size: 12px;
+  letter-spacing: 1.6px; text-transform: uppercase; color: var(--gold);
+  padding: 12px 16px; border-bottom: 1px solid var(--line); background: rgba(255,215,0,0.045);
+  white-space: nowrap;
+}
+table.tbl td { padding: 11px 16px; border-bottom: 1px solid var(--line-soft); color: #C9C9C6; vertical-align: top; }
+table.tbl tr:last-child td { border-bottom: none; }
+table.tbl tr:hover td { background: rgba(255,255,255,0.018); }
+table.tbl td:first-child { white-space: nowrap; }
+table.tbl .m { font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+table.tbl .dim { color: var(--faint); font-size: 12.5px; }
+
+/* ---------- method chips ---------- */
+.mchip {
+  display: inline-block; font-family: var(--mono); font-weight: 600; font-size: 10.5px;
+  letter-spacing: 1px; padding: 2.5px 8px; border-radius: 6px; margin-right: 9px;
+  vertical-align: 1px;
+}
+.mchip.get  { color: #7BE8A2; background: rgba(74,222,128,0.1);  border: 1px solid rgba(74,222,128,0.35); }
+.mchip.post { color: #FFD27A; background: rgba(255,176,32,0.1); border: 1px solid rgba(255,176,32,0.4); }
+.mchip.ws   { color: #8FC7FF; background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.35); }
+
+/* ---------- callouts ---------- */
+.callout {
+  border-radius: var(--radius); padding: 16px 20px; margin: 18px 0;
+  border: 1px solid var(--line); background: var(--surface);
+  display: flex; gap: 14px; font-size: 14.5px;
+}
+.callout .ic { font-size: 19px; flex: none; line-height: 1.5; }
+.callout.tip  { border-color: rgba(74,222,128,0.35);  background: rgba(74,222,128,0.05); }
+.callout.tip .ic { color: var(--green); }
+.callout.warn { border-color: rgba(255,176,32,0.4);   background: rgba(255,176,32,0.05); }
+.callout.warn .ic { color: var(--amber); }
+.callout.danger { border-color: rgba(255,87,87,0.4);  background: rgba(255,87,87,0.05); }
+.callout.danger .ic { color: var(--red); }
+.callout b { color: var(--text); }
+.callout p { margin: 0; color: #C9C9C6; }
+.callout p + p { margin-top: 7px; }
+
+/* ---------- code blocks ---------- */
+.codewrap { position: relative; margin: 16px 0; }
+.codewrap .lang {
+  position: absolute; top: 0; right: 0;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 1.5px;
+  color: var(--faint); padding: 9px 14px; text-transform: uppercase; user-select: none;
+}
+pre {
+  margin: 0; background: #0d0d0f; border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px 20px;
+  overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.7;
+  color: #D8D8D4; scrollbar-width: thin;
+}
+pre .c  { color: #6B6B72; font-style: italic; }
+pre .k  { color: var(--gold); }
+pre .s  { color: #A7D3A6; }
+pre .n  { color: #8FC7FF; }
+.copy-btn {
+  position: absolute; bottom: 10px; right: 10px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1px;
+  background: var(--surface-2); color: var(--muted);
+  border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 11px; cursor: pointer; opacity: 0; transition: opacity 0.15s, color 0.15s;
+}
+.codewrap:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--gold); border-color: rgba(255,215,0,0.4); }
+
+/* ---------- endpoint expanders ---------- */
+details.endpoint {
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); margin: 10px 0; overflow: hidden;
+}
+details.endpoint summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
+  padding: 13px 18px; font-size: 14px;
+}
+details.endpoint summary::-webkit-details-marker { display: none; }
+details.endpoint summary .path { font-family: var(--mono); font-size: 13px; color: var(--text); }
+details.endpoint summary .hint { margin-left: auto; color: var(--faint); font-size: 12px; white-space: nowrap; }
+details.endpoint summary:hover { background: rgba(255,255,255,0.02); }
+details.endpoint .body { border-top: 1px solid var(--line-soft); padding: 16px 20px; font-size: 14px; color: var(--muted); }
+details.endpoint .body p { margin: 6px 0; }
+
+/* ---------- flow diagram ---------- */
+.flow { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+.flow .step {
+  display: flex; gap: 16px; align-items: flex-start; position: relative;
+  padding: 0 0 26px 0;
+}
+.flow .step:not(:last-child)::before {
+  content: ''; position: absolute; left: 19px; top: 40px; bottom: 2px;
+  width: 2px; background: linear-gradient(var(--gold), rgba(255,215,0,0.15));
+}
+.flow .node {
+  width: 40px; height: 40px; flex: none; border-radius: 12px;
+  background: var(--gold-soft); border: 1px solid rgba(255,215,0,0.4);
+  display: grid; place-items: center; font-family: var(--mono); font-size: 13px; color: var(--gold);
+  z-index: 1;
+}
+.flow .what { padding-top: 3px; }
+.flow .what b { font-family: var(--display); font-size: 15px; color: var(--text); display: block; }
+.flow .what span { font-size: 13.8px; color: var(--muted); }
+.flow .what .path { font-family: var(--mono); font-size: 12px; color: var(--amber); }
+
+/* ---------- badges / chips ---------- */
+.badge {
+  display: inline-block; font-family: var(--mono); font-size: 10.5px; letter-spacing: 1px;
+  padding: 2px 9px; border-radius: 99px; border: 1px solid var(--line);
+  color: var(--muted); margin: 1px 3px 1px 0; white-space: nowrap;
+}
+.badge.gold { color: var(--gold); border-color: rgba(255,215,0,0.45); background: var(--gold-soft); }
+.badge.red { color: var(--red); border-color: rgba(255,87,87,0.45); background: rgba(255,87,87,0.07); }
+.badge.green { color: var(--green); border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.06); }
+.badge.amber { color: var(--amber); border-color: rgba(255,176,32,0.45); background: rgba(255,176,32,0.07); }
+.badge.blue { color: var(--blue); border-color: rgba(96,165,250,0.4); background: rgba(96,165,250,0.06); }
+
+/* ---------- tree ---------- */
+pre.tree { user-select: all; }
+
+/* ---------- back to top ---------- */
+#toTop {
+  position: fixed; bottom: 26px; right: 26px; z-index: 90;
+  width: 46px; height: 46px; border-radius: 13px;
+  background: var(--surface-2); color: var(--gold);
+  border: 1px solid var(--line); cursor: pointer; font-size: 19px;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+#toTop.show { opacity: 1; pointer-events: auto; }
+#toTop:hover { transform: translateY(-3px); border-color: rgba(255,215,0,0.5); }
+
+/* ---------- footer ---------- */
+footer {
+  border-top: 1px solid var(--line-soft); margin-top: 80px; padding-top: 28px;
+  color: var(--faint); font-size: 13.5px;
+}
+footer .fin { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+kbd {
+  font-family: var(--mono); font-size: 11.5px; background: var(--surface-2);
+  border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px;
+  padding: 1.5px 7px; color: var(--text);
+}
+.divider { border: none; border-top: 1px dashed var(--line); margin: 34px 0; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<div class="shell">
+<!-- ==================== SIDEBAR ==================== -->
+<aside>
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 L15 9 L22 12 L15 15 L12 22 L9 15 L2 12 L9 9 Z" fill="#000" stroke="none"/>
+      </svg>
+    </div>
+    <div>
+      <h1>AeroTwin</h1>
+      <small>Digital Twin Docs</small>
+    </div>
+  </div>
+
+  <nav id="nav">
+    <div class="nav-group">
+      <div class="nav-label">Start</div>
+      <a href="#overview"><span class="idx">01</span> Overview</a>
+      <a href="#architecture"><span class="idx">02</span> Architecture</a>
+      <a href="#quickstart"><span class="idx">03</span> Quick Start</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Operate</div>
+      <a href="#flying"><span class="idx">04</span> Flying the Engine</a>
+      <a href="#api"><span class="idx">05</span> API Reference</a>
+      <a href="#ops"><span class="idx">06</span> Scripts &amp; Ops</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Inside</div>
+      <a href="#backend"><span class="idx">07</span> Backend</a>
+      <a href="#ml"><span class="idx">08</span> AI &amp; ML</a>
+      <a href="#simulator"><span class="idx">09</span> Simulator Physics</a>
+      <a href="#frontend"><span class="idx">10</span> Frontend</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Help</div>
+      <a href="#troubleshooting"><span class="idx">11</span> Troubleshooting</a>
+    </div>
+    <div class="doc-links">
+      <div class="nav-label" style="padding-left:0">Markdown sources</div>
+      <a href="README.md">docs/README.md</a>
+      <a href="API_REFERENCE.md">API_REFERENCE.md</a>
+      <a href="BACKEND.md">BACKEND.md</a>
+      <a href="ML_MODELS.md">ML_MODELS.md</a>
+      <a href="SIMULATOR.md">SIMULATOR.md</a>
+      <a href="FRONTEND.md">FRONTEND.md</a>
+    </div>
+  </nav>
+</aside>
+
+<!-- ==================== MAIN ==================== -->
+<main>
+
+<!-- ==================== HERO ==================== -->
+<header class="hero">
+  <span class="kicker"><span class="dot"></span> SIH 26054 &nbsp;·&nbsp; DRDO TAPAS-BH-201</span>
+  <h2>The engine's <span class="gold">digital twin</span>,<br />documented end to end.</h2>
+  <p class="lede">
+    AeroTwin is an AI-enabled, real-time digital twin for a four-cylinder aero piston engine:
+    a physics simulator streams 10&nbsp;Hz telemetry, an ML pipeline watches every byte for anomalies,
+    classifies faults, scores an explainable health index, and predicts remaining useful life —
+    <strong>before a human operator could ever notice a glitch</strong>.
+  </p>
+  <div class="cta-row">
+    <a class="btn primary" href="#quickstart">▶ Quick start</a>
+    <a class="btn" href="#api">API reference</a>
+    <a class="btn" href="#flying">Fly the engine</a>
+    <a class="btn" href="http://localhost:8081/docs" target="_blank" rel="noopener">Swagger UI ↗</a>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><b>10 Hz</b><span>telemetry rate</span></div>
+    <div class="stat"><b>4 cyl</b><span>CHT + EGT each</span></div>
+    <div class="stat"><b>20+</b><span>sensor channels</span></div>
+    <div class="stat"><b>8</b><span>fault modes</span></div>
+    <div class="stat"><b>4</b><span>ML models</span></div>
+    <div class="stat"><b>0→100</b><span>explainable EHI</span></div>
+  </div>
+</header>
+
+<!-- ==================== 01 OVERVIEW ==================== -->
+<section class="doc reveal" id="overview">
+  <div class="sec-head"><span class="sec-num">01</span><h3>Overview</h3></div>
+  <p class="sec-sub">Two systems, one engine, one SQLite database. Everything else in the workspace is support tooling.</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h5><span class="ico">🖥</span> Standalone frontend <span class="path">src/frontend</span></h5>
+      <p>Plain HTML/JS pages served by <code class="inline">serve.py</code> on <span class="badge gold">:8000</span>. What <code class="inline">run.bat</code> opens. Talks to the backend through the same-origin proxy and a direct WebSocket — no build step, no framework.</p>
+      <p><b>Pages:</b> dashboard (<code class="inline">index.html</code>), cutaway 3D simulator, telemetry charts, cylinder diagnostics, fault-injection lab, blackbox logs, phone controller.</p>
+    </div>
+    <div class="card">
+      <h5><span class="ico">⚙</span> SIH digital twin <span class="path">sih/</span></h5>
+      <p>The engine room. Four packages:</p>
+      <ul class="plain" style="margin:4px 0 0">
+        <li><b>simulator/</b> — physics telemetry generator + fault injection</li>
+        <li><b>ml/</b> — training + streaming inference pipeline (the AI)</li>
+        <li><b>backend/</b> — FastAPI REST + WebSocket on <span class="badge gold">:8081</span></li>
+        <li><b>frontend/</b> — React cockpit (Vite) with the cutaway viewer</li>
+      </ul>
+    </div>
+  </div>
+
+  <h4>Workspace map</h4>
+  <div class="codewrap"><span class="lang">tree</span><button class="copy-btn">COPY</button>
+<pre class="tree">AeroTwin workspace/
+├── run.bat                  <span class="c"># one click: backend :8081 + viewer :8000</span>
+├── setup.bat                <span class="c"># run FIRST on a fresh machine (venv + requirements)</span>
+├── train.bat                <span class="c"># delegates to sih/train.bat (ML training)</span>
+├── src/frontend/            <span class="c"># standalone pages — source of truth for the viewer</span>
+│   ├── index.html           <span class="c">#   the dashboard (hosts the cutaway box)</span>
+│   ├── cutaway.html         <span class="c">#   STL cutaway simulator (embedded)</span>
+│   ├── phone.html           <span class="c">#   phone controller (auto-pairs via QR)</span>
+│   ├── aerotwin-api.js      <span class="c">#   shared API client (WS → poll → demo)</span>
+│   └── serve.py             <span class="c">#   static server + /api proxy + pairing relay</span>
+├── sih/
+│   ├── backend/             <span class="c"># FastAPI app, services, SQLite, config</span>
+│   ├── ml/                  <span class="c"># physics baseline, 4 models, training</span>
+│   ├── simulator/           <span class="c"># engine model, faults, mission profiles</span>
+│   ├── frontend/            <span class="c"># React cockpit + synced cutaway copy</span>
+│   ├── start_app.py         <span class="c"># service manager: start|stop|status|restart</span>
+│   └── data/aerotwin.db     <span class="c"># SQLite — missions, telemetry, snapshots</span>
+└── docs/                    <span class="c"># you are here</span></pre></div>
+
+  <h4>Ports &amp; identities</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Thing</th><th>Value</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Static frontend</td><td class="m">:8000</td><td>serve.py; proxies <code class="inline">/api</code> &amp; <code class="inline">/health</code> → backend, so the pages never hit CORS</td></tr>
+      <tr><td>FastAPI backend</td><td class="m">:8081</td><td>REST + WS; Swagger at <code class="inline">/docs</code>, ReDoc at <code class="inline">/redoc</code></td></tr>
+      <tr><td>HTTPS listener</td><td class="m">:8443</td><td>self-signed; serves <code class="inline">phone.html</code> (camera needs TLS)</td></tr>
+      <tr><td>Engine identity</td><td class="m">TAPAS-BH-201-001</td><td>singleton simulator — <code class="inline">engine_id</code> params are informational</td></tr>
+      <tr><td>Database</td><td class="m">sih/data/aerotwin.db</td><td>aiosqlite, async, batched telemetry writes</td></tr>
+      <tr><td class="m">:8080 / 8765 / 8766</td><td class="m">retired</td><td class="dim">old Node stack — nothing listens there anymore</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout tip"><span class="ic">✦</span><p><b>Design law:</b> every layer degrades gracefully. Trained models missing? A documented rule-based fallback takes over. Backend down? The dashboard switches to a labelled DEMO generator. WebSocket dies? It drops to REST polling. Nothing ever shows a blank screen.</p></div>
+</section>
+
+<!-- ==================== 02 ARCHITECTURE ==================== -->
+<section class="doc reveal" id="architecture">
+  <div class="sec-head"><span class="sec-num">02</span><h3>Architecture</h3></div>
+  <p class="sec-sub">The journey of one telemetry frame — physics to pixels in under 100 ms, ten times a second.</p>
+
+  <div class="flow">
+    <div class="step"><div class="node">1</div><div class="what">
+      <b>Physics step</b> <span class="path">simulator/telemetry_gen/engine_model.py</span>
+      <span>ISA atmosphere → RPM lag → fuel, CHT, EGT, oil, vibration, electrical sub-models, one tick at 10 Hz. <code class="inline">fault_injection.py</code> corrupts the healthy row (60 s ramp).</span>
+    </div></div>
+    <div class="step"><div class="node">2</div><div class="what">
+      <b>Tick loop</b> <span class="path">backend/services/simulator.py</span>
+      <span>asyncio loop: profile → (phase, throttle, altitude), apply overrides, step engine, build the frame, push to a 600-frame ring buffer, fire callbacks.</span>
+    </div></div>
+    <div class="step"><div class="node">3</div><div class="what">
+      <b>Process &amp; store</b> <span class="path">backend/routes/mission.py</span>
+      <span>Frame → SQLite (buffered writes) → <code class="inline">DigitalTwinService.process_frame()</code>.</span>
+    </div></div>
+    <div class="step"><div class="node">4</div><div class="what">
+      <b>One orchestrator, five analyses</b> <span class="path">backend/services/digital_twin.py</span>
+      <span>physics residuals → anomaly score + fault class → explainable health index → criticality + action → RUL + RTB alerts → sensor status assembly.</span>
+    </div></div>
+    <div class="step"><div class="node">5</div><div class="what">
+      <b>Broadcast</b> <span class="path">backend/websocket_handler.py</span>
+      <span>Full EngineState wrapped as <code class="inline">TELEMETRY</code> and fanned out to every WS client; dead sockets pruned.</span>
+    </div></div>
+    <div class="step"><div class="node">6</div><div class="what">
+      <b>Render</b> <span class="path">src/frontend/aerotwin-api.js</span>
+      <span><code class="inline">flatten()</code> maps the rich state onto the pages: KPI cards with fluctuation chips + sparklines, phase chip, alert banner, and <code class="inline">CUTAWAY_SET_RPM</code> postMessage drives the 3D engine.</span>
+    </div></div>
+  </div>
+
+  <h4>Why a physics baseline + tree ensembles (not an LSTM)?</h4>
+  <p>The temporal signatures — trends, rolling variance, breaking correlations — are encoded <em>explicitly</em> in ~30 engineered features. Tree ensembles reach the same accuracy with ~100× less data, no GPU, and free explainability: every prediction can cite the residuals that drove it. The hybrid backbone means <code class="inline">predicted = physics + ML correction</code>.</p>
+
+  <div class="callout"><span class="ic">⚙</span><p><b>Module-identity rule (a real bug's tombstone):</b> all internal imports use the <code class="inline">backend.</code> prefix. Importing bare <code class="inline">database</code> silently creates a <em>second</em> module instance with its own DB handle — routes saw "Database not initialized" while <code class="inline">init_db()</code> "succeeded".</p></div>
+</section>
+
+<!-- ==================== 03 QUICK START ==================== -->
+<section class="doc reveal" id="quickstart">
+  <div class="sec-head"><span class="sec-num">03</span><h3>Quick Start</h3></div>
+  <p class="sec-sub">From a cold machine to a live engine in two commands (Windows). Everything auto-recovers.</p>
+
+  <div class="codewrap"><span class="lang">cmd</span><button class="copy-btn">COPY</button>
+<pre>:: 1 — once per machine: creates/repairs the venv, installs backend requirements
+setup.bat
+
+:: 2 — every session: boots backend :8081 + viewer :8000, opens the dashboard
+run.bat</pre></div>
+
+  <p>Open <a class="txt" href="http://localhost:8000">http://localhost:8000</a> — the cutaway engine is already running at ground idle. Drag the throttle. It answers.</p>
+
+  <h4>Manual route (any OS)</h4>
+  <div class="codewrap"><span class="lang">bash</span><button class="copy-btn">COPY</button>
+<pre><span class="c"># backend — run from sih/ so the backend.* imports resolve</span>
+<span class="k">cd</span> sih &amp;&amp; python -m uvicorn main:app --host 127.0.0.1 --port 8081
+
+<span class="c"># frontend</span>
+<span class="k">cd</span> src/frontend &amp;&amp; python serve.py   <span class="c"># → http://localhost:8000/</span></pre></div>
+
+  <h4>Verify it's alive</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Check</th><th>Expect</th></tr></thead>
+    <tbody>
+      <tr><td class="m">GET :8081/health</td><td><code class="inline">status: "ok"</code>, <code class="inline">simulator: idle</code>, <code class="inline">ml_models: loaded|fallback</code></td></tr>
+      <tr><td class="m">POST :8081/api/simulation/throttle {"throttle":0.6}</td><td>auto-starts a <code class="inline">manual</code> session — <code class="inline">auto_started: true</code></td></tr>
+      <tr><td class="m">GET :8081/api/simulation/status</td><td><code class="inline">is_running: true</code>, <code class="inline">phase: "MANUAL"</code>, <code class="inline">throttle: 0.6</code></td></tr>
+      <tr><td>Dashboard header chip</td><td><span class="badge green">LIVE</span> (WS) → <span class="badge amber">POLLING</span> (REST) → <span class="badge blue">DEMO MODE</span> (offline generator)</td></tr>
+      <tr><td class="m">:8081/docs</td><td>interactive Swagger UI for every endpoint below</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout tip"><span class="ic">✦</span><p><b>Train the AI (optional):</b> <code class="inline">train.bat</code> or <code class="inline">cd sih &amp;&amp; python -m ml.train --runs-per-fault 2 --healthy-runs 4 --model-dir ml/models</code>. Without it, everything still works via the rule-based fallback — <code class="inline">/health</code> honestly reports <code class="inline">ml_models: fallback</code>.</p></div>
+</section>
+
+<!-- ==================== 04 FLYING THE ENGINE ==================== -->
+<section class="doc reveal" id="flying">
+  <div class="sec-head"><span class="sec-num">04</span><h3>Flying the Engine</h3></div>
+  <p class="sec-sub">One control bar at the bottom of the canvas runs everything: presets, flight transport, manual throttle, and the phone. The engine visibly spools toward every command — it never snaps.</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h5><span class="ico">🎚</span> ENGINE — presets</h5>
+      <p><b>Idle 1.2K / Cruise 2.4K / Takeoff 5.8K.</b> One click commands a throttle (<code class="inline">rpm / 3600</code>) to the backend; the session auto-starts if no mission is running. The cutaway spools to the commanded rate through its speed model.</p>
+    </div>
+    <div class="card">
+      <h5><span class="ico">🛫</span> FLIGHT — transport</h5>
+      <p><b>Test Flight</b> flies the compressed profile — idle → takeoff → climb → cruise → descent → landing in ~2.5 min — with the phase chip tracking each stage. <b>Abort</b> spools back down to idle instead of leaving you mid-air. <b>To Idle</b> releases manual control to ground idle.</p>
+    </div>
+    <div class="card">
+      <h5><span class="ico">🎮</span> MANUAL — the stick</h5>
+      <p>Drag the throttle and the engine reacts live. A <span class="badge gold">MANUAL</span> chip shows when the stick is in command; the 5&nbsp;% floor means the engine idles rather than dies. Every fluctuation shows on the KPI cards: <b>▲/▼ delta chips</b> (1-second windows) and live sparklines under each value.</p>
+    </div>
+    <div class="card">
+      <h5><span class="ico">📱</span> PHONE — scan &amp; fly</h5>
+      <p><b>Pair phone</b> shows a QR. Scanning it auto-pairs (camera + WebRTC handshake, nothing typed) and the phone becomes a live controller: throttle lever, presets, flight start/abort, release — with phase, RPM and throttle echoed back so the display stays live. Commands ride the WebRTC data channel with a REST fallback through serve.py's <code class="inline">/__ctl</code> queue.</p>
+    </div>
+  </div>
+
+  <h4>Mission profiles</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Profile</th><th>Duration</th><th>Shape</th><th>Used by</th></tr></thead>
+    <tbody>
+      <tr><td class="m">default</td><td>~99 min</td><td>STARTUP 120s → TAKEOFF 60s → CLIMB 900s → CRUISE 1800s → ENDURANCE 2400s → DESCENT 600s → LANDING 90s</td><td>API default mission</td></tr>
+      <tr><td class="m">test_flight</td><td>~2.5 min</td><td>same shape compressed (15/12/30/40/30/15 s)</td><td>dashboard <b>Test Flight</b></td></tr>
+      <tr><td class="m">manual</td><td>session</td><td>parks at ground idle (throttle 0.05, 0 ft); interactive overrides fly from there</td><td>auto-started by slider / presets / phone</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Safety behaviors worth knowing</h4>
+  <ul class="plain">
+    <li><b>Overspeed protection</b> — if commanded RPM ≥ 6400 or <code class="inline">RTB_CRITICAL</code>, the cutaway HUD goes red and cuts the commanded throttle to fast idle until it clears.</li>
+    <li><b>Burst warning</b> — anomaly score ≥ 0.55 turns the HUD amber: "ABOUT TO BURST".</li>
+    <li><b>Hand-crank</b> — grab the crankshaft, a piston, a rod or the propeller and drag: the whole slider-crank hierarchy answers, then friction coasts back to the commanded throttle.</li>
+    <li><b>Fresh missions forget</b> — starting a mission resets the health-index EMA, so a new flight never inherits the previous one's degraded score.</li>
+  </ul>
+
+  <div class="callout warn"><span class="ic">⚠</span><p><b>Manual + mission interplay:</b> starting a Test Flight <em>replaces</em> a running manual session (the simulator rewires, it doesn't refuse). Releasing the stick in a <code class="inline">manual</code> session parks at ground idle; releasing inside a real mission hands control back to the profile.</p></div>
+</section>
+
+<!-- ==================== 05 API REFERENCE ==================== -->
+<section class="doc reveal" id="api">
+  <div class="sec-head"><span class="sec-num">05</span><h3>API Reference</h3></div>
+  <p class="sec-sub">
+    Base URL <code class="inline">http://localhost:8081</code> — or same-origin <code class="inline">:8000/api/...</code> through the proxy.
+    JSON everywhere; ISO-8601 UTC timestamps; uniform errors <code class="inline">{error, detail, status_code}</code>.
+    Full request/response schemas live in <a class="txt" href="API_REFERENCE.md">API_REFERENCE.md</a>.
+  </p>
+
+  <h4>System</h4>
+  <details class="endpoint"><summary><span class="mchip get">GET</span><span class="path">/health</span><span class="hint">liveness + components</span></summary>
+    <div class="body">Component status: <code class="inline">ml_models</code> (loaded / fallback / error), <code class="inline">simulator</code> (running / idle), <code class="inline">websocket_clients</code>, uptime. Used by run.bat's health-wait and the dashboard's Force Sync.</div>
+  </details>
+
+  <h4>Engine — the rich read</h4>
+  <details class="endpoint"><summary><span class="mchip get">GET</span><span class="path">/api/engine/{id}/state</span><span class="hint">the single richest read · WS payload</span></summary>
+    <div class="body">Full EngineState: <b>observed</b> frame, physics <b>expected</b> + <b>residuals</b>, health index (category, trend, confidence, contributors, explanation), anomaly score, fault class/severity/criticality/action, RUL + RTB alerts, sensor status, alerts. Cached per frame — polling between ticks is free. <b>503</b> when no mission is running.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip get">GET</span><span class="path">/api/engine/{id}/telemetry?limit=100</span><span class="hint">ring buffer, max 600</span></summary>
+    <div class="body">Last N raw frames from the simulator's in-memory buffer (60 s @ 10 Hz). Empty list, not 404, before any frames exist.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip get">GET</span><span class="path">/api/engine/{id}/health · /faults · /rul</span><span class="hint">slices of state</span></summary>
+    <div class="body">Single-concern slices of <code class="inline">/state</code> for cheap polling.</div>
+  </details>
+
+  <h4>Missions</h4>
+  <details class="endpoint"><summary><span class="mchip post">POST</span><span class="path">/api/missions/start</span><span class="hint">profile: default | test_flight | manual</span></summary>
+    <div class="body">Body: <code class="inline">{engine_id?, duration_s=600, ambient_offset_c=0, name?, profile}</code>. Creates the DB row, starts the tick loop, pipes frames through ML → SQLite → WS. Resets the health EMA. Only one simulator exists; starting while running re-wires the callback.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip post">POST</span><span class="path">/api/missions/{id}/stop</span><span class="hint">flush + COMPLETED</span></summary>
+    <div class="body">Stops the sim, flushes buffered telemetry, stamps ended_at. Unknown id → <b>404</b>; already-stopped → no-op returning the stored status.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip get">GET</span><span class="path">/api/missions?limit=50 · /{id} · /{id}/summary</span><span class="hint">history + aggregates</span></summary>
+    <div class="body">Newest-first list; per-mission stats (avg/min health, anomaly count, fault distribution, min RUL); the full report shape.</div>
+  </details>
+
+  <h4>Fault injection</h4>
+  <details class="endpoint"><summary><span class="mchip post">POST</span><span class="path">/api/faults/inject</span><span class="hint">8 classes · 60 s ramp</span></summary>
+    <div class="body">Body: <code class="inline">{fault_type, severity=0.7, target_sensor?}</code> — HEALTHY, INJECTOR_DEGRADATION, MISFIRE, LUBRICATION_FAILURE, OVERHEATING, SENSOR_DRIFT, SENSOR_DROPOUT, ABNORMAL_VIBRATION, ALTERNATOR_DEGRADATION. Effects ramp in over 60 s; audit row written; <code class="inline">FAULT_INJECTED</code> broadcast. <b>400</b> if no mission is running.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip post">POST</span><span class="path">/api/faults/clear</span><span class="hint">and GET /api/faults/types</span></summary>
+    <div class="body">Clear removes all active faults (broadcasts <code class="inline">FAULTS_CLEARED</code>). Types returns the 8 faultable classes with criticality + recommended maintenance action.</div>
+  </details>
+
+  <h4>Simulation controls — the interactive stick</h4>
+  <details class="endpoint"><summary><span class="mchip post">POST</span><span class="path">/api/simulation/throttle</span><span class="hint">auto-starts a session</span></summary>
+    <div class="body">Body <code class="inline">{throttle: 0.0–1.0}</code>. Overrides the profile from the next tick. <b>No mission running? It auto-starts an interactive <code class="inline">manual</code> session</b> — this is why the slider and phone work the instant a page opens. Response: <code class="inline">{throttle, status:"set", mission_id, auto_started}</code>.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip post">POST</span><span class="path">/api/simulation/throttle/release</span><span class="hint">hand back the stick</span></summary>
+    <div class="body">Drops the interactive override. In a <code class="inline">manual</code> session the engine parks at ground idle; in a real mission the profile takes over. <b>400</b> if not running.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip get">GET</span><span class="path">/api/simulation/status</span><span class="hint">+ POST /altitude</span></summary>
+    <div class="body"><code class="inline">{is_running, mission_id, frame_id, sim_time_s, hz, active_faults, phase, profile, throttle, throttle_manual}</code>. Altitude override (0–45 000 ft) mirrors throttle, including auto-start.</div>
+  </details>
+
+  <h4>Reports &amp; replay</h4>
+  <details class="endpoint"><summary><span class="mchip get">GET</span><span class="path">/api/reports/{id}</span><span class="hint">+ /download · /health-timeline</span></summary>
+    <div class="body">Post-mission analysis: executive summary, health timeline (≤500 downsampled), anomaly events, fault predictions, RUL timeline, priority-ordered maintenance advisories, sensor + environmental summaries. Download sends it as an attachment; health-timeline gives the untruncated series for charts.</div>
+  </details>
+  <details class="endpoint"><summary><span class="mchip post">POST</span><span class="path">/api/replay/start</span><span class="hint">speed 0.1–10×</span></summary>
+    <div class="body">Loads a stored mission for replay; frames then stream over the WebSocket at <code class="inline">speed</code>. HTTP fallback: <code class="inline">GET /api/replay/frames/{id}?start_s=&amp;end_s=&amp;limit=5000</code>.</div>
+  </details>
+
+  <h4>WebSocket <span class="mchip ws">WS</span> <code class="inline" style="font-size:12px">ws://localhost:8081/ws/telemetry/{engine_id}</code></h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Direction</th><th>Message</th><th>Payload / effect</th></tr></thead>
+    <tbody>
+      <tr><td>← server</td><td class="m">WELCOME</td><td>on connect: server time + client count</td></tr>
+      <tr><td>← server</td><td class="m">TELEMETRY</td><td>every frame (10 Hz): full EngineState + envelope timestamp</td></tr>
+      <tr><td>← server</td><td class="m">FAULT_INJECTED · FAULTS_CLEARED</td><td>fault events from REST or WS</td></tr>
+      <tr><td>← server</td><td class="m">PONG · STATS</td><td>replies to PING / GET_STATS</td></tr>
+      <tr><td>→ client</td><td class="m">TRIGGER_FAULT</td><td><code class="inline">{fault, severity, sensor?}</code> — inject + broadcast</td></tr>
+      <tr><td>→ client</td><td class="m">SET_THROTTLE · SET_ALTITUDE · CLEAR_FAULTS · PING · GET_STATS</td><td>interactive control without REST</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Vocabularies</h4>
+  <div class="grid g2">
+    <div class="card">
+      <h5>Health categories</h5>
+      <p><span class="badge green">NORMAL ≥ 85</span> <span class="badge">WATCH 70–84</span> <span class="badge amber">WARNING 50–69</span> <span class="badge red">CRITICAL 30–49</span> <span class="badge red">EMERGENCY &lt; 30</span></p>
+    </div>
+    <div class="card">
+      <h5>Return-to-base ladder</h5>
+      <p><span class="badge">NONE</span> → <span class="badge amber">RTB_ADVISORY</span> at RUL ≤ 30 min → <span class="badge red">RTB_CRITICAL</span> at RUL ≤ 10 min. Mission phases: STARTUP · TAKEOFF · CLIMB · CRUISE · ENDURANCE · DESCENT · LANDING · MANUAL.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 06 SCRIPTS & OPS ==================== -->
+<section class="doc reveal" id="ops">
+  <div class="sec-head"><span class="sec-num">06</span><h3>Scripts &amp; Ops</h3></div>
+  <p class="sec-sub">Every launcher resolves paths from its own location — the repo can live in any folder. No hardcoded drives.</p>
+
+  <h4>Root launchers</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Script</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="m">setup.bat</td><td>Run <b>first</b> on a fresh machine. Creates the venv — and <b>rebuilds it if broken</b> (a venv from another user path is detected and replaced) — installs <code class="inline">sih/backend/requirements.txt</code>, verifies the imports.</td></tr>
+      <tr><td class="m">run.bat</td><td>Starts everything: prefers the venv python, falls back to system python; launches the backend on <b>:8081</b>, waits for <code class="inline">/health</code>, starts serve.py on <b>:8000</b>, opens the dashboard. Skips booting a backend that's already up.</td></tr>
+      <tr><td class="m">train.bat</td><td>Delegates to <code class="inline">sih/train.bat</code> (ML training pipeline) with the venv-fallback + PYTHONPATH handling.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>sih launchers</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Script</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="m">sih/start_app.py</td><td>The service manager — <code class="inline">python start_app.py start|stop|status|restart</code>. Manages the real pair (FastAPI :8081 + serve.py :8000), logs to <code class="inline">.backend.log</code>/<code class="inline">.frontend.log</code>; port-based stop catches servers started any other way.</td></tr>
+      <tr><td class="m">sih/run.bat / run.sh</td><td>Quick backend launcher (script-relative paths, error pause).</td></tr>
+      <tr><td class="m">sih/run_demo.bat / run_demo.sh</td><td>One-click demo: start via start_app.py → health-check :8081 → open <code class="inline">:8000/index.html</code>.</td></tr>
+      <tr><td class="m">sih/setup_environment.bat</td><td>Environment bootstrap; self-locating (the old version cd'd into the wrong directory).</td></tr>
+      <tr><td class="m">sih/train.bat / train.sh</td><td>ML training with venv fallback + correct PYTHONPATH.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Keeping the cutaway copies in sync</h4>
+  <p><code class="inline">src/frontend/cutaway.html</code> owns the simulator. After editing it:</p>
+  <div class="codewrap"><span class="lang">bash</span><button class="copy-btn">COPY</button>
+<pre><span class="c"># sih cockpit hosts the same simulator under a different name</span>
+cp src/frontend/cutaway.html sih/frontend/public/cutaway/index.html
+cp src/frontend/cutaway.html sih/frontend/dist/cutaway/index.html
+<span class="c"># phone.html + the STL files stay identical in all three places</span></pre></div>
+
+  <div class="callout danger"><span class="ic">✕</span><p><b>Don't trust :3000 or the Node stack.</b> Legacy docs referenced a Node backend on :8080 and a cockpit on :3000 — retired. If a script mentions <code class="inline">localhost:3000</code>, it predates the FastAPI migration.</p></div>
+</section>
+
+<!-- ==================== 07 BACKEND ==================== -->
+<section class="doc reveal" id="backend">
+  <div class="sec-head"><span class="sec-num">07</span><h3>Backend</h3></div>
+  <p class="sec-sub">FastAPI + asyncio + aiosqlite. Entry: <code class="inline">sih/backend/main.py</code>. Services are singletons obtained via <code class="inline">get_*_service()</code>. Full function-level detail in <a class="txt" href="BACKEND.md">BACKEND.md</a>.</p>
+
+  <h4>Lifecycle</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Phase</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr><td>startup</td><td><code class="inline">init_db()</code>, pre-initialise anomaly + health services (warms models), log banner. CORS for the React dev origins only — the standalone frontend bypasses it via the proxy.</td></tr>
+      <tr><td>runtime</td><td>Any request slower than 100 ms is logged as a warning. Global handlers return the uniform error shape.</td></tr>
+      <tr><td>shutdown</td><td>Stops the simulator, flushes buffered telemetry, closes the DB.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>The nine services</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Service</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td class="m">simulator.py</td><td>In-process telemetry producer. <code class="inline">start/stop</code>, per-tick callbacks, <code class="inline">inject_fault/clear_faults</code>, <code class="inline">set_throttle/set_altitude</code> overrides, the asyncio <code class="inline">_run_loop</code> (profile → overrides → ISA → engine step → faults → frame → buffer → callbacks).</td></tr>
+      <tr><td class="m">digital_twin.py</td><td><b>The orchestrator.</b> Frame → CSV-keyed row → residuals → anomaly → health → fault enrichment → RUL → alerts + sensor status → EngineState. One call: <code class="inline">process_frame(frame)</code>.</td></tr>
+      <tr><td class="m">anomaly.py</td><td>Wraps the ML pipeline (or <code class="inline">FallbackAnalyzer</code>, or an ultra-minimal heuristic — see §08). Warmup returns neutral HEALTHY while the feature window fills.</td></tr>
+      <tr><td class="m">health_index.py</td><td>Wraps the explainable EHI calculator; <code class="inline">reset()</code> on every mission start; rule-based fallback when ML is missing.</td></tr>
+      <tr><td class="m">fault_prediction.py</td><td>Stateless enrichment: class → criticality (LUBRICATION 1.0 … SENSOR_DROPOUT 0.30) + human maintenance action text.</td></tr>
+      <tr><td class="m">rul.py</td><td>Remaining Useful Life + RTB ladder (≤10 min CRITICAL, ≤30 min ADVISORY, 180 min endurance bar); slope-based extrapolation when ML is absent.</td></tr>
+      <tr><td class="m">report.py</td><td>Mission post-mortem: timelines, anomaly/fault/RUL events, advisories, summaries.</td></tr>
+      <tr><td class="m">replay.py</td><td>Streams stored frames through a callback at adjustable speed.</td></tr>
+      <tr><td class="m">websocket_handler.py</td><td>ConnectionManager (welcome / prune dead sockets), frame + message broadcast, the client command loop.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Database — five tables</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td class="m">engines</td><td>Registered engines (seeded with TAPAS-BH-201-001)</td></tr>
+      <tr><td class="m">missions</td><td>One row per mission: status, timestamps, aggregates (frame_count, max_anomaly, min_health, faults_observed JSON)</td></tr>
+      <tr><td class="m">telemetry</td><td>Every tick — cht/egt stored as JSON strings; (mission_id, frame_id) UNIQUE; batched writes</td></tr>
+      <tr><td class="m">fault_injections</td><td>Audit trail of every demo injection</td></tr>
+      <tr><td class="m">health_snapshots</td><td>Per-tick ML output: EHI, category, anomaly, class, confidence, severity, RUL, RTB, explanation/contributors JSON</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Configuration highlights <span class="dim" style="font-weight:400">— sih/.env overrides</span></h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Setting</th><th>Default</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="m">SIM_HZ / SIM_SEED</td><td class="m">10 / 42</td><td>tick rate; deterministic seed — same seed, identical missions</td></tr>
+      <tr><td class="m">MODEL_DIR / USE_FALLBACK</td><td class="m">ml/models / true</td><td>trained bundle location; allow the rule-based fallback</td></tr>
+      <tr><td class="m">DEFAULT_MISSION_DURATION_S</td><td class="m">600</td><td>mission wall-clock cap</td></tr>
+      <tr><td class="m">MAX_REPLAY_FRAMES</td><td class="m">100 000</td><td>replay volume cap</td></tr>
+      <tr><td class="m">CORS_ORIGINS</td><td class="m">:3000, :5173</td><td>React dev allow-list (standalone frontend uses the proxy instead)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ==================== 08 AI & ML ==================== -->
+<section class="doc reveal" id="ml">
+  <div class="sec-head"><span class="sec-num">08</span><h3>AI &amp; ML</h3></div>
+  <p class="sec-sub">Everything "AI-enabled" means. Four scikit-learn models on top of an analytic physics backbone, wrapped in an explainable health index. Deep detail in <a class="txt" href="ML_MODELS.md">ML_MODELS.md</a>.</p>
+
+  <h4>Layer 1 — physics baseline (not trained)</h4>
+  <p><code class="inline">ml/physics_baseline.py</code> computes the <em>expected healthy</em> value of every sensor from the operating point — mirroring the simulator's own calibration, so a healthy engine produces residuals ≈ 0. The compact 10-vector (<code class="inline">r_cht_avg/max, r_egt_avg/max, r_fuel, r_oil_p, r_oil_t, r_vib, r_batt, r_alt</code>) feeds everything downstream. Deterministic, explainable ("EGT is +76 °C above physics"), robust to dataset shift.</p>
+
+  <h4>Layer 2 — streaming features (~30, strictly causal)</h4>
+  <p>Same code path for training and inference — no train/serve skew. Conditions + one-hot phase, raw channels, the 10 residuals, 60 s rolling stats, <b>180 s trend slopes</b> (faults are trends, not jumps), and coupling correlations (<code class="inline">corr_oilp_rpm</code>, <code class="inline">corr_egt_cht</code>…) that break characteristically under faults.</p>
+
+  <h4>Layer 3 — the four models</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>#</th><th>Model</th><th>Algorithm</th><th>Key outputs</th></tr></thead>
+    <tbody>
+      <tr><td class="m">1</td><td>Anomaly detector</td><td>Isolation Forest, healthy-only training</td><td><code class="inline">anomaly_score</code> 0–100, <code class="inline">is_anomaly</code> (threshold fit on validation at the 95th percentile)</td></tr>
+      <tr><td class="m">2</td><td>Fault classifier</td><td>Random Forest, 9 classes</td><td><code class="inline">fault_class</code> + <code class="inline">confidence</code> (max class probability)</td></tr>
+      <tr><td class="m">3</td><td>Degradation severity</td><td>RF regressor → [0,1]</td><td><code class="inline">severity</code>; per-tree spread doubles as confidence</td></tr>
+      <tr><td class="m">4</td><td>RUL regressor</td><td>RF on log(minutes)</td><td><code class="inline">rul_min</code> + 68 % interval <code class="inline">rul_lo/hi</code>, confidence</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Layer 4 — the explainable Engine Health Index</h4>
+  <div class="codewrap"><span class="lang">formula</span><button class="copy-btn">COPY</button>
+<pre>EHI = 100 × (1 − Σ wᵢ · penaltyᵢ)
+
+<span class="n">residual</span>     w = 0.25   worst |z| of physics residuals (÷ 8.0σ ⇒ full penalty)
+<span class="n">anomaly</span>      w = 0.20   anomaly_score / 100
+<span class="n">fault</span>        w = 0.25   P(class) × criticality(class)
+<span class="n">degradation</span>  w = 0.20   severity from model 3
+<span class="n">sensor</span>       w = 0.10   fraction of missing/frozen sensors</pre></div>
+  <ul class="plain">
+    <li><b>Smoothing:</b> EMA with cadence-adaptive τ ≈ 60 s + hard rate limit ±15 pts/s — 10 Hz live and 1 Hz replay behave identically.</li>
+    <li><b>Weight redistribution:</b> a missing model's weight is redistributed, never silently dropped.</li>
+    <li><b>Data-quality gate:</b> below 60 % valid sensors the index goes <code class="inline">stale</code>, capped at 50.</li>
+    <li><b>Explanations:</b> engineer-readable — "EGT residual (max cyl) +76 °C (4.2σ above healthy baseline)".</li>
+  </ul>
+
+  <h4>The fallback chain</h4>
+  <div class="flow">
+    <div class="step"><div class="node">A</div><div class="what"><b>Trained bundle present?</b> <span class="path">ml/inference.py</span><span>InferencePipeline — 4 models + feature impacts + recommended action.</span></div></div>
+    <div class="step"><div class="node">B</div><div class="what"><b>FallbackAnalyzer</b><span>Physics-residual z-score rules: <code class="inline">r_oil_p &lt; −2.5</code> → LUBRICATION_FAILURE, <code class="inline">r_cht_avg &gt; 2.5</code> → OVERHEATING, and so on. Honest <code class="inline">low_confidence: true</code>.</span></div></div>
+    <div class="step"><div class="node">C</div><div class="what"><b>Ultra-minimal heuristic</b><span>Vibration/RPM score at confidence 0.3. The API never breaks — <code class="inline">/health</code> reports which level is active.</span></div></div>
+  </div>
+
+  <h4>Training — one command</h4>
+  <div class="codewrap"><span class="lang">bash</span><button class="copy-btn">COPY</button>
+<pre>cd sih &amp;&amp; train.bat
+<span class="c"># or directly:</span>
+python -m ml.train --runs-per-fault 2 --healthy-runs 4 --model-dir ml/models
+<span class="c"># → generates labelled runs (deterministic seeds), extracts features,</span>
+<span class="c">#   splits by WHOLE RUN (no row leakage), fits the 4 models,</span>
+<span class="c">#   evaluates on held-out runs, writes ml/models/*.joblib + bundle.json</span></pre></div>
+</section>
+
+<!-- ==================== 09 SIMULATOR PHYSICS ==================== -->
+<section class="doc reveal" id="simulator">
+  <div class="sec-head"><span class="sec-num">09</span><h3>Simulator Physics</h3></div>
+  <p class="sec-sub">The ground-truth world: a ~100–130 hp air-cooled, horizontally-opposed 4-cylinder aero piston (the MALE-UAV class). Full constants in <a class="txt" href="SIMULATOR.md">SIMULATOR.md</a>.</p>
+
+  <div class="callout warn"><span class="ic">⚠</span><p><b>Honesty note (from the source):</b> these are simulation equations <em>calibrated to land inside realistic sensor envelopes</em> — not certified engine equations. They exist to make the twin behave credibly and give residual-based detection a meaningful baseline. The only randomness is the seeded <code class="inline">default_rng(42)</code>.</p></div>
+
+  <h4>Sub-models, one step per tick</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Sub-model</th><th>Shape</th><th>Calibration</th></tr></thead>
+    <tbody>
+      <tr><td>ISA atmosphere</td><td>lapse rates → temp, pressure, density ratio</td><td class="dim">standard</td></tr>
+      <tr><td>RPM dynamics</td><td>first-order lag toward throttle × density target</td><td class="m">1100→5600 rpm · τ 1.0 s</td></tr>
+      <tr><td>Fuel flow</td><td>power law on effective throttle</td><td class="m">1.1 + 13.8·t^1.3 L/h</td></tr>
+      <tr><td>CHT / EGT</td><td>Newton cooling per cylinder; EGT fast + altitude-lean</td><td class="m">τ 45 s / τ 2 s</td></tr>
+      <tr><td>Oil temp / pressure</td><td>slow integrator; pump ∝ RPM, viscosity ∝ T</td><td class="m">τ 400 s · 265 kPa base</td></tr>
+      <tr><td>Vibration</td><td>RMS baseline ∝ RPM + load</td><td class="dim">—</td></tr>
+      <tr><td>Electrical</td><td>bus charges above ~1500 rpm</td><td class="m">14.25 V vs 12.55 V</td></tr>
+      <tr><td>Injection timing</td><td>RPM advance + CHT retard, clamped</td><td class="m">18–38°</td></tr>
+    </tbody>
+  </table></div>
+  <p>Per-cylinder ±15 °C EGT spread is deliberate manufacturing variation on an otherwise cylinder-symmetric baseline — a learnable, documented pattern, not noise.</p>
+
+  <h4>The 8 fault modes</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Fault</th><th>Signature on the sensors</th><th class="dim">Criticality</th></tr></thead>
+    <tbody>
+      <tr><td class="m">LUBRICATION_FAILURE</td><td>oil pressure ↓ accelerating · oil temp ↑ · CHT/EGT ↑</td><td><span class="badge red">1.00</span></td></tr>
+      <tr><td class="m">OVERHEATING</td><td>all CHT/EGT ↑ · oil temp ↑ · oil pressure ↓ · RPM ↓</td><td><span class="badge red">0.90</span></td></tr>
+      <tr><td class="m">MISFIRE</td><td>EGT/CHT cyl ↓ (cold) · periodic vibration ↑ · RPM ↓ · fuel ↑</td><td><span class="badge amber">0.75</span></td></tr>
+      <tr><td class="m">ABNORMAL_VIBRATION</td><td>vibration ↑ with low-frequency pulsing · thermal ripple</td><td><span class="badge amber">0.70</span></td></tr>
+      <tr><td class="m">INJECTOR_DEGRADATION</td><td>cyl EGT/CHT ↑ (lean) · fuel ↓ + oscillates · advance ↓</td><td><span class="badge">0.65</span></td></tr>
+      <tr><td class="m">ALTERNATOR_DEGRADATION</td><td>alternator current ↓ · battery voltage decays</td><td><span class="badge">0.50</span></td></tr>
+      <tr><td class="m">SENSOR_DRIFT</td><td>one channel drifts linearly (CHT 40 °C/h, RPM 120 rpm/h at severity 1.0)</td><td><span class="badge">0.35</span></td></tr>
+      <tr><td class="m">SENSOR_DROPOUT</td><td>one channel freezes at last value after a 30 s grace</td><td><span class="badge">0.30</span></td></tr>
+    </tbody>
+  </table></div>
+  <p>Each signature is exactly what the fallback rules key on — inject a fault, watch the residual vector light up, watch the classifier name it.</p>
+</section>
+
+<!-- ==================== 10 FRONTEND ==================== -->
+<section class="doc reveal" id="frontend">
+  <div class="sec-head"><span class="sec-num">10</span><h3>Frontend</h3></div>
+  <p class="sec-sub">Standalone pages, one shared client, one proxy, one bridge protocol. Full detail in <a class="txt" href="FRONTEND.md">FRONTEND.md</a>.</p>
+
+  <h4>The pages</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Page</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td class="m">index.html</td><td><b>Main dashboard.</b> Header + nav + KPI cards (delta chips, sparklines) + fault sliders + JSON drawer, with the cutaway box as the main view (ships fullscreen; <code class="inline">⛶</code> / <code class="inline">×</code> manage it without ever killing the WebGL context).</td></tr>
+      <tr><td class="m">cutaway.html</td><td>STL cutaway simulator: section plane, per-part tooltips, system cuts, hand-crank kinematics, overspeed protection, phone pairing host.</td></tr>
+      <tr><td class="m">telemetry.html</td><td>Sparklines, 4-cyl CHT/EGT multi-line charts, EHI bar, anomaly score, RUL/RTB readouts.</td></tr>
+      <tr><td class="m">diagnostics.html</td><td>Per-cylinder cards, NOMINAL/HOT/CRIT badges, thermal-spread chart with the 40 °C alert line.</td></tr>
+      <tr><td class="m">faults.html</td><td>Fault-injection lab: type cards from the API, per-type severity sliders, detection readout, <code class="inline">?fault=TYPE</code> deep-links.</td></tr>
+      <tr><td class="m">blackbox.html</td><td>Missions table, report JSON/CSV downloads, health timeline with 60 %/30 % guard lines.</td></tr>
+      <tr><td class="m">phone.html</td><td>Auto-pairing phone controller (below).</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4><code class="inline">aerotwin-api.js</code> — one client, three modes</h4>
+  <p>Connection ladder <b>WS → REST poll → demo generator</b>, mode always visible in the header chip. <code class="inline">flatten()</code> maps the rich EngineState onto page-friendly frames. Command surface: <code class="inline">setThrottle/releaseThrottle/setAltitude</code>, <code class="inline">injectFault/clearFaults/faultTypes</code>, <code class="inline">startMission/stopMission</code>, <code class="inline">missions/mission/missionSummary</code>, <code class="inline">healthTimeline/report</code>, <code class="inline">simStatus/health</code>. Offline, <code class="inline">demoFrame()</code> synthesises a plausible cruise frame (honestly labelled <span class="badge blue">DEMO</span>).</p>
+
+  <h4><code class="inline">serve.py</code> — more than a static server</h4>
+  <ul class="plain">
+    <li><b>REST proxy</b> — <code class="inline">/api/*</code> + <code class="inline">/health</code> → 127.0.0.1:8081; clean 503 JSON when the backend is down (this is why pages never hit CORS).</li>
+    <li><b>LAN IP endpoint</b> — <code class="inline">GET /__lanip</code> so pages can build the pairing QR (a browser can't see the host's LAN IP).</li>
+    <li><b>Pairing relay</b> — <code class="inline">POST /__pair</code>, <code class="inline">GET /__pair/{t}</code>, <code class="inline">POST /__pair/{t}/answer</code> (one-time tokens, 15 min TTL).</li>
+    <li><b>Command relay</b> — <code class="inline">POST /__ctl</code> + <code class="inline">GET /__ctl?since=</code>: the phone's REST fallback channel.</li>
+    <li><b>HTTPS on :8443</b> — self-signed cert via openssl; phones refuse camera access over plain HTTP.</li>
+  </ul>
+
+  <h4>Phone pairing — scan, and it's done</h4>
+  <div class="flow">
+    <div class="step"><div class="node">1</div><div class="what"><b>Pair phone</b><span>Dashboard asks the cutaway (<code class="inline">CUTAWAY_REQUEST_QR</code>); the sim creates a WebRTC offer and parks it on serve.py under a one-time token.</span></div></div>
+    <div class="step"><div class="node">2</div><div class="what"><b>QR</b><span>Encodes only <code class="inline">phone.html#p=&lt;token&gt;</code>. No codes displayed, typed, copied or pasted anywhere.</span></div></div>
+    <div class="step"><div class="node">3</div><div class="what"><b>Phone answers</b><span>Fetches the offer, starts the camera, posts its answer to the relay.</span></div></div>
+    <div class="step"><div class="node">4</div><div class="what"><b>Connected</b><span>Desktop poll picks up the answer; video + data channel connect; the phone page becomes the controller and the dashboard auto-closes the pop-up.</span></div></div>
+  </div>
+
+  <h4>Bridge protocol — dashboard ↔ simulator ↔ phone</h4>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Message</th><th>Direction</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="m">CUTAWAY_SET_RPM</td><td>dashboard → sim</td><td>commanded RPM (treated as a throttle command; the sim spools via its speed model)</td></tr>
+      <tr><td class="m">CUTAWAY_ENGINE_STATE</td><td>dashboard → sim</td><td>per-frame state incl. <code class="inline">aboutToBurst</code> / <code class="inline">overLimit</code> flags driving the HUD</td></tr>
+      <tr><td class="m">CUTAWAY_REQUEST_QR / CUTAWAY_SHOW_QR / CUTAWAY_PAIR_STATE</td><td>↔</td><td>the pairing handshake (request → QR dataURL → connected)</td></tr>
+      <tr><td class="m">PHONE_CMD</td><td>phone → sim → dashboard</td><td><code class="inline">{cmd: throttle|preset|flight|abort|release, value}</code> over the WebRTC data channel</td></tr>
+      <tr><td class="m">PHONE_STATE</td><td>dashboard → phone</td><td>phase, RPM, throttle — echoed so the phone display stays live</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout tip"><span class="ic">✦</span><p><b>Fullscreen without the Fullscreen API:</b> the box stretches over the viewport with CSS, so the iframe's WebGL context is never interrupted. Closing the box swaps the iframe to <code class="inline">about:blank</code> to release the context; reopening restores it — hide/show no longer restarts the simulator.</p></div>
+</section>
+
+<!-- ==================== 11 TROUBLESHOOTING ==================== -->
+<section class="doc reveal" id="troubleshooting">
+  <div class="sec-head"><span class="sec-num">11</span><h3>Troubleshooting</h3></div>
+  <p class="sec-sub">The hits, in order of likelihood.</p>
+
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>"backend unreachable" on the pages</td><td>backend not running</td><td><code class="inline">run.bat</code>, or <code class="inline">cd sih &amp;&amp; python start_app.py start</code>; check <code class="inline">:8081/health</code></td></tr>
+      <tr><td>venv broken / <code class="inline">python.exe</code> missing</td><td>venv built under a different user path</td><td><code class="inline">setup.bat</code> detects and rebuilds it</td></tr>
+      <tr><td>"Database not initialized" from routes</td><td>bare <code class="inline">import database</code> created a second module instance</td><td>always <code class="inline">from backend.database import ...</code></td></tr>
+      <tr><td>Header chip stuck on <span class="badge amber">POLLING</span></td><td>WS blocked (proxy/firewall)</td><td>harmless — REST polling is fully functional; check <code class="inline">:8081/ws/telemetry/…</code> reachability</td></tr>
+      <tr><td>Phone camera refused</td><td>plain HTTP</td><td>use the HTTPS listener <code class="inline">:8443</code> (serve.py starts it automatically)</td></tr>
+      <tr><td>Throttle slider does nothing</td><td>backend older than the auto-start feature</td><td>restart the backend — the endpoint auto-starts a <code class="inline">manual</code> session on first command</td></tr>
+      <tr><td>Cutaway out of sync in the sih cockpit</td><td>edits not copied</td><td><code class="inline">cp src/frontend/cutaway.html sih/frontend/public/cutaway/index.html</code> (+ dist copy)</td></tr>
+      <tr><td>Models missing, predictions feel rule-ish</td><td>never trained</td><td><code class="inline">train.bat</code>; until then <code class="inline">/health</code> honestly says <code class="inline">fallback</code></td></tr>
+      <tr><td>Port already in use on :8081/:8000</td><td>stale server</td><td><code class="inline">python sih/start_app.py stop</code> (port-based, catches any origin), then start again</td></tr>
+    </tbody>
+  </table></div>
+
+  <hr class="divider" />
+
+  <div class="grid g3">
+    <div class="card"><h5><span class="ico">📘</span> Markdown sources</h5><p>This site condenses the six reference docs in <code class="inline">docs/</code> — linked in the sidebar — which remain the fine-grained source of truth.</p></div>
+    <div class="card"><h5><span class="ico">🧪</span> Tests</h5><p>Backend suite: <code class="inline">cd sih &amp;&amp; python -m pytest backend/tests</code>. Simulator + ML unit tests live under their packages.</p></div>
+    <div class="card"><h5><span class="ico">⚡</span> Demo script</h5><p>Boot → drag throttle → inject OVERHEATING 0.85 → watch the class, EHI and RTB ladder react → Test Flight → blackbox report. ~4 minutes, no preparation.</p></div>
+  </div>
+
+  <footer>
+    <p><b style="color:var(--text)">AeroTwin</b> — AI-Enabled Real-Time Digital Twin for aero piston engine health monitoring, fault prediction and mission reliability. SIH 26054 · DRDO Tapas-BH-201.</p>
+    <div class="fin"><span class="badge gold">10 Hz</span><span class="badge gold">4 cylinders</span><span class="badge gold">8 fault modes</span><span class="badge gold">4 ML models</span><span class="badge green">graceful degradation everywhere</span></div>
+  </footer>
+</section>
+</main>
+</div>
+
+<button id="toTop" title="Back to top" aria-label="Back to top">↑</button>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- reading progress + back-to-top ---------- */
+  var bar = document.getElementById('progress');
+  var toTop = document.getElementById('toTop');
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    toTop.classList.toggle('show', h.scrollTop > 600);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+  /* ---------- scrollspy ---------- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('#nav a[href^="#"]'));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.doc'));
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) current = e.target.id;
+      });
+      links.forEach(function (a) { a.classList.remove('active'); });
+      if (current && byId[current]) byId[current].classList.add('active');
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(function (s) { spy.observe(s); });
+
+    /* ---------- reveal on scroll ---------- */
+    var rev = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('visible'); rev.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach(function (el) { rev.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('visible'); });
+  }
+
+  /* ---------- copy buttons ---------- */
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pre = btn.parentElement.querySelector('pre');
+      if (!pre) return;
+      var text = pre.innerText;
+      function done() {
+        btn.textContent = 'COPIED ✓';
+        setTimeout(function () { btn.textContent = 'COPY'; }, 1400);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta); done();
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

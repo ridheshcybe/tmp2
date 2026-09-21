@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AeroTwin phone camera</title>
+<style>
+    body {
+        background: #0b0e13;
+        color: #dfe6ec;
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 14px;
+    }
+    h1 { font-size: 15px; margin: 0 0 10px; }
+    video {
+        width: 100%;
+        border-radius: 8px;
+        background: #000;
+        transform: scaleX(-1);
+    }
+    button {
+        width: 100%;
+        padding: 11px 0;
+        font-size: 14px;
+        border-radius: 8px;
+        border: 1px solid #4a5666;
+        background: #2c3644;
+        color: #fff;
+        margin: 4px 0;
+    }
+    #status {
+        font-size: 13px;
+        color: #8fd4ff;
+        min-height: 20px;
+        margin: 8px 0;
+        word-break: break-word;
+    }
+    #detail {
+        font-size: 11px;
+        line-height: 1.5;
+        color: #9aa3ad;
+        min-height: 16px;
+        margin: 0 0 10px;
+        word-break: break-word;
+    }
+    .ok  { color: #6ee7a8; }
+    .bad { color: #ff8b7e; }
+</style>
+</head>
+<body>
+<h1>AeroTwin phone camera</h1>
+<video id="preview" playsinline muted autoplay></video>
+<button id="flip">flip camera</button>
+
+<div id="status">scan the QR on the desktop to open this page</div>
+<div id="detail">waiting for the pairing link...</div>
+
+<!--
+    Everything on this page is automatic.  The QR link carries the pairing
+    token: the offer is fetched from the local server, the camera starts,
+    and the answer is posted straight back.  There is no invite code to
+    paste and no reply code to carry back by hand - the answer travels
+    over the local network instead of through the user.
+-->
+<script>
+const $ = id => document.getElementById(id);
+const detail = t => { $("detail").textContent = t; };
+const status = (t, cls) => {
+    const el = $("status");
+    el.textContent = t;
+    el.className = cls || "";
+};
+
+let stream = null, facing = "user", pc = null;
+
+/*
+    deflate-raw keeps the SDP small.  Falls back to plain base64 when
+    CompressionStream is missing; the desktop decoder accepts either form.
+*/
+async function deflateToB64(text) {
+
+    const blob = await new Response(
+        new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"))
+    ).blob();
+
+    const bin = String.fromCharCode(...new Uint8Array(await blob.arrayBuffer()));
+
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function inflateFromB64(b64) {
+
+    const n = b64.replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(n + "=".repeat((4 - n.length % 4) % 4));
+    const bytes = new Uint8Array(bin.length);
+
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    const out = await new Response(
+        new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))
+    ).blob();
+
+    return out.text();
+}
+
+/*
+    SDP envelopes.  Same shape as before ({t, c, s}) wrapped in JSON so the
+    answer travels as a plain POST body instead of a code a human copies.
+*/
+async function decodeCode(text) {
+
+    const obj = JSON.parse(decodeURIComponent(escape(atob(text.trim()))));
+
+    if (obj.c === "deflate") obj.s = await inflateFromB64(obj.s);
+
+    return obj;
+}
+
+async function encodeCode(obj) {
+
+    const wrapped = { t: obj.t, s: obj.s };
+
+    try {
+        wrapped.c = "deflate";
+        wrapped.s = await deflateToB64(obj.s);
+    } catch (noStream) {
+        /* older browser: plain base64, the desktop still reads it */
+    }
+
+    return JSON.stringify(wrapped);
+}
+
+/*  The answer must carry every ICE candidate: no trickle channel exists.  */
+function iceDone(conn) {
+
+    return new Promise(res => {
+
+        if (conn.iceGatheringState === "complete") return res();
+
+        const t = setTimeout(res, 1500);
+
+        conn.addEventListener("icegatheringstatechange", () => {
+            if (conn.iceGatheringState === "complete") {
+                clearTimeout(t);
+                res();
+            }
+        });
+    });
+}
+
+function stopStream() {
+
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+}
+
+async function startCamera() {
+
+    if (!navigator.mediaDevices) {
+        throw new Error("camera blocked - open this page over https (use the QR code address)");
+    }
+
+    stopStream();
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facing, width: 640, height: 480 }
+        });
+    } catch (e) {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+
+    $("preview").srcObject = stream;
+    status("camera live - pair it on the desktop", "ok");
+}
+
+async function attachToPeer() {
+
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+
+    if (sender) await sender.replaceTrack(stream.getVideoTracks()[0]);
+}
+
+$("flip").addEventListener("click", async () => {
+
+    facing = facing === "user" ? "environment" : "user";
+
+    try {
+        await startCamera();
+        if (pc && pc.connectionState === "connected") await attachToPeer();
+    } catch (e) {
+        status("camera error: " + e.message, "bad");
+    }
+});
+
+/*
+    One token from the QR link is the whole handshake:
+
+        GET  /__pair/<token>          -> the desktop's parked offer
+        POST /__pair/<token>/answer   -> this phone's answer
+
+    The desktop is polling the answer endpoint, so the moment this posts,
+    the two sides connect - no code is ever shown, typed or pasted.
+*/
+async function autoPair(token) {
+
+    status("pairing...");
+
+    const reply = await fetch("/__pair/" + token, { cache: "no-store" });
+
+    if (!reply.ok) throw new Error("pairing link expired - scan the QR again");
+
+    const parked = await reply.json();
+
+    const invite = await decodeCode(parked.offer);
+
+    if (invite.t !== "invite" || !invite.s) throw new Error("bad offer from desktop");
+
+    await startCamera();
+
+    if (pc) pc.close();
+
+    pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+
+    pc.addTrack(stream.getVideoTracks()[0], stream);
+
+    await pc.setRemoteDescription({ type: "offer", sdp: invite.s });
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await iceDone(pc);
+
+    const body = await encodeCode({ t: "reply", s: pc.localDescription.sdp });
+
+    const sent = await fetch("/__pair/" + token + "/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answer: body })
+    });
+
+    if (!sent.ok) throw new Error("desktop stopped waiting - scan the QR again");
+
+    detail("paired - video is streaming to the desktop");
+
+    pc.addEventListener("iceconnectionstatechange", () => {
+        if (pc.iceConnectionState === "failed" ||
+            pc.iceConnectionState === "disconnected") {
+            status("connection lost - scan the QR again", "bad");
+        }
+    });
+}
+
+/*
+    QR links carry the pairing token in the hash: opening the scanned link
+    IS the pairing.  The camera starts and the reply is generated without
+    touching anything.
+*/
+(async () => {
+
+    const m = location.hash.match(/p=([A-Za-z0-9]+)/);
+
+    if (!m) {
+        status("no pairing link - scan the QR on the desktop", "bad");
+        detail("open this page by scanning the code shown on the desktop.");
+        return;
+    }
+
+    try {
+        await autoPair(m[1]);
+    } catch (e) {
+        status("pairing failed", "bad");
+        detail(e && e.message ? e.message : String(e));
+    }
+})();
+</script>
+</body>
+</html>

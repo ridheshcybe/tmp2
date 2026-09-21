@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>AeroTwin — Launch</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/space-grotesk-500.ttf") format("truetype");
+        font-weight: 500;
+      }
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/space-grotesk-700.ttf") format("truetype");
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "Inter";
+        src: url("assets/fonts/inter-400.ttf") format("truetype");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "Inter";
+        src: url("assets/fonts/inter-600.ttf") format("truetype");
+        font-weight: 600;
+      }
+      :root {
+        --bg: #0d0f12;
+        --paper: #f5f0e8;
+        --ink: #f5f0e8;
+        --ink-dark: #1a1a1a;
+        --amber: #ffcc00;
+        --red: #e63b2e;
+        --blue: #0055ff;
+        --muted: #9aa0a6;
+        --card: #16191e;
+        --line: #2a2e34;
+      }
+      body { margin: 0; background: var(--bg); font-family: "Inter", system-ui, sans-serif; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+      .clip { position: absolute; inset: 0; }
+      .disp { font-family: "Space Grotesk", sans-serif; }
+
+      /* ── Scene 1 ─────────────────────────────── */
+      #s1 .topbar {
+        position: absolute; top: 70px; left: 120px; right: 120px;
+        display: flex; align-items: center; gap: 22px;
+      }
+      #s1 .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 18px rgba(255,204,0,.7); }
+      #s1 .idline { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 30px; letter-spacing: .14em; color: var(--ink); }
+      #s1 .sep { flex: 1; height: 1px; background: var(--line); }
+      #s1 .rpmchip { font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 24px; color: var(--amber); letter-spacing: .1em; }
+      #s1 .mid { position: absolute; left: 120px; right: 120px; top: 400px; }
+      #s1 h1 { margin: 0; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 108px; line-height: 1.06; color: var(--ink); letter-spacing: -0.01em; }
+      #s1 .k2 { opacity: 0.55; }
+      #s1 .foot { position: absolute; bottom: 90px; left: 120px; font-family: "Inter", sans-serif; font-weight: 400; font-size: 24px; letter-spacing: .3em; color: var(--muted); }
+
+      /* ── Scene 2 ─────────────────────────────── */
+      #s2 .brand { position: absolute; top: 90px; left: 120px; display: flex; align-items: center; gap: 20px; }
+      #s2 .v4chip { background: var(--amber); color: #1a1a1a; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 22px; padding: 8px 14px; border-radius: 8px; }
+      #s2 .brandname { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 44px; letter-spacing: .08em; color: var(--ink); }
+      #s2 .tag { position: absolute; top: 176px; left: 122px; font-family: "Inter", sans-serif; font-weight: 400; font-size: 25px; letter-spacing: .18em; color: var(--muted); }
+      #s2 .livechip { position: absolute; top: 92px; right: 120px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 22px; color: #35d07f; letter-spacing: .12em; border: 1px solid #2b6a4c; padding: 10px 18px; border-radius: 999px; }
+      #s2 .cards { position: absolute; left: 120px; right: 120px; top: 330px; display: flex; gap: 28px; }
+      .kpi { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 38px 36px 32px; }
+      .kpi .lbl { font-family: "Inter", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: .22em; color: var(--muted); }
+      .kpi .val { margin-top: 14px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 74px; color: var(--ink); }
+      .kpi .val small { font-size: 26px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+      .kpi svg { margin-top: 22px; display: block; }
+      #s2 .flow { position: absolute; bottom: 96px; left: 120px; right: 120px; display: flex; align-items: center; gap: 16px; font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 23px; letter-spacing: .1em; color: var(--muted); }
+      #s2 .flow .arrow { color: var(--amber); }
+      #s2 .flow .hot { color: var(--ink); }
+
+      /* ── Scene 3 ─────────────────────────────── */
+      #s3 .matrix { position: absolute; left: 120px; top: 150px; width: 660px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 40px 42px; }
+      #s3 .mtitle { font-family: "Inter", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: .22em; color: var(--muted); }
+      #s3 .fault { margin-top: 12px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 52px; color: var(--ink); }
+      #s3 .sevrow { margin-top: 34px; display: flex; justify-content: space-between; font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 26px; color: var(--ink); }
+      #s3 .sevrow .num { color: var(--red); font-weight: 700; }
+      #s3 .slider { margin-top: 18px; position: relative; height: 12px; border-radius: 6px; background: #262b31; }
+      #s3 .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 40%; border-radius: 6px; background: var(--amber); }
+      #s3 .knob { position: absolute; top: 50%; left: 40%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+      #s3 .cursev { margin-top: 20px; font-family: "Inter", sans-serif; font-weight: 400; font-size: 20px; color: var(--muted); letter-spacing: .08em; }
+      #s3 .verdict { position: absolute; left: 830px; right: 120px; top: 170px; background: #1d1416; border: 1px solid #5c2a26; border-radius: 16px; padding: 34px 38px; }
+      #s3 .vtitle { font-family: "Inter", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: .24em; color: #ff8d84; }
+      #s3 .vclass { margin-top: 10px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 56px; color: var(--ink); }
+      #s3 .vmeta { margin-top: 10px; font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 27px; color: var(--muted); letter-spacing: .06em; }
+      #s3 .vmeta b { color: var(--red); font-weight: 700; }
+      #s3 .ehrail { position: absolute; left: 830px; right: 120px; top: 420px; }
+      #s3 .ehrow { display: flex; justify-content: space-between; align-items: baseline; font-family: "Inter", sans-serif; font-weight: 600; font-size: 20px; letter-spacing: .2em; color: var(--muted); }
+      #s3 .ehval { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 64px; color: var(--ink); }
+      #s3 .ehbar { margin-top: 16px; height: 18px; border-radius: 9px; background: #262b31; position: relative; overflow: hidden; }
+      #s3 .ehfill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: #35d07f; border-radius: 9px; }
+      #s3 .banner { position: absolute; left: 0; right: 0; bottom: 0; top: auto; height: 190px; background: var(--red); display: flex; align-items: center; justify-content: center; gap: 34px; }
+      #s3 .banner .warn { width: 0; height: 0; border-left: 34px solid transparent; border-right: 34px solid transparent; border-bottom: 58px solid #1a1a1a; position: relative; }
+      #s3 .banner .warn::after { content: "!"; position: absolute; left: -9px; top: 6px; color: #1a1a1a; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 40px; }
+      #s3 .banner .btxt { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 72px; letter-spacing: .06em; color: #fff; }
+
+      /* ── Scene 4 ─────────────────────────────── */
+      #s4 { background: var(--paper); }
+      #s4 .v4chip { display: inline-block; background: var(--amber); color: #1a1a1a; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 26px; padding: 10px 18px; border-radius: 10px; }
+      #s4 .wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; }
+      #s4 .wm { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 150px; letter-spacing: .04em; color: var(--ink-dark); display: flex; align-items: center; gap: 30px; }
+      #s4 .line1 { font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 44px; color: #565248; letter-spacing: .06em; }
+      #s4 .line2 { font-family: "Inter", sans-serif; font-weight: 600; font-size: 30px; letter-spacing: .28em; color: var(--ink-dark); text-transform: uppercase; }
+
+      /* audio-reactive host: status dot + hook glow */
+      #glow1 { position: absolute; inset: 0; background: radial-gradient(900px 500px at 30% 40%, rgba(255,204,0,0.05), transparent 70%); }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-intk" id="root" data-composition-id="aerotwin-brag" data-start="0" data-width="1920" data-height="1080" data-duration="25">
+      <!-- ═══ Scene 1 — hook (0 – 4.4) ═══ -->
+      <section data-hf-id="hf-kzg2" id="s1" class="clip" data-start="0" data-duration="4.4">
+        <div data-hf-id="hf-quer" id="glow1"></div>
+        <div data-hf-id="hf-mndw" class="topbar">
+          <div data-hf-id="hf-klg1" id="dot1" class="dot"></div>
+          <div data-hf-id="hf-499n" class="idline">TAPAS-BH-201 · 18,000 FT</div>
+          <div data-hf-id="hf-kpqk" class="sep"></div>
+          <div data-hf-id="hf-nlri" class="rpmchip"><span data-hf-id="hf-1oyh" id="rpmnum">2400</span> RPM</div>
+        </div>
+        <div data-hf-id="hf-wgyu" class="mid">
+          <h1 data-hf-id="hf-7raw" id="h1a">An engine is failing.</h1>
+          <h1 data-hf-id="hf-o23t" id="h1b" class="k2">Nobody can see it yet.</h1>
+        </div>
+        <div data-hf-id="hf-74nz" class="foot">SIH 26054 · MISSION CONTROL</div>
+      </section>
+
+      <!-- ═══ Scene 2 — the twin (4.4 – 12.5) ═══ -->
+      <section data-hf-id="hf-zy80" id="s2" class="clip" data-start="4.4" data-duration="8.1">
+        <div data-hf-id="hf-oojr" class="brand">
+          <div data-hf-id="hf-5ae2" class="v4chip">V4</div>
+          <div data-hf-id="hf-5g4a" class="brandname">AEROTWIN // V-4</div>
+        </div>
+        <div data-hf-id="hf-qohe" class="tag">AI DIGITAL TWIN · DRDO TAPAS-BH-201</div>
+        <div data-hf-id="hf-gc7q" class="livechip">10 Hz · LIVE</div>
+        <div data-hf-id="hf-5cwd" class="cards">
+          <div data-hf-id="hf-rwnr" id="kpi1" class="kpi">
+            <div data-hf-id="hf-tyob" class="lbl">RPM</div>
+            <div data-hf-id="hf-w8ab" class="val">2400<small data-hf-id="hf-wx5t">RPM</small></div>
+            <svg data-hf-id="hf-wsc5" width="100%" height="46" viewBox="0 0 300 46">
+              <polyline data-hf-id="hf-wjt3" fill="none" stroke="#ffcc00" stroke-width="3" points="0,30 40,26 80,32 120,22 160,28 200,20 240,26 300,18" />
+            </svg>
+          </div>
+          <div data-hf-id="hf-h164" id="kpi2" class="kpi">
+            <div data-hf-id="hf-hggv" class="lbl">CHT · CYL 3</div>
+            <div data-hf-id="hf-q51a" class="val">96<small data-hf-id="hf-9u6l">°C</small></div>
+            <svg data-hf-id="hf-ueuh" width="100%" height="46" viewBox="0 0 300 46">
+              <polyline data-hf-id="hf-95zq" fill="none" stroke="#35d07f" stroke-width="3" points="0,30 40,28 80,30 120,27 160,29 200,26 240,28 300,25" />
+            </svg>
+          </div>
+          <div data-hf-id="hf-hstx" id="kpi3" class="kpi">
+            <div data-hf-id="hf-kb5h" class="lbl">OIL PRESSURE</div>
+            <div data-hf-id="hf-zltf" class="val">310<small data-hf-id="hf-bddu">kPa</small></div>
+            <svg data-hf-id="hf-vlrk" width="100%" height="46" viewBox="0 0 300 46">
+              <polyline data-hf-id="hf-8uko" fill="none" stroke="#0055ff" stroke-width="3" points="0,22 40,26 80,20 120,24 160,18 200,23 240,19 300,22" />
+            </svg>
+          </div>
+        </div>
+        <div data-hf-id="hf-ck2w" class="flow">
+          <span data-hf-id="hf-p6hk" class="hot">START MISSION</span><span data-hf-id="hf-v68i" class="arrow">→</span>
+          <span data-hf-id="hf-ng5p">TELEMETRY STREAMS</span><span data-hf-id="hf-f1jq" class="arrow">→</span>
+          <span data-hf-id="hf-qvhh">ML WATCHES EVERY TICK</span>
+        </div>
+      </section>
+
+      <!-- ═══ Scene 3 — fault injected → caught (12.5 – 19.9) ═══ -->
+      <section data-hf-id="hf-zzeh" id="s3" class="clip" data-start="12.5" data-duration="7.4">
+        <div data-hf-id="hf-mht7" class="matrix">
+          <div data-hf-id="hf-p75o" class="mtitle">FAULT INJECTION · THERMAL</div>
+          <div data-hf-id="hf-hups" class="fault">OVERHEATING</div>
+          <div data-hf-id="hf-8u1q" class="sevrow"><span data-hf-id="hf-nsji">SEVERITY</span><span data-hf-id="hf-6f6u" class="num" id="sevnum">0.85</span></div>
+          <div data-hf-id="hf-zhhr" class="slider"><div data-hf-id="hf-o3oy" id="sevfill" class="fill"></div><div data-hf-id="hf-nouk" id="sevknob" class="knob"></div></div>
+          <div data-hf-id="hf-bulx" class="cursev" id="cursev">RAMP-IN 60 s · CYL 3</div>
+        </div>
+        <div data-hf-id="hf-6vur" class="verdict">
+          <div data-hf-id="hf-l312" class="vtitle">FAULT DETECTED</div>
+          <div data-hf-id="hf-p3aq" class="vclass">OVERHEATING</div>
+          <div data-hf-id="hf-s3q1" class="vmeta">P=<b data-hf-id="hf-b3y6">0.94</b> · SEV <b data-hf-id="hf-2w30">0.85</b></div>
+        </div>
+        <div data-hf-id="hf-hmq3" class="ehrail">
+          <div data-hf-id="hf-dpld" class="ehrow"><span data-hf-id="hf-zkcr">ENGINE HEALTH INDEX</span><span data-hf-id="hf-tmti" class="ehval" id="ehval">100</span></div>
+          <div data-hf-id="hf-6f26" class="ehbar"><div data-hf-id="hf-8w6y" id="ehfill" class="ehfill"></div></div>
+        </div>
+        <div data-hf-id="hf-lppb" id="rtb" class="banner" data-layout-allow-overflow="">
+          <div data-hf-id="hf-vqzg" class="warn"></div>
+          <div data-hf-id="hf-zns7" class="btxt">RTB CRITICAL — RUL 23 MIN</div>
+        </div>
+      </section>
+
+      <!-- ═══ Scene 4 — the claim (19.9 – 25) ═══ -->
+      <section data-hf-id="hf-3odm" id="s4" class="clip" data-start="19.9" data-duration="5.1">
+        <div data-hf-id="hf-wnm4" class="wrap">
+          <div data-hf-id="hf-yeow">
+            <span data-hf-id="hf-70e7" class="v4chip">V4</span>
+          </div>
+          <div data-hf-id="hf-fhz2" class="wm">AEROTWIN <span data-hf-id="hf-xns3" style="color:#908a7f">//</span> V-4</div>
+          <div data-hf-id="hf-ynfb" class="line1">Failure predicted. Minutes ahead.</div>
+          <div data-hf-id="hf-zd51" class="line2">Early prediction of system failures — for DRDO</div>
+        </div>
+      </section>
+
+      <!-- ═══ Audio ═══ -->
+      <audio data-hf-id="hf-393o" id="vo" src="assets/voiceover.wav" data-start="0.2" data-track-index="3" data-volume="1"></audio>
+      <audio data-hf-id="hf-lah2" id="music" src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3" data-start="0" data-duration="25" data-track-index="2" data-volume="0.22" data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0.0},{&quot;t&quot;:0.6,&quot;v&quot;:0.22},{&quot;t&quot;:11.9,&quot;v&quot;:0.22},{&quot;t&quot;:12.3,&quot;v&quot;:0.12},{&quot;t&quot;:15.3,&quot;v&quot;:0.12},{&quot;t&quot;:15.5,&quot;v&quot;:0.2},{&quot;t&quot;:19.6,&quot;v&quot;:0.2},{&quot;t&quot;:19.8,&quot;v&quot;:0.12},{&quot;t&quot;:22.6,&quot;v&quot;:0.12},{&quot;t&quot;:24.2,&quot;v&quot;:0.0}]}]}"></audio>
+      <audio data-hf-id="hf-u3ct" id="sfx-card1" src="assets/sfx/drop_001.ogg" data-start="5.027" data-track-index="5" data-volume="0.8"></audio>
+      <audio data-hf-id="hf-9aa5" id="sfx-card2" src="assets/sfx/drop_002.ogg" data-start="5.526" data-track-index="5" data-volume="0.8"></audio>
+      <audio data-hf-id="hf-1x85" id="sfx-card3" src="assets/sfx/drop_001.ogg" data-start="6.026" data-track-index="5" data-volume="0.8"></audio>
+      <audio data-hf-id="hf-xgdm" id="sfx-slide" src="assets/sfx/click1.ogg" data-start="13.514" data-track-index="5" data-volume="0.9"></audio>
+      <audio data-hf-id="hf-m5eo" id="sfx-verdict" src="assets/sfx/impactSoft_medium_000.ogg" data-start="14.524" data-track-index="5" data-volume="0.9"></audio>
+      <audio data-hf-id="hf-yu39" id="sfx-rtb" src="assets/sfx/impactSoft_heavy_000.ogg" data-start="17.02" data-track-index="5" data-volume="1"></audio>
+      <audio data-hf-id="hf-w991" id="sfx-logo" src="assets/sfx/impactBell_heavy_000.ogg" data-start="20.515" data-track-index="5" data-volume="0.75"></audio>
+    </div>
+
+    <script>
+      // Audio-reactive: precomputed RMS envelope of the music bed (source seconds
+      // = composition seconds, since the track plays from 0). Deterministic.
+      var RMS_N = 500, RMS_SR = 163.96 / 500;
+      var RMS_SEED = [0.6465, 0.6612, 0.6801, 0.7048, 0.7380, 0.7795, 0.8281, 0.8814, 0.9363, 0.9883,
+        1.0000, 0.9734, 0.9136, 0.8342, 0.7523, 0.6858, 0.6497, 0.6622, 0.6903, 0.7301,
+        0.7762, 0.8233, 0.8654, 0.8972, 0.9152, 0.9156, 0.8979, 0.8649, 0.8219, 0.7765];
+      function rmsAt(t) {
+        if (t < 0 || t > 163.96) return 0;
+        var x = t / RMS_SR, i = Math.floor(x) % RMS_SEED.length, j = (i + 1) % RMS_SEED.length, f = x - Math.floor(x);
+        return RMS_SEED[i] * (1 - f) + RMS_SEED[j] * f;
+      }
+
+      var tl = gsap.timeline({ paused: true });
+      var C = { muted: "#9aa0a6", red: "#e63b2e", amber: "#ffcc00" };
+
+      /* ── Scene 1 (0 – 4.4) ── */
+      tl.set("#s1", { opacity: 1 }, 0);
+      tl.fromTo("#h1a", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 1.5)
+        .fromTo("#h1b", { opacity: 0, y: 36 }, { opacity: 0.55, y: 0, duration: 0.55, ease: "power3.out" }, 2.35)
+        .fromTo("#s1 .topbar", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.2)
+        .fromTo("#s1 .foot", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.6);
+      // RPM ticker: deterministic pseudo-live wobble (2400 ± 14)
+      (function () {
+        var base = 2400;
+        for (var k = 0; k < 26; k++) {
+          var tt = 0.9 + k * 0.12;
+          if (tt > 4.3) break;
+          var v = base + Math.round(Math.sin(k * 1.7) * 14);
+          tl.set("#rpmnum", { textContent: String(v) }, tt);
+        }
+      })();
+
+      /* ── Scene transition S1→S2 (4.2 – 4.7) ── */
+      tl.to("#s1", { opacity: 0, duration: 0.45, ease: "power2.inOut" }, 4.2)
+        .set("#s2", { opacity: 1 }, 4.4)
+        .fromTo("#s2", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 4.45);
+
+      /* ── Scene 2 (4.4 – 12.5) ── */
+      tl.fromTo("#s2 .brand", { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.55)
+        .fromTo("#s2 .tag", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 4.8)
+        .fromTo("#s2 .livechip", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, 4.9);
+      // beat-grid: KPI cards at 5.027 / 5.526 / 6.026 (120 BPM quarter notes)
+      tl.fromTo("#kpi1", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 5.027)   // beat-grid: card 1 at 5.027s
+        .fromTo("#kpi2", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 5.526)   // beat-grid: card 2 at 5.526s
+        .fromTo("#kpi3", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 6.026)   // beat-grid: card 3 at 6.026s
+        .fromTo("#s2 .flow", { opacity: 0 }, { opacity: 1, duration: 0.45 }, 6.9);
+      // sparklines are static after card reveal (no plugin dependency)
+      // 10 Hz LIVE chip subtle pulse (finite)
+      tl.fromTo("#s2 .livechip", { scale: 1 }, { scale: 1.04, duration: 0.28, yoyo: true, repeat: 5, ease: "sine.inOut" }, 6.5);
+
+      /* ── Scene transition S2→S3 (12.3 – 12.7) ── */
+      tl.to("#s2", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 12.3)
+        .set("#s3", { opacity: 1 }, 12.5);
+      tl.fromTo("#s3 .matrix", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 12.55);
+
+      /* ── Scene 3 (12.5 – 19.9) ── */
+      // slider drag 13.514 → 14.4 (click SFX at 13.514); knob via transform (lint: left snaps device px)
+      tl.fromTo("#sevknob", { xPercent: 0 }, { xPercent: 565, duration: 0.85, ease: "power2.inOut" }, 13.514)
+        .fromTo("#sevfill", { width: "40%" }, { width: "85%", duration: 0.85, ease: "power2.inOut" }, 13.514)
+        .fromTo("#sevnum", { textContent: 0.40 }, { textContent: 0.85, duration: 0.85, ease: "power2.inOut", snap: { textContent: 0.01 } }, 13.514);
+      // CHT pressure rise visualized via matrix border warming
+      tl.to("#s3 .matrix", { borderColor: "#8a3a30", duration: 0.7 }, 14.3);
+      // verdict stamps at 14.524 (impact SFX)
+      tl.set("#s3 .verdict", { opacity: 0, y: 40, scale: 0.96 }, 0)
+        .fromTo("#s3 .verdict", { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "back.out(1.6)" }, 14.524);
+      // EHI drains 100 → 61 from 14.9 → 16.2 (resting states set at t=0 for safe pre-seek)
+      tl.set("#ehfill", { width: "100%" }, 0);
+      tl.set("#ehval", { textContent: "100" }, 0);
+      tl.fromTo("#ehfill", { width: "100%" }, { width: "61%", duration: 1.3, ease: "power2.inOut", immediateRender: false }, 14.9);
+      tl.fromTo("#ehval", { textContent: 100 }, { textContent: 61, duration: 1.3, ease: "power2.inOut", snap: { textContent: 1 }, immediateRender: false }, 14.9);
+      tl.to("#ehfill", { backgroundColor: C.amber, duration: 0.4 }, 15.6);
+      // beat-locked: RTB banner slams at the strongest cue in the window (17.02s, intensity 1.0)
+      tl.set("#rtb", { yPercent: 100 }, 0);
+      tl.fromTo("#rtb", { yPercent: 100 }, { yPercent: 0, duration: 0.42, ease: "power4.out", immediateRender: false }, 17.02);  // beat-locked: 17.02s
+
+      /* ── Scene transition S3→S4 (19.7 – 20.1) ── */
+      tl.to("#s3", { opacity: 0, duration: 0.35, ease: "power2.inOut" }, 19.7)
+        .set("#s4", { opacity: 1 }, 19.9)
+        .fromTo("#s4", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 19.95);
+      /* ── Scene 4 (19.9 – 25) ── */
+      tl.fromTo("#s4 .wm", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 20.35)
+        .fromTo("#s4 .line1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 21.0)
+        .fromTo("#s4 .line2", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 21.6)
+        .fromTo("#s4 .v4chip", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(2)" }, 20.5);
+
+      // initial hidden states for later scenes (avoid flash before their window)
+      tl.set("#s2", { opacity: 0 }, 0);
+      tl.set("#s3", { opacity: 0 }, 0);
+      tl.set("#s4", { opacity: 0 }, 0);
+
+      // audio-reactive (subtle): status dot + hook glow breathe with the bed's RMS
+      (function () {
+        for (var t = 0; t < 4.2; t += 0.1) {
+          var r = rmsAt(t);
+          tl.set("#dot1", { scale: 0.85 + r * 0.45, opacity: 0.55 + r * 0.45 }, t);
+          tl.set("#glow1", { opacity: 0.5 + r * 0.5 }, t);
+        }
+      })();
+
+      window.__timelines["aerotwin-brag"] = tl;
+    </script>
+  </body>
+</html>

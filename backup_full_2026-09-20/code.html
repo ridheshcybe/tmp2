@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Visualization</title>
+    <style>
+        body { font-family: monospace; background-color: #282c34; color: #abb2bf; padding: 20px; }
+        h1 { color: #61afef; border-bottom: 2px solid #3b4050; padding-bottom: 10px; }
+        pre { background-color: #21262d; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Source Code Representation</h1>
+    <p>This area now displays the code structure instead of the Three.js model.</p>
+    <pre id="code-output">
+// Placeholder for actual code content
+// Functionality to load and display code.html content will go here.
+// Example: console.log("Code loaded successfully.");
+    </pre>
+</body>
+</html>
+﻿<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AeroTwin // V-4 Digital Twin Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&amp;display=swap" rel="stylesheet"/>
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: #d0cbc3; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background": "#f5f0e8",
+            "surface": "#ffffff",
+            "surface-subtle": "#f9f7f2",
+            "surface-muted": "#ede8df",
+            "outline": "#e2ded6",
+            "outline-strong": "#1a1a1a",
+            "primary": "#1a1a1a",
+            "primary-container": "#ffcc00",
+            "on-primary-container": "#1a1a1a",
+            "secondary": "#e63b2e",
+            "secondary-container": "#fee2e2",
+            "tertiary": "#0055ff",
+            "tertiary-container": "#e0edff",
+            "on-surface": "#1a1a1a",
+            "on-surface-variant": "#6b6762"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "md": "0.375rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-primary">
+<!-- Compact Top App Bar -->
+<header class="h-14 bg-surface border-b border-outline px-5 flex items-center justify-between sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">
+          V4
+        </div>
+<div class="flex flex-col">
+<span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // V-4</span>
+<span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+</div>
+</div>
+<div class="h-5 w-px bg-outline hidden sm:block"></div>
+<!-- Consolidated Header Badges -->
+<div class="hidden sm:flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          STATUS: NOMINAL
+        </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-surface-muted text-on-surface-variant border border-outline">
+<span class="font-bold text-primary">30Hz</span> REALTIME
+        </span>
+<span class="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary text-white">
+          V4-CORE v4.2
+        </span>
+</div>
+</div>
+<div class="flex items-center gap-2.5">
+<div class="hidden lg:flex items-center gap-1.5 text-xs font-mono text-on-surface-variant bg-surface-subtle px-2.5 py-1 rounded border border-outline">
+<span class="text-[10px] uppercase font-bold text-on-surface">AIRFRAME:</span>
+<span>INLINE V-4 TURBO-PROP</span>
+</div>
+<button class="bg-primary-container hover:brightness-105 active:scale-[0.98] text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="dispatchWebhook()">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+        Force Sync
+      </button>
+<div class="w-8 h-8 rounded-full bg-surface-muted border border-outline flex items-center justify-center font-bold text-xs">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+</div>
+</header>
+<!-- Main Multi-Column Layout -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left Navigation & Engine Architecture Sidebar -->
+<aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+<div class="flex flex-col overflow-y-auto">
+<!-- Clean Primary Navigation -->
+<div class="p-3 border-b border-outline">
+<div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
+<nav class="space-y-0.5">
+<a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">speed</span>
+              Telemetry Overview
+            </a>
+<a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+              Cylinder Diagnostics
+            </a>
+<a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm" href="#">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+              Architecture Map
+            </a>
+<a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">emergency_home</span>
+              Fault Injection Lab
+            </a>
+<a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">data_table</span>
+              Blackbox Logs
+            </a>
+</nav>
+</div>
+<!-- Kinematic Hierarchy: 60Â° V4 Architecture -->
+<div class="p-3">
+<div class="flex items-center justify-between px-2 mb-2">
+<span class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant">Kinematic Hierarchy</span>
+<span class="text-[10px] font-mono font-semibold px-1.5 py-0.2 bg-surface-muted text-on-surface rounded">60Â° V4</span>
+</div>
+<div class="space-y-1 text-xs">
+<!-- Root node -->
+<div class="p-2 rounded-md bg-surface-subtle border border-outline">
+<div class="flex items-center justify-between font-headline font-semibold text-xs text-on-surface">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-slate-700">view_in_ar</span>
+                  Billet Silver Crankcase
+                </span>
+<span class="text-[9px] font-mono text-on-surface-variant bg-surface px-1 py-0.5 rounded border border-outline">Root</span>
+</div>
+</div>
+<!-- Children links -->
+<div class="ml-2 pl-2 border-l border-outline space-y-1">
+<div class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">rotate_right</span>
+                  Forged Crankshaft (Crossplane)
+                </span>
+<span class="text-[9px] font-bold text-tertiary">720Â°</span>
+</div>
+<div class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">grid_goldenratio</span>
+                  Dual 60Â° V-Banks (L / R)
+                </span>
+<span class="text-[9px]">2Ã—2</span>
+</div>
+<div class="p-1.5 rounded bg-primary-container/20 border border-primary-container/40 flex items-center justify-between text-on-surface font-mono text-[11px]">
+<span class="flex items-center gap-1.5 font-semibold">
+<span class="material-symbols-outlined text-[14px]">swap_vert</span>
+                  Polished Chrome Pistons Ã—4
+                </span>
+<span class="text-[9px] font-bold text-primary">STAGGER</span>
+</div>
+<div class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+                  Dual DOHC Bank Heads
+                </span>
+<span class="text-[9px]">4-CAM</span>
+</div>
+<div class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">alt_route</span>
+                  Silver Exhaust Headers &amp; Plenums
+                </span>
+<span class="text-[9px]">Twin</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Session Indicator -->
+<div class="p-3 border-t border-outline bg-surface-subtle">
+<div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant mb-1.5">
+<span class="font-headline font-semibold uppercase text-[10px]">Session Bus</span>
+<span class="text-emerald-700 font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            CONNECTED
+          </span>
+</div>
+<div class="w-full bg-surface border border-outline h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[94%] rounded-full"></div>
+</div>
+<div class="text-[10px] font-mono text-on-surface-variant mt-1.5 flex justify-between">
+<span>LATENCY: 4.2ms</span>
+<span>LOSS: 0%</span>
+</div>
+</div>
+</aside>
+<!-- Main Workspace (Center Viewport + Right Telemetry Sidebar) -->
+<div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+<!-- Center Hero: All-Silver Inline V-4 3D Viewport -->
+<main class="flex-1 flex flex-col relative bg-stone-900 overflow-hidden">
+<!-- 3D Canvas Mount Element -->
+<div class="w-full h-full relative" id="engine-canvas-container">
+<!-- STITCH_THREEJS_START:ANIMATION_20 class="absolute inset-0 w-full h-full bg-transparent block" -->
+<div class="absolute inset-0 w-full h-full bg-transparent block" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_20" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_20');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const targetContainer = (typeof container !== 'undefined' && container) 
+  ? container 
+  : (document.getElementById('threejs-container-ANIMATION_18')
+     || document.getElementById('engine-canvas-container') 
+     || document.querySelector('threejs-scene') 
+     || document.querySelector('.threejs-viewport') 
+     || document.body);
+
+const getWidth = () => targetContainer.clientWidth || window.innerWidth || 800;
+const getHeight = () => targetContainer.clientHeight || window.innerHeight || 600;
+
+// Scene & Camera
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, getWidth() / getHeight(), 0.1, 1000);
+camera.position.set(22, 16, 26);
+
+// WebGL Renderer with High Performance & ACES Filmic Tone Mapping
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+renderer.setSize(getWidth(), getHeight());
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.4;
+targetContainer.innerHTML = '';
+targetContainer.appendChild(renderer.domElement);
+
+// Studio Lighting for pristine silver / machined aluminum & chrome reflections
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+scene.add(ambientLight);
+
+const keyLight = new THREE.DirectionalLight(0xf8fafc, 3.2);
+keyLight.position.set(28, 42, 26);
+keyLight.castShadow = true;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x94a3b8, 2.0);
+fillLight.position.set(-26, 12, -22);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xe2e8f0, 2.2);
+rimLight.position.set(0, 30, -32);
+scene.add(rimLight);
+
+const bottomBounce = new THREE.DirectionalLight(0x64748b, 1.0);
+bottomBounce.position.set(0, -20, 10);
+scene.add(bottomBounce);
+
+// Procedural Studio Environment Reflection Probe for crisp silver specular response
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+pmremGenerator.compileEquirectangularShader();
+const envScene = new THREE.Scene();
+envScene.background = new THREE.Color(0x090d16);
+
+const glow1 = new THREE.Mesh(new THREE.SphereGeometry(16, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+glow1.position.set(24, 32, 24);
+envScene.add(glow1);
+
+const glow2 = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 16), new THREE.MeshBasicMaterial({ color: 0x94a3b8 }));
+glow2.position.set(-24, 18, -24);
+envScene.add(glow2);
+
+const glow3 = new THREE.Mesh(new THREE.SphereGeometry(15, 16, 16), new THREE.MeshBasicMaterial({ color: 0xe2e8f0 }));
+glow3.position.set(0, 35, -28);
+envScene.add(glow3);
+
+const envMapRT = pmremGenerator.fromScene(envScene);
+scene.environment = envMapRT.texture;
+
+// Root Engine Assembly
+const engineAssembly = new THREE.Group();
+scene.add(engineAssembly);
+
+// ==========================================
+// ALL-SILVER / MACHINED METALLIC MATERIALS
+// (No Amber Glass / Pure Precision Silver Engine)
+// ==========================================
+const polishedSilverChromeMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 0.08,
+  metalness: 0.98
+});
+
+const brushedSilverAluminumMat = new THREE.MeshStandardMaterial({
+  color: 0xdde3ea,
+  roughness: 0.22,
+  metalness: 0.90
+});
+
+const machinedBilletSilverMat = new THREE.MeshStandardMaterial({
+  color: 0xc8d1dc,
+  roughness: 0.28,
+  metalness: 0.88
+});
+
+const castSilverAlloyMat = new THREE.MeshStandardMaterial({
+  color: 0xa8b4c4,
+  roughness: 0.42,
+  metalness: 0.82
+});
+
+const silverSpringMat = new THREE.MeshStandardMaterial({
+  color: 0xcad3df,
+  roughness: 0.30,
+  metalness: 0.86
+});
+
+const gunmetalSilverTitaniumMat = new THREE.MeshStandardMaterial({
+  color: 0x475569,
+  roughness: 0.35,
+  metalness: 0.88
+});
+
+// ==========================================
+// INLINE V4 ARCHITECTURE & 60Â° V-BANK GEOMETRY
+// 4 Cylinders in 2 Staggered Banks (V4 configuration along crankshaft)
+// Bank A (Left): Cyl 0, Cyl 2 (tilted at -30Â°)
+// Bank B (Right): Cyl 1, Cyl 3 (tilted at +30Â°)
+// ==========================================
+const vAngle = Math.PI / 6; // 30 degrees half-angle (60Â° total V-angle)
+const crankRadius = 1.35;
+const rodLength = 4.8;
+const crankY = -1.4;
+
+// Crankcase Cradle & Sump (Machined Billet Silver)
+const crankcaseCradle = new THREE.Mesh(new THREE.BoxGeometry(16.8, 3.2, 8.4), machinedBilletSilverMat);
+crankcaseCradle.position.set(0, crankY - 1.2, 0);
+engineAssembly.add(crankcaseCradle);
+
+// Crankcase Bedplate Stiffener Rails
+const railLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 17.2, 20), polishedSilverChromeMat);
+railLeft.rotation.z = Math.PI / 2;
+railLeft.position.set(0, crankY - 0.2, -3.8);
+engineAssembly.add(railLeft);
+
+const railRight = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 17.2, 20), polishedSilverChromeMat);
+railRight.rotation.z = Math.PI / 2;
+railRight.position.set(0, crankY - 0.2, 3.8);
+engineAssembly.add(railRight);
+
+// Continuous Crankshaft Assembly (Polished Silver Chrome)
+const crankshaftGroup = new THREE.Group();
+crankshaftGroup.position.set(0, crankY, 0);
+engineAssembly.add(crankshaftGroup);
+
+// Main Crankshaft Journal Core
+const mainShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 17.6, 32), polishedSilverChromeMat);
+mainShaft.rotation.z = Math.PI / 2;
+crankshaftGroup.add(mainShaft);
+
+// Heavy Precision Billet Silver Flywheel
+const flywheel = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.6, 1.1, 40), brushedSilverAluminumMat);
+flywheel.rotation.z = Math.PI / 2;
+flywheel.position.set(-8.6, 0, 0);
+crankshaftGroup.add(flywheel);
+
+// V4 Bank Cylinder Setup
+// 4 Cylinders:
+// Cyl 0: Bank A (-30Â°), X = -4.5
+// Cyl 1: Bank B (+30Â°), X = -1.5
+// Cyl 2: Bank A (-30Â°), X = 1.5
+// Cyl 3: Bank B (+30Â°), X = 4.5
+const cylinderConfigs = [
+  { id: 0, x: -4.5, bankSign: -1, throwAngle: 0, phaseOffset: 0 },
+  { id: 1, x: -1.5, bankSign: 1, throwAngle: Math.PI, phaseOffset: Math.PI * 3 },
+  { id: 2, x: 1.5, bankSign: -1, throwAngle: Math.PI, phaseOffset: Math.PI },
+  { id: 3, x: 4.5, bankSign: 1, throwAngle: 0, phaseOffset: Math.PI * 2 }
+];
+
+// Build Crankshaft Throws & Counterweights
+cylinderConfigs.forEach(cfg => {
+  const throwAngle = cfg.throwAngle;
+  // Counterweight Webs (Machined Silver)
+  const webGeo = new THREE.BoxGeometry(0.7, 3.2, 1.5);
+  const web1 = new THREE.Mesh(webGeo, machinedBilletSilverMat);
+  web1.position.set(cfg.x - 0.75, Math.sin(throwAngle + Math.PI) * 0.75, Math.cos(throwAngle + Math.PI) * 0.75);
+  crankshaftGroup.add(web1);
+
+  const web2 = new THREE.Mesh(webGeo, machinedBilletSilverMat);
+  web2.position.set(cfg.x + 0.75, Math.sin(throwAngle + Math.PI) * 0.75, Math.cos(throwAngle + Math.PI) * 0.75);
+  crankshaftGroup.add(web2);
+
+  // Offset Crankpin Journal
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 1.2, 24), polishedSilverChromeMat);
+  pin.rotation.z = Math.PI / 2;
+  pin.position.set(cfg.x, Math.sin(throwAngle) * crankRadius, Math.cos(throwAngle) * crankRadius);
+  crankshaftGroup.add(pin);
+});
+
+// Cylinders, Pistons, Connecting Rods & Open Cylinder Sleeves (Cast & Machined Silver)
+const cylinderKinematics = [];
+const combustionLights = [];
+const combustionFlashes = [];
+
+cylinderConfigs.forEach((cfg) => {
+  const bankAngle = cfg.bankSign * vAngle; // -30Â° or +30Â°
+  const cosBank = Math.cos(bankAngle);
+  const sinBank = Math.sin(bankAngle);
+
+  // Machined Silver Cylinder Sleeve / Liner (Solid silver metallic, no amber)
+  const sleeveGroup = new THREE.Group();
+  sleeveGroup.position.set(cfg.x, crankY + 4.2 * cosBank, 4.2 * sinBank);
+  sleeveGroup.rotation.x = -bankAngle; // tilt along cylinder bore axis
+
+  const sleeveMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.55, 6.6, 32, 1, true), castSilverAlloyMat);
+  sleeveGroup.add(sleeveMesh);
+
+  // Cylinder Head Cap (Billet Silver)
+  const headCap = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 1.2, 28), machinedBilletSilverMat);
+  headCap.position.y = 3.6;
+  sleeveGroup.add(headCap);
+
+  // Spark Plug with Silver Electrode
+  const sparkPlug = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 2.0, 16), polishedSilverChromeMat);
+  sparkPlug.position.y = 4.6;
+  sleeveGroup.add(sparkPlug);
+
+  engineAssembly.add(sleeveGroup);
+
+  // Connecting Rod Assembly (Mirror Silver Chrome)
+  const rodGroup = new THREE.Group();
+  engineAssembly.add(rodGroup);
+
+  const rodStem = new THREE.Mesh(new THREE.BoxGeometry(0.48, rodLength, 0.42), polishedSilverChromeMat);
+  rodStem.position.set(0, rodLength / 2, 0);
+  rodGroup.add(rodStem);
+
+  const bigEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.52, 24), brushedSilverAluminumMat);
+  bigEnd.rotation.z = Math.PI / 2;
+  rodGroup.add(bigEnd);
+
+  const smallEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.46, 20), brushedSilverAluminumMat);
+  smallEnd.rotation.z = Math.PI / 2;
+  smallEnd.position.set(0, rodLength, 0);
+  rodGroup.add(smallEnd);
+
+  // Piston Assembly (Brushed / Polished Silver Chrome)
+  const pistonGroup = new THREE.Group();
+  engineAssembly.add(pistonGroup);
+
+  const pistonMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.48, 1.85, 32), polishedSilverChromeMat);
+  pistonMesh.rotation.x = -bankAngle;
+  pistonGroup.add(pistonMesh);
+
+  // Precision Piston Rings (Dark Gunmetal Silver Titanium)
+  for (let r = 0; r < 3; r++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.49, 0.035, 12, 32), gunmetalSilverTitaniumMat);
+    ring.rotation.x = Math.PI / 2 - bankAngle;
+    const ringDist = (0.55 - r * 0.22);
+    ring.position.set(0, ringDist * cosBank, ringDist * sinBank);
+    pistonGroup.add(ring);
+  }
+
+  // Wrist Pin
+  const wristPin = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 2.7, 16), polishedSilverChromeMat);
+  wristPin.rotation.z = Math.PI / 2;
+  pistonGroup.add(wristPin);
+
+  // Clean White/Silver Combustion Flash Light
+  const cLight = new THREE.PointLight(0xffffff, 0, 30);
+  cLight.position.set(cfg.x, crankY + 7.2 * cosBank, 7.2 * sinBank);
+  engineAssembly.add(cLight);
+  combustionLights.push(cLight);
+
+  // High-energy combustion burst halo
+  const flashMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(1.42, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  flashMesh.position.set(cfg.x, crankY + 7.0 * cosBank, 7.0 * sinBank);
+  engineAssembly.add(flashMesh);
+  combustionFlashes.push(flashMesh);
+
+  cylinderKinematics.push({
+    config: cfg,
+    bankAngle,
+    cosBank,
+    sinBank,
+    rodGroup,
+    pistonGroup
+  });
+});
+
+// Dual Overhead Camshafts for both V-Banks (4 Camshafts total for V4, Silver Chrome)
+const camShafts = [];
+[-vAngle, vAngle].forEach((bAngle, bIdx) => {
+  const cosB = Math.cos(bAngle);
+  const sinB = Math.sin(bAngle);
+
+  const bankCams = new THREE.Group();
+  bankCams.position.set(0, crankY + 8.4 * cosB, 8.4 * sinB);
+  bankCams.rotation.x = -bAngle;
+  engineAssembly.add(bankCams);
+
+  const cam1 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 16.4, 24), polishedSilverChromeMat);
+  cam1.rotation.z = Math.PI / 2;
+  cam1.position.z = 1.0;
+  bankCams.add(cam1);
+
+  const cam2 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 16.4, 24), polishedSilverChromeMat);
+  cam2.rotation.z = Math.PI / 2;
+  cam2.position.z = -1.0;
+  bankCams.add(cam2);
+
+  // Timing Gears (Billet Silver)
+  const gear1 = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.3, 24), machinedBilletSilverMat);
+  gear1.rotation.z = Math.PI / 2;
+  gear1.position.set(-8.0, 0, 1.0);
+  bankCams.add(gear1);
+
+  const gear2 = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.3, 24), machinedBilletSilverMat);
+  gear2.rotation.z = Math.PI / 2;
+  gear2.position.set(-8.0, 0, -1.0);
+  bankCams.add(gear2);
+
+  camShafts.push(bankCams);
+});
+
+// Silver Tubular V4 Exhaust & Intake Manifolds (Polished Machined Finish)
+const exhaustManifoldGroup = new THREE.Group();
+engineAssembly.add(exhaustManifoldGroup);
+
+// Left and Right Bank Exhaust Headers (Curved Silver Pipes)
+cylinderConfigs.forEach(cfg => {
+  const isLeft = cfg.bankSign < 0;
+  const startPt = new THREE.Vector3(cfg.x, crankY + 7.8 * Math.cos(cfg.bankSign * vAngle), cfg.bankSign * 3.6);
+  const midPt = new THREE.Vector3(cfg.x * 0.8, crankY + 4.5, cfg.bankSign * 5.2);
+  const endPt = new THREE.Vector3(isLeft ? -2.2 : 2.2, crankY + 1.2, cfg.bankSign * 5.8);
+
+  const curve = new THREE.CatmullRomCurve3([startPt, midPt, endPt]);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.32, 14, false), brushedSilverAluminumMat);
+  exhaustManifoldGroup.add(tube);
+});
+
+// Twin Silver Exhaust Collectors
+const collectorL = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.72, 6.0, 20), polishedSilverChromeMat);
+collectorL.rotation.x = Math.PI / 2.4;
+collectorL.position.set(-2.2, crankY + 0.5, -5.8);
+exhaustManifoldGroup.add(collectorL);
+
+const collectorR = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.72, 6.0, 20), polishedSilverChromeMat);
+collectorR.rotation.x = -Math.PI / 2.4;
+collectorR.position.set(2.2, crankY + 0.5, 5.8);
+exhaustManifoldGroup.add(collectorR);
+
+// Central Silver Intake Plenum (Valley between V-Banks)
+const centralIntake = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 14.2, 24), brushedSilverAluminumMat);
+centralIntake.rotation.z = Math.PI / 2;
+centralIntake.position.set(0, crankY + 6.8, 0);
+engineAssembly.add(centralIntake);
+
+// Global Interop State
+window.aerotwinState = window.aerotwinState || {
+  rpm: 2400,
+  crankAngleDeg: 0,
+  isDragging: false,
+  cameraTheta: 0.8,
+  cameraRadius: 34,
+  cameraY: 15,
+  lastMouseX: 0,
+  lastMouseY: 0
+};
+
+// Mouse Orbit & Zoom Handlers
+targetContainer.addEventListener('mousedown', (e) => {
+  window.aerotwinState.isDragging = true;
+  window.aerotwinState.lastMouseX = e.clientX;
+  window.aerotwinState.lastMouseY = e.clientY;
+});
+window.addEventListener('mouseup', () => { window.aerotwinState.isDragging = false; });
+window.addEventListener('mousemove', (e) => {
+  if (!window.aerotwinState.isDragging) return;
+  const dx = e.clientX - window.aerotwinState.lastMouseX;
+  const dy = e.clientY - window.aerotwinState.lastMouseY;
+  window.aerotwinState.cameraTheta += dx * 0.008;
+  window.aerotwinState.cameraY = Math.max(2, Math.min(36, window.aerotwinState.cameraY + dy * 0.05));
+  window.aerotwinState.lastMouseX = e.clientX;
+  window.aerotwinState.lastMouseY = e.clientY;
+});
+targetContainer.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  window.aerotwinState.cameraRadius = Math.max(16, Math.min(60, window.aerotwinState.cameraRadius + e.deltaY * 0.03));
+}, { passive: false });
+
+window.addEventListener('resize', () => {
+  const w = getWidth();
+  const h = getHeight();
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+
+// Kinematic Simulation Loop
+let totalCycleAngle = 0;
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  const state = window.aerotwinState;
+
+  const omega = (state.rpm / 60) * Math.PI * 2;
+  totalCycleAngle += omega * dt;
+
+  const masterCycleRad = totalCycleAngle % (Math.PI * 4);
+  state.crankAngleDeg = Math.floor(masterCycleRad * 180 / Math.PI);
+
+  // Rotate Crankshaft
+  crankshaftGroup.rotation.x = totalCycleAngle;
+
+  // Rotate Camshafts at half engine speed
+  const camAngle = totalCycleAngle * 0.5;
+  camShafts.forEach(cs => { cs.rotation.x = camAngle; });
+
+  // Update V4 Kinematic Slider-Crank for each cylinder along its inclined bore axis
+  for (let i = 0; i < cylinderKinematics.length; i++) {
+    const item = cylinderKinematics[i];
+    const cfg = item.config;
+    const cylCycleDeg = ((totalCycleAngle + cfg.phaseOffset) % (Math.PI * 4)) * 180 / Math.PI;
+
+    // Instantaneous crankpin position
+    const throwAngle = cfg.throwAngle + totalCycleAngle;
+    const pinZ = Math.cos(throwAngle) * crankRadius;
+    const pinY = crankY + Math.sin(throwAngle) * crankRadius;
+
+    // Project along cylinder bore axis inclined at bankAngle
+    // Cylinder axis unit vector: u = [0, cosBank, sinBank]
+    // Crank center is at [cfg.x, crankY, 0].
+    // Pin offset from crank center: delta = [0, pinY - crankY, pinZ]
+    const dy = pinY - crankY;
+    const dz = pinZ;
+
+    // Component of pin along bore axis: s_pin = dy*cosBank + dz*sinBank
+    const s_pin = dy * item.cosBank + dz * item.sinBank;
+    // Lateral offset perpendicular to bore axis in YZ plane: d_perp = dy*sinBank - dz*cosBank
+    const d_perp = dy * item.sinBank - dz * item.cosBank;
+
+    // Piston slider distance along bore axis from crank center
+    const s_piston = s_pin + Math.sqrt(Math.max(0.1, rodLength * rodLength - d_perp * d_perp));
+
+    // Piston position in 3D space
+    const pistonY = crankY + s_piston * item.cosBank;
+    const pistonZ = s_piston * item.sinBank;
+    item.pistonGroup.position.set(cfg.x, pistonY, pistonZ);
+
+    // Connecting rod position and orientation
+    item.rodGroup.position.set(cfg.x, pinY, pinZ);
+    // Vector from pin to piston
+    const rY = pistonY - pinY;
+    const rZ = pistonZ - pinZ;
+    const rodAngle = -Math.atan2(rZ, rY);
+    item.rodGroup.rotation.x = rodAngle;
+
+    // Clean combustion flash during Power Stroke (360Â° TDC)
+    let burst = 0;
+    if (cylCycleDeg >= 360 && cylCycleDeg < 540) {
+      const p = (cylCycleDeg - 360) / 180;
+      burst = Math.max(0, Math.pow(1.0 - p, 4.0));
+    }
+    combustionLights[i].intensity = burst * 4.5;
+    combustionFlashes[i].material.opacity = burst * 0.85;
+  }
+
+  // Camera Orbit
+  if (!state.isDragging) {
+    state.cameraTheta += 0.0018;
+  }
+  camera.position.x = Math.sin(state.cameraTheta) * state.cameraRadius;
+  camera.position.z = Math.cos(state.cameraTheta) * state.cameraRadius;
+  camera.position.y = state.cameraY;
+  camera.lookAt(0, 3.5, 0);
+
+  renderer.render(scene, camera);
+}
+animate();
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_20 -->
+</div>
+<!-- Floating Sleek Overlay HUD Controls -->
+<div class="absolute inset-x-0 top-0 p-4 pointer-events-none flex flex-wrap items-start justify-between gap-3 z-10">
+<!-- Quick Speed Selector Pills -->
+<div class="pointer-events-auto bg-stone-900/80 backdrop-blur-md border border-stone-700/60 p-1 rounded-lg flex items-center shadow-lg">
+<button class="preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all" id="preset-idle" onclick="setPreset('idle', 1200)">
+              Idle 1.2K
+            </button>
+<button class="preset-btn px-3 py-1 rounded text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow transition-all" id="preset-cruise" onclick="setPreset('cruise', 2400)">
+              Cruise 2.4K
+            </button>
+<button class="preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all" id="preset-takeoff" onclick="setPreset('takeoff', 5800)">
+              Takeoff 5.8K
+            </button>
+</div>
+<!-- Camera Angles & Phase Badge -->
+<div class="pointer-events-auto flex items-center gap-2">
+<div class="bg-stone-900/80 backdrop-blur-md border border-stone-700/60 px-3 py-1 rounded-lg flex items-center gap-2 shadow-lg">
+<span class="w-2 h-2 rounded-full bg-slate-200 animate-pulse"></span>
+<span class="font-mono text-xs text-slate-200 font-semibold" id="hud-stroke-title">V4 SIMULATION ACTIVE</span>
+<span class="font-mono text-[11px] text-stone-400" id="hud-crank-deg">312Â°</span>
+</div>
+<div class="bg-stone-900/80 backdrop-blur-md border border-stone-700/60 p-1 rounded-lg flex items-center shadow-lg">
+<button class="cam-btn px-2.5 py-1 rounded text-[11px] font-mono font-medium text-white bg-stone-700 hover:bg-stone-600 transition-all" onclick="setCameraAngle('PERSP')">PERSP</button>
+<button class="cam-btn px-2.5 py-1 rounded text-[11px] font-mono font-medium text-stone-300 hover:text-white hover:bg-stone-800 transition-all" onclick="setCameraAngle('ISO')">ISO</button>
+<button class="cam-btn px-2.5 py-1 rounded text-[11px] font-mono font-medium text-stone-300 hover:text-white hover:bg-stone-800 transition-all" onclick="setCameraAngle('TOP')">TOP</button>
+</div>
+</div>
+</div>
+<!-- Floating Bottom Viewport Strip -->
+<div class="absolute inset-x-0 bottom-0 p-4 pointer-events-none flex flex-wrap items-end justify-between gap-3 z-10">
+<!-- Interaction Hint Pill -->
+<div class="pointer-events-auto bg-stone-900/80 backdrop-blur-md border border-stone-700/60 px-3 py-1.5 rounded-lg text-xs font-mono text-stone-300 flex items-center gap-2 shadow-lg">
+<span class="material-symbols-outlined text-[16px] text-slate-300">drag_pan</span>
+<span>Drag to rotate â€¢ Scroll to zoom</span>
+</div>
+<!-- Quick Action Buttons -->
+<div class="pointer-events-auto flex items-center gap-2">
+<button class="bg-stone-900/80 backdrop-blur-md hover:bg-stone-800 text-stone-200 border border-stone-700/60 px-3 py-1.5 rounded-lg text-xs font-headline font-semibold flex items-center gap-1.5 transition-all shadow-lg" onclick="resetOrbit()">
+<span class="material-symbols-outlined text-[15px]">restart_alt</span>
+              Reset Orbit
+            </button>
+<button class="bg-rose-600/90 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-headline font-bold flex items-center gap-1.5 transition-all shadow-lg" onclick="triggerRunaway()">
+<span class="material-symbols-outlined text-[15px]">warning</span>
+              Thermal Fault Test
+            </button>
+</div>
+</div>
+</main>
+<!-- Right Column: Focused 4-KPI Dashboard & Fault Matrix -->
+<aside class="w-full lg:w-80 bg-surface border-l border-outline flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">Telemetry KPIs</span>
+<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">LIVE FEED</span>
+</div>
+<!-- 4 Critical KPI Stat Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-1 gap-2.5">
+<!-- KPI 1: Drive Speed -->
+<div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
+<div class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+<span>Drive Speed</span>
+<span class="material-symbols-outlined text-[16px]">speed</span>
+</div>
+<div class="flex items-baseline justify-between">
+<div class="text-2xl font-headline font-bold" id="metric-rpm">2,400 <span class="text-xs font-mono font-normal text-on-surface-variant">RPM</span></div>
+<div class="w-14 h-4 flex items-end gap-1">
+<span class="w-2 h-2 bg-primary rounded-xs"></span>
+<span class="w-2 h-3 bg-primary rounded-xs"></span>
+<span class="w-2 h-4 bg-primary rounded-xs"></span>
+<span class="w-2 h-4 bg-primary-container rounded-xs"></span>
+</div>
+</div>
+</div>
+<!-- KPI 2: Peak Temp (CRIT HIGH) -->
+<div class="p-3.5 rounded-lg bg-rose-50/70 border border-rose-200 transition-shadow hover:shadow-sm">
+<div class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-rose-700 mb-1">
+<span>Peak Temp (Cyl 3)</span>
+<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-600 text-white">CRIT HIGH</span>
+</div>
+<div class="flex items-baseline justify-between">
+<div class="text-2xl font-headline font-bold text-rose-600" id="metric-temp">142.8Â°C</div>
+<span class="text-[10px] font-mono text-rose-700">Threshold: 110Â°C</span>
+</div>
+</div>
+<!-- KPI 3: Oil Pressure -->
+<div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
+<div class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+<span>Oil Pressure</span>
+<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+</div>
+<div class="flex items-baseline justify-between">
+<div class="text-2xl font-headline font-bold">22.1 <span class="text-xs font-mono font-normal text-on-surface-variant">PSI</span></div>
+<span class="text-[11px] font-mono text-emerald-700 font-semibold">Nominal</span>
+</div>
+</div>
+<!-- KPI 4: Misfire Status -->
+<div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
+<div class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+<span>Misfire Status</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Rate 0.0%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="text-lg font-headline font-bold">0 Detected</div>
+<svg class="w-16 h-5 text-emerald-600" fill="none" viewbox="0 0 64 20">
+<path d="M0 16 L12 16 L18 4 L24 16 L36 16 L42 4 L48 16 L64 16" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Streamlined Fault Injection Matrix -->
+<div class="p-4 rounded-lg bg-surface-subtle border border-outline flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-slate-700">tune</span>
+              Fault Injection Controls
+            </div>
+<span class="text-[9px] font-headline font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface border border-outline">TEST</span>
+</div>
+<!-- Slider: Thermal Runaway -->
+<div class="space-y-1">
+<div class="flex justify-between text-xs font-mono text-on-surface">
+<span class="font-medium">Thermal Runaway</span>
+<span class="font-bold text-rose-600" id="sev-thermal">0.85</span>
+</div>
+<input class="w-full accent-rose-600 cursor-pointer h-1.5 bg-stone-200 rounded-lg appearance-none" max="100" min="0" oninput="updateFaultSeverity('thermal', this.value)" type="range" value="85"/>
+</div>
+<!-- Slider: Harmonic Vibration -->
+<div class="space-y-1">
+<div class="flex justify-between text-xs font-mono text-on-surface">
+<span class="font-medium">Vibration Harmonic</span>
+<span class="font-bold text-on-surface" id="sev-vibration">0.40</span>
+</div>
+<input class="w-full accent-stone-800 cursor-pointer h-1.5 bg-stone-200 rounded-lg appearance-none" max="100" min="0" oninput="updateFaultSeverity('vibration', this.value)" type="range" value="40"/>
+</div>
+<!-- Emergency Directive Button -->
+<div class="pt-2 border-t border-outline flex items-center justify-between gap-2">
+<div class="text-[11px] text-on-surface-variant font-medium">Thermal Hazard Alert</div>
+<button class="px-2.5 py-1 rounded bg-stone-900 hover:bg-stone-800 text-white font-headline text-xs font-bold uppercase tracking-wider transition-all" onclick="setPreset('idle', 1200)">
+              Execute Idle
+            </button>
+</div>
+</div>
+<!-- Telemetry JSON Drawer Trigger Button -->
+<div class="mt-auto pt-2">
+<button class="w-full py-2 px-3 rounded-lg border border-outline bg-surface hover:bg-surface-subtle font-headline text-xs font-semibold text-on-surface-variant hover:text-on-surface flex items-center justify-between transition-colors shadow-sm" onclick="toggleJsonDrawer()">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">data_object</span>
+<span>API Dispatch Drawer</span>
+</span>
+<span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">ACTIVE</span>
+</button>
+</div>
+</aside>
+</div>
+</div>
+<!-- Collapsible Bottom Drawer: API Telemetry Snapshot -->
+<div class="fixed inset-x-0 bottom-0 z-50 bg-stone-900 border-t border-stone-700 shadow-2xl transition-transform duration-300 transform translate-y-full" id="json-drawer">
+<div class="max-w-7xl mx-auto p-4 flex flex-col gap-3 max-h-[480px]">
+<div class="flex items-center justify-between pb-2 border-b border-stone-800">
+<div class="flex items-center gap-2 text-stone-200 font-headline font-bold text-xs uppercase tracking-wider">
+<span class="material-symbols-outlined text-[18px] text-primary-container">webhook</span>
+<span>POST /api/diagnostics/dispatch â€¢ Snapshot Payload</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-mono border border-stone-600 transition-colors flex items-center gap-1" onclick="copyPayload()">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+            Copy JSON
+          </button>
+<button class="p-1 rounded hover:bg-stone-800 text-stone-400 hover:text-white transition-colors" onclick="toggleJsonDrawer()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+</div>
+<div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-stone-300 overflow-auto border border-stone-800 max-h-72">
+<pre id="json-preview"><code>{
+  "timestamp": "2025-02-23T14:48:02.108Z",
+  "engine_id": "AEROTWIN-V4-TURBOPROP-9982",
+  "engine_type": "60_DEG_INLINE_V4_TURBOPROP",
+  "session_uuid": "L-99214-X",
+  "telemetry": {
+    "rpm": 2400,
+    "crank_cycle_deg": 312,
+    "cam_cycle_deg": 156,
+    "current_stroke": "COMPRESSION (180Â°-360Â°)",
+    "oil_pressure_psi": 22.1,
+    "vibration_g": 3.84,
+    "banks": [
+      {
+        "bank": "BANK_A_LEFT",
+        "cylinders": [
+          { "id": 1, "temp_c": 94.2, "status": "NOMINAL" },
+          { "id": 3, "temp_c": 142.8, "status": "ERR_THERMAL_RUNAWAY", "severity": 0.85 }
+        ]
+      },
+      {
+        "bank": "BANK_B_RIGHT",
+        "cylinders": [
+          { "id": 2, "temp_c": 95.8, "status": "NOMINAL" },
+          { "id": 4, "temp_c": 96.1, "status": "NOMINAL" }
+        ]
+      }
+    ]
+  },
+  "dispatcher_directive": "THROTTLE_BACK_TO_IDLE_IMMEDIATE"
+}</code></pre>
+</div>
+</div>
+</div>
+<!-- All-Silver Inline V4 Three.js Runtime Scene -->
+<script>
+    (function() {
+      const container = document.getElementById('engine-canvas-container');
+      if (!container || typeof THREE === 'undefined') return;
+
+      const getWidth = () => container.clientWidth || window.innerWidth || 800;
+      const getHeight = () => container.clientHeight || window.innerHeight || 600;
+
+      // Scene & Camera
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(40, getWidth() / getHeight(), 0.1, 1000);
+      camera.position.set(22, 16, 26);
+
+      // WebGL Renderer with High Performance & ACES Filmic Tone Mapping
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(getWidth(), getHeight());
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.4;
+
+      const existingScene = container.querySelector('threejs-scene');
+      if (existingScene) {
+        existingScene.innerHTML = '';
+        existingScene.appendChild(renderer.domElement);
+      } else {
+        container.appendChild(renderer.domElement);
+      }
+
+      // Studio Lighting for pristine silver / machined aluminum & chrome reflections
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+      scene.add(ambientLight);
+
+      const keyLight = new THREE.DirectionalLight(0xf8fafc, 3.2);
+      keyLight.position.set(28, 42, 26);
+      keyLight.castShadow = true;
+      scene.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0x94a3b8, 2.0);
+      fillLight.position.set(-26, 12, -22);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.DirectionalLight(0xe2e8f0, 2.2);
+      rimLight.position.set(0, 30, -32);
+      scene.add(rimLight);
+
+      const bottomBounce = new THREE.DirectionalLight(0x64748b, 1.0);
+      bottomBounce.position.set(0, -20, 10);
+      scene.add(bottomBounce);
+
+      // Procedural Studio Environment Reflection Probe for crisp silver specular response
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+      const envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(0x090d16);
+
+      const glow1 = new THREE.Mesh(new THREE.SphereGeometry(16, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      glow1.position.set(24, 32, 24);
+      envScene.add(glow1);
+
+      const glow2 = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 16), new THREE.MeshBasicMaterial({ color: 0x94a3b8 }));
+      glow2.position.set(-24, 18, -24);
+      envScene.add(glow2);
+
+      const glow3 = new THREE.Mesh(new THREE.SphereGeometry(15, 16, 16), new THREE.MeshBasicMaterial({ color: 0xe2e8f0 }));
+      glow3.position.set(0, 35, -28);
+      envScene.add(glow3);
+
+      const envMapRT = pmremGenerator.fromScene(envScene);
+      scene.environment = envMapRT.texture;
+
+      // Root Engine Assembly
+      const engineAssembly = new THREE.Group();
+      scene.add(engineAssembly);
+
+      // Materials: Pure Precision All-Silver Metallic Architecture
+      const polishedSilverChromeMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.08,
+        metalness: 0.98
+      });
+
+      const brushedSilverAluminumMat = new THREE.MeshStandardMaterial({
+        color: 0xdde3ea,
+        roughness: 0.22,
+        metalness: 0.90
+      });
+
+      const machinedBilletSilverMat = new THREE.MeshStandardMaterial({
+        color: 0xc8d1dc,
+        roughness: 0.28,
+        metalness: 0.88
+      });
+
+      const castSilverAlloyMat = new THREE.MeshStandardMaterial({
+        color: 0xa8b4c4,
+        roughness: 0.42,
+        metalness: 0.82
+      });
+
+      const gunmetalSilverTitaniumMat = new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        roughness: 0.35,
+        metalness: 0.88
+      });
+
+      // Inline V4 Architecture: 60Â° V-Bank Geometry
+      const vAngle = Math.PI / 6; // 30Â° half angle -> 60Â° total bank separation
+      const crankRadius = 1.35;
+      const rodLength = 4.8;
+      const crankY = -1.4;
+
+      // Crankcase Cradle & Sump (Machined Billet Silver)
+      const crankcaseCradle = new THREE.Mesh(new THREE.BoxGeometry(16.8, 3.2, 8.4), machinedBilletSilverMat);
+      crankcaseCradle.position.set(0, crankY - 1.2, 0);
+      engineAssembly.add(crankcaseCradle);
+
+      // Crankcase Bedplate Stiffener Rails
+      const railLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 17.2, 20), polishedSilverChromeMat);
+      railLeft.rotation.z = Math.PI / 2;
+      railLeft.position.set(0, crankY - 0.2, -3.8);
+      engineAssembly.add(railLeft);
+
+      const railRight = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 17.2, 20), polishedSilverChromeMat);
+      railRight.rotation.z = Math.PI / 2;
+      railRight.position.set(0, crankY - 0.2, 3.8);
+      engineAssembly.add(railRight);
+
+      // Continuous Crankshaft Assembly (Polished Silver Chrome)
+      const crankshaftGroup = new THREE.Group();
+      crankshaftGroup.position.set(0, crankY, 0);
+      engineAssembly.add(crankshaftGroup);
+
+      const mainShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 17.6, 32), polishedSilverChromeMat);
+      mainShaft.rotation.z = Math.PI / 2;
+      crankshaftGroup.add(mainShaft);
+
+      const flywheel = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.6, 1.1, 40), brushedSilverAluminumMat);
+      flywheel.rotation.z = Math.PI / 2;
+      flywheel.position.set(-8.6, 0, 0);
+      crankshaftGroup.add(flywheel);
+
+      // 4 Cylinders staggered in 2 Banks:
+      // Cyl 0: Bank A (-30Â°), X = -4.5
+      // Cyl 1: Bank B (+30Â°), X = -1.5
+      // Cyl 2: Bank A (-30Â°), X = 1.5
+      // Cyl 3: Bank B (+30Â°), X = 4.5
+      const cylinderConfigs = [
+        { id: 0, x: -4.5, bankSign: -1, throwAngle: 0, phaseOffset: 0 },
+        { id: 1, x: -1.5, bankSign: 1, throwAngle: Math.PI, phaseOffset: Math.PI * 3 },
+        { id: 2, x: 1.5, bankSign: -1, throwAngle: Math.PI, phaseOffset: Math.PI },
+        { id: 3, x: 4.5, bankSign: 1, throwAngle: 0, phaseOffset: Math.PI * 2 }
+      ];
+
+      // Build Crankshaft Throws & Counterweights
+      cylinderConfigs.forEach(cfg => {
+        const throwAngle = cfg.throwAngle;
+        const webGeo = new THREE.BoxGeometry(0.7, 3.2, 1.5);
+        const web1 = new THREE.Mesh(webGeo, machinedBilletSilverMat);
+        web1.position.set(cfg.x - 0.75, Math.sin(throwAngle + Math.PI) * 0.75, Math.cos(throwAngle + Math.PI) * 0.75);
+        crankshaftGroup.add(web1);
+
+        const web2 = new THREE.Mesh(webGeo, machinedBilletSilverMat);
+        web2.position.set(cfg.x + 0.75, Math.sin(throwAngle + Math.PI) * 0.75, Math.cos(throwAngle + Math.PI) * 0.75);
+        crankshaftGroup.add(web2);
+
+        const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 1.2, 24), polishedSilverChromeMat);
+        pin.rotation.z = Math.PI / 2;
+        pin.position.set(cfg.x, Math.sin(throwAngle) * crankRadius, Math.cos(throwAngle) * crankRadius);
+        crankshaftGroup.add(pin);
+      });
+
+      // Cylinders, Pistons, Connecting Rods
+      const cylinderKinematics = [];
+      const combustionLights = [];
+      const combustionFlashes = [];
+
+      cylinderConfigs.forEach((cfg) => {
+        const bankAngle = cfg.bankSign * vAngle;
+        const cosBank = Math.cos(bankAngle);
+        const sinBank = Math.sin(bankAngle);
+
+        const sleeveGroup = new THREE.Group();
+        sleeveGroup.position.set(cfg.x, crankY + 4.2 * cosBank, 4.2 * sinBank);
+        sleeveGroup.rotation.x = -bankAngle;
+
+        const sleeveMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.55, 6.6, 32, 1, true), castSilverAlloyMat);
+        sleeveGroup.add(sleeveMesh);
+
+        const headCap = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 1.2, 28), machinedBilletSilverMat);
+        headCap.position.y = 3.6;
+        sleeveGroup.add(headCap);
+
+        const sparkPlug = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 2.0, 16), polishedSilverChromeMat);
+        sparkPlug.position.y = 4.6;
+        sleeveGroup.add(sparkPlug);
+
+        engineAssembly.add(sleeveGroup);
+
+        const rodGroup = new THREE.Group();
+        engineAssembly.add(rodGroup);
+
+        const rodStem = new THREE.Mesh(new THREE.BoxGeometry(0.48, rodLength, 0.42), polishedSilverChromeMat);
+        rodStem.position.set(0, rodLength / 2, 0);
+        rodGroup.add(rodStem);
+
+        const bigEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.52, 24), brushedSilverAluminumMat);
+        bigEnd.rotation.z = Math.PI / 2;
+        rodGroup.add(bigEnd);
+
+        const smallEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.46, 20), brushedSilverAluminumMat);
+        smallEnd.rotation.z = Math.PI / 2;
+        smallEnd.position.set(0, rodLength, 0);
+        rodGroup.add(smallEnd);
+
+        const pistonGroup = new THREE.Group();
+        engineAssembly.add(pistonGroup);
+
+        const pistonMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.48, 1.85, 32), polishedSilverChromeMat);
+        pistonMesh.rotation.x = -bankAngle;
+        pistonGroup.add(pistonMesh);
+
+        for (let r = 0; r < 3; r++) {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(1.49, 0.035, 12, 32), gunmetalSilverTitaniumMat);
+          ring.rotation.x = Math.PI / 2 - bankAngle;
+          const ringDist = (0.55 - r * 0.22);
+          ring.position.set(0, ringDist * cosBank, ringDist * sinBank);
+          pistonGroup.add(ring);
+        }
+
+        const wristPin = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 2.7, 16), polishedSilverChromeMat);
+        wristPin.rotation.z = Math.PI / 2;
+        pistonGroup.add(wristPin);
+
+        const cLight = new THREE.PointLight(0xffffff, 0, 30);
+        cLight.position.set(cfg.x, crankY + 7.2 * cosBank, 7.2 * sinBank);
+        engineAssembly.add(cLight);
+        combustionLights.push(cLight);
+
+        const flashMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(1.42, 16, 12),
+          new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+        );
+        flashMesh.position.set(cfg.x, crankY + 7.0 * cosBank, 7.0 * sinBank);
+        engineAssembly.add(flashMesh);
+        combustionFlashes.push(flashMesh);
+
+        cylinderKinematics.push({
+          config: cfg,
+          bankAngle,
+          cosBank,
+          sinBank,
+          rodGroup,
+          pistonGroup
+        });
+      });
+
+      // Dual Overhead Camshafts (4 Camshafts total for V4)
+      const camShafts = [];
+      [-vAngle, vAngle].forEach((bAngle) => {
+        const cosB = Math.cos(bAngle);
+        const sinB = Math.sin(bAngle);
+
+        const bankCams = new THREE.Group();
+        bankCams.position.set(0, crankY + 8.4 * cosB, 8.4 * sinB);
+        bankCams.rotation.x = -bAngle;
+        engineAssembly.add(bankCams);
+
+        const cam1 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 16.4, 24), polishedSilverChromeMat);
+        cam1.rotation.z = Math.PI / 2;
+        cam1.position.z = 1.0;
+        bankCams.add(cam1);
+
+        const cam2 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 16.4, 24), polishedSilverChromeMat);
+        cam2.rotation.z = Math.PI / 2;
+        cam2.position.z = -1.0;
+        bankCams.add(cam2);
+
+        const gear1 = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.3, 24), machinedBilletSilverMat);
+        gear1.rotation.z = Math.PI / 2;
+        gear1.position.set(-8.0, 0, 1.0);
+        bankCams.add(gear1);
+
+        const gear2 = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.3, 24), machinedBilletSilverMat);
+        gear2.rotation.z = Math.PI / 2;
+        gear2.position.set(-8.0, 0, -1.0);
+        bankCams.add(gear2);
+
+        camShafts.push(bankCams);
+      });
+
+      // Silver Exhaust & Manifolds
+      const exhaustManifoldGroup = new THREE.Group();
+      engineAssembly.add(exhaustManifoldGroup);
+
+      cylinderConfigs.forEach(cfg => {
+        const isLeft = cfg.bankSign < 0;
+        const startPt = new THREE.Vector3(cfg.x, crankY + 7.8 * Math.cos(cfg.bankSign * vAngle), cfg.bankSign * 3.6);
+        const midPt = new THREE.Vector3(cfg.x * 0.8, crankY + 4.5, cfg.bankSign * 5.2);
+        const endPt = new THREE.Vector3(isLeft ? -2.2 : 2.2, crankY + 1.2, cfg.bankSign * 5.8);
+
+        const curve = new THREE.CatmullRomCurve3([startPt, midPt, endPt]);
+        const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.32, 14, false), brushedSilverAluminumMat);
+        exhaustManifoldGroup.add(tube);
+      });
+
+      const collectorL = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.72, 6.0, 20), polishedSilverChromeMat);
+      collectorL.rotation.x = Math.PI / 2.4;
+      collectorL.position.set(-2.2, crankY + 0.5, -5.8);
+      exhaustManifoldGroup.add(collectorL);
+
+      const collectorR = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.72, 6.0, 20), polishedSilverChromeMat);
+      collectorR.rotation.x = -Math.PI / 2.4;
+      collectorR.position.set(2.2, crankY + 0.5, 5.8);
+      exhaustManifoldGroup.add(collectorR);
+
+      const centralIntake = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 14.2, 24), brushedSilverAluminumMat);
+      centralIntake.rotation.z = Math.PI / 2;
+      centralIntake.position.set(0, crankY + 6.8, 0);
+      engineAssembly.add(centralIntake);
+
+      // Global state interop
+      window.aerotwinState = {
+        rpm: 2400,
+        crankAngleDeg: 0,
+        isDragging: false,
+        cameraTheta: 0.8,
+        cameraRadius: 34,
+        cameraY: 15,
+        lastMouseX: 0,
+        lastMouseY: 0
+      };
+
+      // Mouse Orbit
+      container.addEventListener('mousedown', (e) => {
+        window.aerotwinState.isDragging = true;
+        window.aerotwinState.lastMouseX = e.clientX;
+        window.aerotwinState.lastMouseY = e.clientY;
+      });
+      window.addEventListener('mouseup', () => { window.aerotwinState.isDragging = false; });
+      window.addEventListener('mousemove', (e) => {
+        if (!window.aerotwinState.isDragging) return;
+        const dx = e.clientX - window.aerotwinState.lastMouseX;
+        const dy = e.clientY - window.aerotwinState.lastMouseY;
+        window.aerotwinState.cameraTheta += dx * 0.008;
+        window.aerotwinState.cameraY = Math.max(2, Math.min(36, window.aerotwinState.cameraY + dy * 0.05));
+        window.aerotwinState.lastMouseX = e.clientX;
+        window.aerotwinState.lastMouseY = e.clientY;
+      });
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        window.aerotwinState.cameraRadius = Math.max(16, Math.min(60, window.aerotwinState.cameraRadius + e.deltaY * 0.03));
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        const w = getWidth();
+        const h = getHeight();
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+
+      // Kinematic Simulation Loop
+      let totalCycleAngle = 0;
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.1);
+        const state = window.aerotwinState;
+
+        const omega = (state.rpm / 60) * Math.PI * 2;
+        totalCycleAngle += omega * dt;
+
+        const masterCycleRad = totalCycleAngle % (Math.PI * 4);
+        state.crankAngleDeg = Math.floor(masterCycleRad * 180 / Math.PI);
+
+        crankshaftGroup.rotation.x = totalCycleAngle;
+
+        const camAngle = totalCycleAngle * 0.5;
+        camShafts.forEach(cs => { cs.rotation.x = camAngle; });
+
+        for (let i = 0; i < cylinderKinematics.length; i++) {
+          const item = cylinderKinematics[i];
+          const cfg = item.config;
+          const cylCycleDeg = ((totalCycleAngle + cfg.phaseOffset) % (Math.PI * 4)) * 180 / Math.PI;
+
+          const throwAngle = cfg.throwAngle + totalCycleAngle;
+          const pinZ = Math.cos(throwAngle) * crankRadius;
+          const pinY = crankY + Math.sin(throwAngle) * crankRadius;
+
+          const dy = pinY - crankY;
+          const dz = pinZ;
+
+          const s_pin = dy * item.cosBank + dz * item.sinBank;
+          const d_perp = dy * item.sinBank - dz * item.cosBank;
+
+          const s_piston = s_pin + Math.sqrt(Math.max(0.1, rodLength * rodLength - d_perp * d_perp));
+
+          const pistonY = crankY + s_piston * item.cosBank;
+          const pistonZ = s_piston * item.sinBank;
+          item.pistonGroup.position.set(cfg.x, pistonY, pistonZ);
+
+          item.rodGroup.position.set(cfg.x, pinY, pinZ);
+          const rY = pistonY - pinY;
+          const rZ = pistonZ - pinZ;
+          item.rodGroup.rotation.x = -Math.atan2(rZ, rY);
+
+          let burst = 0;
+          if (cylCycleDeg >= 360 && cylCycleDeg < 540) {
+            const p = (cylCycleDeg - 360) / 180;
+            burst = Math.max(0, Math.pow(1.0 - p, 4.0));
+          }
+          combustionLights[i].intensity = burst * 4.5;
+          combustionFlashes[i].material.opacity = burst * 0.85;
+        }
+
+        if (!state.isDragging) {
+          state.cameraTheta += 0.0018;
+        }
+        camera.position.x = Math.sin(state.cameraTheta) * state.cameraRadius;
+        camera.position.z = Math.cos(state.cameraTheta) * state.cameraRadius;
+        camera.position.y = state.cameraY;
+        camera.lookAt(0, 3.5, 0);
+
+        renderer.render(scene, camera);
+      }
+      animate();
+    })();
+
+    // Presets & Interactive controls
+    function setPreset(name, rpm) {
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.className = "preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all";
+      });
+      const current = document.getElementById('preset-' + name);
+      if (current) {
+        current.className = "preset-btn px-3 py-1 rounded text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow transition-all";
+      }
+      const rpmEl = document.getElementById('metric-rpm');
+      if (rpmEl) {
+        rpmEl.innerHTML = rpm.toLocaleString() + ' <span class="text-xs font-mono font-normal text-on-surface-variant">RPM</span>';
+      }
+      if (window.aerotwinState) {
+        window.aerotwinState.rpm = rpm;
+      }
+    }
+
+    function setCameraAngle(mode) {
+      if (!window.aerotwinState) return;
+      if (mode === 'PERSP') {
+        window.aerotwinState.cameraTheta = 0.8;
+        window.aerotwinState.cameraY = 15;
+        window.aerotwinState.cameraRadius = 34;
+      } else if (mode === 'ISO') {
+        window.aerotwinState.cameraTheta = 0.8;
+        window.aerotwinState.cameraY = 22;
+        window.aerotwinState.cameraRadius = 32;
+      } else if (mode === 'TOP') {
+        window.aerotwinState.cameraTheta = 0.0;
+        window.aerotwinState.cameraY = 32;
+        window.aerotwinState.cameraRadius = 24;
+      }
+    }
+
+    function resetOrbit() {
+      if (window.aerotwinState) {
+        window.aerotwinState.cameraTheta = 0.8;
+        window.aerotwinState.cameraY = 15;
+        window.aerotwinState.cameraRadius = 34;
+      }
+    }
+
+    function updateFaultSeverity(type, val) {
+      const formatted = (val / 100).toFixed(2);
+      const el = document.getElementById('sev-' + type);
+      if (el) el.innerText = formatted;
+    }
+
+    function triggerRunaway() {
+      const tempEl = document.getElementById('metric-temp');
+      if (tempEl) {
+        tempEl.innerText = "188.4Â°C";
+        tempEl.classList.add('animate-pulse');
+      }
+      setPreset('takeoff', 5800);
+      const sev = document.getElementById('sev-thermal');
+      if (sev) sev.innerText = "1.00";
+    }
+
+    function toggleJsonDrawer() {
+      const drawer = document.getElementById('json-drawer');
+      if (drawer) {
+        drawer.classList.toggle('translate-y-full');
+      }
+    }
+
+    function copyPayload() {
+      const el = document.getElementById('json-preview');
+      if (el && navigator.clipboard) {
+        navigator.clipboard.writeText(el.innerText);
+        alert("Payload copied to clipboard.");
+      }
+    }
+
+    function dispatchWebhook() {
+      alert("Telemetry snapshot synced with remote broker.");
+    }
+
+    // Live Sync Deg Readout
+    setInterval(() => {
+      if (!window.aerotwinState) return;
+      const deg = window.aerotwinState.crankAngleDeg || 0;
+      const degEl = document.getElementById('hud-crank-deg');
+      if (degEl) degEl.innerText = deg + 'Â° / 720Â°';
+
+      const strokeTitle = document.getElementById('hud-stroke-title');
+      if (strokeTitle) {
+        if (deg < 180) strokeTitle.innerText = "V4 INTAKE STROKE";
+        else if (deg < 360) strokeTitle.innerText = "V4 COMPRESSION";
+        else if (deg < 540) strokeTitle.innerText = "V4 POWER STROKE";
+        else strokeTitle.innerText = "V4 EXHAUST STROKE";
+      }
+    }, 100);
+  </script>
+</body></html>

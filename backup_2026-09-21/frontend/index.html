@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>AeroTwin // V-4 Digital Twin Architecture</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&display=swap"
+    rel="stylesheet" />
+  <style>
+    @layer base {
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        overscroll-behavior: none;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #d0cbc3;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* ------------------------------------------------------------------------
+       CUTAWAY IFRAME
+       The simulator lives inline in the hero viewport, not in a pop-up.
+       The hero container is a flex column so the frame always absorbs the
+       space that's left after the header strip - no calc(), no clipping.
+       ------------------------------------------------------------------------ */
+    #cutawayBox {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: #0b0e13;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    #cutawayHead {
+      flex: 0 0 auto;
+      font-size: 10px;
+      color: #9aa3ad;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 10px;
+      background: #11151b;
+      border-bottom: 1px solid #2a2f38;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #cutawayHead .left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #cutawayHead .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    #cutawayHead .btns {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #cutawayHead button {
+      background: #1c2129;
+      color: #c8ced6;
+      border: 1px solid #3a4049;
+      border-radius: 5px;
+      padding: 4px 9px;
+      font: 600 10px/1 "Inter", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+
+    #cutawayHead button:hover {
+      background: #262c36;
+      border-color: #5a6270;
+      color: #fff;
+    }
+
+    #cutawayFrameWrap {
+      flex: 1 1 auto;
+      position: relative;
+      min-height: 0;
+      background: #05070a;
+    }
+
+    #cutawayFrame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #05070a;
+    }
+
+    /* ------------------------------------------------------------------------
+       QR POP-UP
+       Only the pairing box is a modal. It sits above everything, has a fixed
+       320x320 QR tile so the code is always fully visible, and is dismissed
+       by its buttons, Esc, or a backdrop click.
+       ------------------------------------------------------------------------ */
+    #qrPopup {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(4px);
+    }
+
+    #qrPopup.open {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qrShell {
+      width: 420px;
+      max-width: calc(100vw - 32px);
+      background: #0e1218;
+      border: 1px solid #3d434c;
+      border-radius: 12px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      color: #c8ced6;
+      font-family: "Inter", sans-serif;
+    }
+
+    #qrHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #11151b;
+      border-bottom: 1px solid #2a2f38;
+      font: 600 11px/1 "Inter", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    #qrHead .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #qrHead .title .material-symbols-outlined {
+      font-size: 16px;
+      color: #ffcc00;
+    }
+
+    #qrClose {
+      background: transparent;
+      border: 0;
+      color: #8a93a0;
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    #qrClose:hover {
+      color: #fff;
+      background: #262c36;
+    }
+
+    #qrBody {
+      padding: 22px 22px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #qrCanvasWrap {
+      width: 320px;
+      height: 320px;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    #qrImage {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    #qrPlaceholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #98a1ab;
+      font-size: 12px;
+      text-align: center;
+      padding: 8px;
+      box-sizing: border-box;
+      line-height: 1.5;
+    }
+
+    #qrPlaceholder .spinner {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid #3a4049;
+      border-top-color: #ffcc00;
+      animation: qr-spin 0.9s linear infinite;
+    }
+
+    @keyframes qr-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #qrCaption {
+      font-size: 12px;
+      color: #98a1ab;
+      text-align: center;
+      line-height: 1.5;
+      max-width: 340px;
+    }
+
+    #qrStatus {
+      padding: 14px 22px 18px;
+      display: flex;
+      gap: 8px;
+    }
+
+    #qrFoot button {
+      flex: 1 1 auto;
+      background: #ffcc00;
+      color: #1a1a1a;
+      border: 1px solid #b38f00;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font: 600 11px/1 "Inter", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    #qrFoot button:hover {
+      filter: brightness(1.05);
+    }
+
+    #qrStatus {
+      font-size: 11px;
+      color: #7fd4ff;
+      min-height: 15px;
+      text-align: center;
+      width: 100%;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="aerotwin-api.js"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background": "#f5f0e8",
+            "surface": "#ffffff",
+            "surface-subtle": "#f9f7f2",
+            "surface-muted": "#ede8df",
+            "outline": "#e2ded6",
+            "outline-strong": "#1a1a1a",
+            "primary": "#1a1a1a",
+            "primary-container": "#ffcc00",
+            "on-primary-container": "#1a1a1a",
+            "secondary": "#e63b2e",
+            "secondary-container": "#fee2e2",
+            "tertiary": "#0055ff",
+            "tertiary-container": "#e0edff",
+            "on-surface": "#1a1a1a",
+            "on-surface-variant": "#6b6762"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "md": "0.375rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body
+  class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-primary">
+
+  <header class="h-14 bg-surface border-b border-outline px-5 flex items-center justify-between sticky top-0 z-40">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <div
+          class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">
+          V4
+        </div>
+        <div class="flex flex-col">
+          <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // V-4</span>
+          <span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+        </div>
+      </div>
+      <div class="h-5 w-px bg-outline hidden sm:block"></div>
+      <div class="hidden sm:flex items-center gap-2"> <span id="connBadge"
+          class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span id="connDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="connLabel">STATUS: CONNECTING</span>
+        </span> <span id="feedBadge"
+          class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-surface-muted text-on-surface-variant border border-outline">
+          <span class="font-bold text-primary">--</span>&nbsp;<span id="feedSource">CONNECTING</span>
+        </span>
+        <span
+          class="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary text-white">
+          V4-CORE v4.2
+        </span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2.5">
+      <div
+        class="hidden lg:flex items-center gap-1.5 text-xs font-mono text-on-surface-variant bg-surface-subtle px-2.5 py-1 rounded border border-outline">
+        <span class="text-[10px] uppercase font-bold text-on-surface">AIRFRAME:</span>
+        <span>INLINE V-4 TURBO-PROP</span>
+      </div>
+      <button
+        class="bg-primary-container hover:brightness-105 active:scale-[0.98] text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm"
+        onclick="dispatchWebhook()">
+        <span class="material-symbols-outlined text-[16px]">sync</span>
+        Force Sync
+      </button>
+      <div
+        class="w-8 h-8 rounded-full bg-surface-muted border border-outline flex items-center justify-center font-bold text-xs">
+        <span class="material-symbols-outlined text-[18px]">person</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 flex overflow-hidden">
+
+    <aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+      <div class="flex flex-col overflow-y-auto">
+        <div class="p-3 border-b border-outline">
+          <div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">
+            Navigation</div>
+          <nav class="space-y-0.5">
+            <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors"
+              href="telemetry.html">
+              <span class="material-symbols-outlined text-[18px]">speed</span> Telemetry Overview
+            </a>
+            <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors"
+              href="diagnostics.html">
+              <span class="material-symbols-outlined text-[18px]">tune</span> Cylinder Diagnostics
+            </a>
+            <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm"
+              href="index.html">
+              <span class="material-symbols-outlined text-[18px]">account_tree</span> Architecture Map
+            </a>
+            <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors"
+              href="faults.html">
+              <span class="material-symbols-outlined text-[18px]">emergency_home</span> Fault Injection Lab
+            </a>
+            <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors"
+              href="blackbox.html">
+              <span class="material-symbols-outlined text-[18px]">data_table</span> Blackbox Logs
+            </a>
+          </nav>
+        </div>
+
+        <div class="p-3">
+          <div class="flex items-center justify-between px-2 mb-2">
+            <span
+              class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant">Kinematic
+              Hierarchy</span>
+            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 bg-surface-muted text-on-surface rounded">60°
+              V4</span>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div class="p-2 rounded-md bg-surface-subtle border border-outline">
+              <div class="flex items-center justify-between font-headline font-semibold text-xs text-on-surface">
+                <span class="flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[15px] text-slate-700">view_in_ar</span>
+                  Billet Silver Crankcase
+                </span>
+                <span
+                  class="text-[9px] font-mono text-on-surface-variant bg-surface px-1 py-0.5 rounded border border-outline">Root</span>
+              </div>
+            </div>
+            <div class="ml-2 pl-2 border-l border-outline space-y-1">
+              <div
+                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+                <span class="flex items-center gap-1.5"><span
+                    class="material-symbols-outlined text-[14px]">rotate_right</span> Forged Crankshaft
+                  (Crossplane)</span>
+                <span class="text-[9px] font-bold text-tertiary">720°</span>
+              </div>
+              <div
+                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+                <span class="flex items-center gap-1.5"><span
+                    class="material-symbols-outlined text-[14px]">grid_goldenratio</span> Dual 60° V-Banks (L /
+                  R)</span>
+                <span class="text-[9px]">2×2</span>
+              </div>
+              <div
+                class="p-1.5 rounded bg-primary-container/20 border border-primary-container/40 flex items-center justify-between text-on-surface font-mono text-[11px]">
+                <span class="flex items-center gap-1.5 font-semibold"><span
+                    class="material-symbols-outlined text-[14px]">swap_vert</span> Polished Chrome Pistons ×4</span>
+                <span class="text-[9px] font-bold text-primary">STAGGER</span>
+              </div>
+              <div
+                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+                <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">sync</span>
+                  Dual DOHC Bank Heads</span>
+                <span class="text-[9px]">4-CAM</span>
+              </div>
+              <div
+                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
+                <span class="flex items-center gap-1.5"><span
+                    class="material-symbols-outlined text-[14px]">alt_route</span> Silver Exhaust Headers &amp;
+                  Plenums</span>
+                <span class="text-[9px]">Twin</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-outline bg-surface-subtle">
+        <div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant mb-1.5">
+          <span class="font-headline font-semibold uppercase text-[10px]">Session Bus</span>
+          <span class="text-emerald-700 font-bold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            CONNECTED
+          </span>
+        </div>
+        <div class="w-full bg-surface border border-outline h-1.5 rounded-full overflow-hidden">
+          <div class="bg-primary h-full w-[94%] rounded-full"></div>
+        </div>
+        <div class="text-[10px] font-mono text-on-surface-variant mt-1.5 flex justify-between">
+          <span>LATENCY: 4.2ms</span>
+          <span>LOSS: 0%</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+      <main class="flex-1 flex flex-col relative bg-stone-900 overflow-hidden">
+        <div id="cutawayBox">
+          <div id="cutawayHead">
+            <div class="left">
+              <span class="dot"></span>
+              <span>AeroTwin &middot; STL Cutaway Simulator</span>
+            </div>
+            <div class="btns">
+              <button type="button" id="syncSimBtn" title="Sync the simulator from the backend now">
+                <span class="material-symbols-outlined text-[14px]">sync</span>
+                Sync
+              </button>
+              <button type="button" id="reloadSimBtn" title="Reload the simulator">
+                <span class="material-symbols-outlined text-[14px]">refresh</span>
+                Reload
+              </button>
+            </div>
+          </div>
+          <div id="cutawayFrameWrap">
+            <iframe id="cutawayFrame" src="cutaway.html" title="V-4 cutaway simulator"
+              allow="camera; microphone"></iframe>
+          </div>
+        </div>
+
+        <div
+          class="absolute inset-x-0 top-0 p-4 pointer-events-none flex flex-wrap items-start justify-between gap-3 z-10">
+          <div
+            class="pointer-events-auto bg-stone-900/80 backdrop-blur-md border border-stone-700/60 p-1 rounded-lg flex items-center shadow-lg">
+            <button
+              class="preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all"
+              id="preset-idle" onclick="setPreset('idle', 1200)">Idle 1.2K</button>
+            <button
+              class="preset-btn px-3 py-1 rounded text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow transition-all"
+              id="preset-cruise" onclick="setPreset('cruise', 2400)">Cruise 2.4K</button>
+            <button
+              class="preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all"
+              id="preset-takeoff" onclick="setPreset('takeoff', 5800)">Takeoff 5.8K</button>
+          </div>
+          <div class="pointer-events-auto flex items-center gap-2">
+            <div
+              class="bg-stone-900/80 backdrop-blur-md border border-stone-700/60 px-3 py-1 rounded-lg flex items-center gap-2 shadow-lg">
+              <span class="w-2 h-2 rounded-full bg-slate-200 animate-pulse"></span>
+              <span class="font-mono text-xs text-slate-200 font-semibold">V4 SIMULATION ACTIVE</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="absolute inset-x-0 bottom-0 p-4 pointer-events-none flex flex-wrap items-end justify-between gap-3 z-10">
+          <div class="pointer-events-auto flex items-center gap-2">
+            <button
+              class="bg-stone-900/80 backdrop-blur-md hover:bg-stone-800 text-stone-200 border border-stone-700/60 px-3 py-1.5 rounded-lg text-xs font-headline font-semibold flex items-center gap-1.5 transition-all shadow-lg"
+              onclick="askSimForQr()">
+              <span class="material-symbols-outlined text-[15px]">qr_code_2</span>
+              <span>Pair phone</span>
+            </button>
+          </div>
+          <div class="pointer-events-auto flex items-center gap-2">
+            <button
+              class="bg-rose-600/90 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-headline font-bold flex items-center gap-1.5 transition-all shadow-lg"
+              onclick="triggerRunaway()">
+              <span class="material-symbols-outlined text-[15px]">warning</span> Thermal Fault Test
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <aside class="w-full lg:w-80 bg-surface border-l border-outline flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">Telemetry KPIs</span>
+            <span
+              class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">LIVE
+              FEED</span>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-1 gap-2.5">
+            <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
+              <div
+                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                <span>Drive Speed</span>
+                <span class="material-symbols-outlined text-[16px]">speed</span>
+              </div>
+              <div class="flex items-baseline justify-between">
+                <div class="text-2xl font-headline font-bold"><span id="metric-rpm">--</span> <span
+                    class="text-xs font-mono font-normal text-on-surface-variant">RPM</span></div>
+                <div class="w-14 h-4 flex items-end gap-1">
+                  <span class="w-2 h-2 bg-primary rounded-sm"></span>
+                  <span class="w-2 h-3 bg-primary rounded-sm"></span>
+                  <span class="w-2 h-4 bg-primary rounded-sm"></span>
+                  <span class="w-2 h-4 bg-primary-container rounded-sm"></span>
+                </div>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-lg bg-rose-50/70 border border-rose-200 transition-shadow hover:shadow-sm">
+              <div
+                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-rose-700 mb-1">
+                <span>Peak Temp (Cyl 3)</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-600 text-white">CRIT HIGH</span>
+              </div>
+              <div class="flex items-baseline justify-between">
+                <div class="text-2xl font-headline font-bold text-rose-600"><span id="metric-temp">--</span></div>
+                <span class="text-[10px] font-mono text-rose-700" id="metric-temp-sub">Threshold: 110°C</span>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
+              <div
+                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                <span>Oil Pressure</span>
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+              </div>
+              <div class="flex items-baseline justify-between">
+                <div class="text-2xl font-headline font-bold"><span id="metric-oil">--</span> <span
+                    class="text-xs font-mono font-normal text-on-surface-variant">PSI</span></div>
+                <span class="text-[11px] font-mono text-emerald-700 font-semibold" id="metric-oil-status">Nominal</span>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
+              <div
+                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                <span>Misfire Status</span>
+                <span class="text-[10px] font-mono text-on-surface-variant">Rate 0.0%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="text-lg font-headline font-bold" id="metric-misfire">0 Detected</div>
+                <svg class="w-16 h-5 text-emerald-600" fill="none" viewBox="0 0 64 20">
+                  <path d="M0 16 L12 16 L18 4 L24 16 L36 16 L42 4 L48 16 L64 16" stroke="currentColor"
+                    stroke-linejoin="round" stroke-width="1.8"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-lg bg-surface-subtle border border-outline flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div
+              class="flex items-center gap-1.5 font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+              <span class="material-symbols-outlined text-[16px] text-slate-700">tune</span>
+              Fault Injection Controls
+            </div>
+            <span
+              class="text-[9px] font-headline font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface border border-outline">TEST</span>
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono text-on-surface">
+              <span class="font-medium">Overheating</span>
+              <span class="font-bold text-rose-600" id="sev-thermal">0.85</span>
+            </div>
+            <input class="w-full accent-rose-600 cursor-pointer h-1.5 bg-stone-200 rounded-lg appearance-none" max="100"
+              min="0" oninput="injectFault('OVERHEATING', this.value)" type="range" value="85" />
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono text-on-surface">
+              <span class="font-medium">Abnormal Vibration</span>
+              <span class="font-bold text-on-surface" id="sev-vibration">0.40</span>
+            </div>
+            <input class="w-full accent-stone-800 cursor-pointer h-1.5 bg-stone-200 rounded-lg appearance-none" max="100"
+              min="0" oninput="injectFault('ABNORMAL_VIBRATION', this.value)" type="range" value="40" />
+          </div>
+          <div class="pt-2 border-t border-outline flex items-center justify-between gap-2">
+            <div class="text-[11px] text-on-surface-variant font-medium">Thermal Hazard Alert</div>
+            <button
+              class="px-2.5 py-1 rounded bg-stone-900 hover:bg-stone-800 text-white font-headline text-xs font-bold uppercase tracking-wider transition-all"
+              onclick="clearAllFaults()">Clear Faults</button>
+          </div>
+        </div>
+
+        <div class="mt-auto pt-2">
+          <button
+            class="w-full py-2 px-3 rounded-lg border border-outline bg-surface hover:bg-surface-subtle font-headline text-xs font-semibold text-on-surface-variant hover:text-on-surface flex items-center justify-between transition-colors shadow-sm"
+            onclick="toggleJsonDrawer()">
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-tertiary">data_object</span>
+              <span>API Dispatch Drawer</span>
+            </span>
+            <span
+              class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">ACTIVE</span>
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="qrPopup" role="dialog" aria-modal="true" aria-label="Pair your phone">
+    <div id="qrShell">
+      <div id="qrHead">
+        <div class="title">
+          <span class="material-symbols-outlined">qr_code_2</span>
+          <span>Pair your phone</span>
+        </div>
+        <button id="qrClose" title="Close (Esc)">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <div id="qrBody">
+        <div id="qrCanvasWrap">
+          <img id="qrImage" alt="Pairing QR code" style="display:none;">
+          <div id="qrPlaceholder">
+            <div class="spinner"></div>
+            <div>Waiting for QR from simulator&hellip;</div>
+          </div>
+        </div>
+        <div id="qrCaption">
+          Scan this code with your phone camera to pair.<br>
+          Keep both devices on the same network.
+        </div>
+        <div id="qrStatus"></div>
+      </div>
+
+      <div id="qrFoot">
+        <button type="button" id="qrDoneBtn">
+          <span class="material-symbols-outlined text-[16px]">check</span>
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="fixed inset-x-0 bottom-0 z-50 bg-stone-900 border-t border-stone-700 shadow-2xl transition-transform duration-300 transform translate-y-full"
+    id="json-drawer">
+    <div class="max-w-7xl mx-auto p-4 flex flex-col gap-3 max-h-[480px]">
+      <div class="flex items-center justify-between pb-2 border-b border-stone-800">
+        <div class="flex items-center gap-2 text-stone-200 font-headline font-bold text-xs uppercase tracking-wider">
+          <span class="material-symbols-outlined text-[18px] text-primary-container">webhook</span>
+          <span>POST /api/diagnostics/dispatch • Snapshot Payload</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            class="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-mono border border-stone-600 transition-colors flex items-center gap-1"
+            onclick="copyPayload()">
+            <span class="material-symbols-outlined text-[14px]">content_copy</span> Copy JSON
+          </button>
+          <button class="p-1 rounded hover:bg-stone-800 text-stone-400 hover:text-white transition-colors"
+            onclick="toggleJsonDrawer()">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+      </div>
+      <div
+        class="bg-black/60 rounded-lg p-3 font-mono text-xs text-stone-300 overflow-auto border border-stone-800 max-h-72">
+        <pre id="json-preview"><code>// Live EngineState frame - updates from the backend stream
+{
+  "timestamp": "--",
+  "engine_id": "AEROTWIN-V4-TURBOPROP-9982",
+  "engine_type": "60_DEG_INLINE_V4_TURBOPROP",
+  "session_uuid": "L-99214-X",
+  "telemetry": {
+    "rpm": 2400,
+    "crank_cycle_deg": 312,
+    "cam_cycle_deg": 156,
+    "current_stroke": "COMPRESSION (180°-360°)",
+    "oil_pressure_psi": 22.1,
+    "vibration_g": 3.84,
+    "banks": [
+      {
+        "bank": "BANK_A_LEFT",
+        "cylinders": [
+          { "id": 1, "temp_c": 94.2, "status": "NOMINAL" },
+          { "id": 3, "temp_c": 142.8, "status": "ERR_THERMAL_RUNAWAY", "severity": 0.85 }
+        ]
+      },
+      {
+        "bank": "BANK_B_RIGHT",
+        "cylinders": [
+          { "id": 2, "temp_c": 95.8, "status": "NOMINAL" },
+          { "id": 4, "temp_c": 96.1, "status": "NOMINAL" }
+        ]
+      }
+    ]
+  },
+  "dispatcher_directive": "THROTTLE_BACK_TO_IDLE_IMMEDIATE"
+}</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== UI handlers ===== */
+    function setPreset(name, rpm) {
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.className = "preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all";
+      });
+      const current = document.getElementById('preset-' + name);
+      if (current) current.className = "preset-btn px-3 py-1 rounded text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow transition-all";
+
+      const rpmEl = document.getElementById('metric-rpm');
+      if (rpmEl) rpmEl.innerHTML = rpm.toLocaleString() + ' <span class="text-xs font-mono font-normal text-on-surface-variant">RPM</span>';
+
+      const cutFrame = document.getElementById('cutawayFrame');
+      if (cutFrame && cutFrame.contentWindow) {
+        cutFrame.contentWindow.postMessage({ type: 'CUTAWAY_SET_RPM', rpm }, '*');
+      }
+    }
+
+    function triggerRunaway() {
+      const tempEl = document.getElementById('metric-temp');
+      if (tempEl) {
+        tempEl.innerText = "188.4°C";
+        tempEl.classList.add('animate-pulse');
+      }
+      setPreset('takeoff', 5800);
+      const sev = document.getElementById('sev-thermal');
+      if (sev) sev.innerText = "1.00";
+    }
+
+    function toggleJsonDrawer() {
+      const drawer = document.getElementById('json-drawer');
+      if (drawer) drawer.classList.toggle('translate-y-full');
+    }
+
+    function copyPayload() {
+      const el = document.getElementById('json-preview');
+      if (el && navigator.clipboard) {
+        navigator.clipboard.writeText(el.innerText);
+        alert("Payload copied to clipboard.");
+      }
+    }
+
+    function dispatchWebhook() {
+      alert("Telemetry snapshot synced with remote broker.");
+    }
+
+    /* =========================================================================
+       CUTAWAY IFRAME (inline, not a pop-up)
+       ========================================================================= */
+    const cutawayFrame = document.getElementById('cutawayFrame');
+
+    /*  The preset buttons are wired to the backend inside the API block
+        below; before that block runs they must still exist, so a stub
+        keeps the inline onclick from throwing on a slow API script.  */
+    if (typeof window.setPreset !== 'function') {
+      window.setPreset = function () {};
+    }
+
+    cutawayFrame.addEventListener('load', () => {
+      const active = document.querySelector('.preset-btn.bg-primary-container');
+      if (!active) return;
+      const rpm = active.id === 'preset-idle' ? 1200
+        : active.id === 'preset-takeoff' ? 5800
+          : 2400;
+      if (cutawayFrame.contentWindow) {
+        cutawayFrame.contentWindow.postMessage({ type: 'CUTAWAY_SET_RPM', rpm }, '*');
+      }
+    });
+
+    document.getElementById('reloadSimBtn').addEventListener('click', () => {
+      cutawayFrame.src = 'cutaway.html';
+    });
+
+    /* Ask the simulator to produce a fresh QR. The simulator is expected to
+       reply with a CUTAWAY_SHOW_QR message (see the message bridge below). */
+    function askSimForQr() {
+      lastQrDataUrl = null;
+      lastQrCaption = null;
+      qrPlaceholder.innerHTML =
+        '<div class="spinner"></div><div>Waiting for QR from simulator&hellip;</div>';
+      setQrStatus('');
+      openQr();
+      if (cutawayFrame.contentWindow) {
+        cutawayFrame.contentWindow.postMessage({ type: 'CUTAWAY_REQUEST_QR' }, '*');
+      }
+    }
+
+    /* =========================================================================
+       QR POP-UP
+       The QR carries a one-time pairing token, so scanning it is the whole
+       handshake: the phone fetches the offer and posts its answer back over
+       the local server, and this pop-up just watches for the connected
+       state.  No code to copy, and no reply to paste back in.
+       ========================================================================= */
+    const qrPopup = document.getElementById('qrPopup');
+    const qrImage = document.getElementById('qrImage');
+    const qrPlaceholder = document.getElementById('qrPlaceholder');
+    const qrCaption = document.getElementById('qrCaption');
+    const qrStatus = document.getElementById('qrStatus');
+
+    const DEFAULT_CAPTION =
+      'Scan this code with your phone camera to pair.<br>Keep both devices on the same network.';
+
+    let lastQrDataUrl = null;
+    let lastQrCaption = null;
+
+    function setQrStatus(text) {
+      qrStatus.textContent = text || '';
+    }
+
+    function openQr() {
+      if (lastQrDataUrl) {
+        qrImage.src = lastQrDataUrl;
+        qrImage.style.display = 'block';
+        qrPlaceholder.style.display = 'none';
+      } else {
+        qrImage.style.display = 'none';
+        qrPlaceholder.style.display = 'flex';
+      }
+
+      qrCaption.innerHTML = lastQrCaption || DEFAULT_CAPTION;
+      qrPopup.classList.add('open');
+    }
+
+    function closeQr() {
+      qrPopup.classList.remove('open');
+    }
+
+    document.getElementById('qrClose').addEventListener('click', closeQr);
+    document.getElementById('qrDoneBtn').addEventListener('click', closeQr);
+
+    qrPopup.addEventListener('click', e => {
+      if (e.target === qrPopup) closeQr();
+    });
+
+    /* =========================================================================
+       MESSAGE BRIDGE
+       The simulator (cutaway.html) sends its QR image here. The engine itself
+       never moves; only this pop-up appears on top.
+       ========================================================================= */
+    window.addEventListener('message', (ev) => {
+      const data = ev.data;
+      if (!data || typeof data !== 'object') return;
+
+      if (data.type === 'CUTAWAY_SHOW_QR') {
+        if (data.error) {
+          lastQrDataUrl = null;
+          lastQrCaption = 'Pairing failed: ' + data.error;
+          qrPlaceholder.innerHTML =
+            '<div style="color:#e63b2e;font-weight:600">Pairing failed</div>' +
+            '<div>' + String(data.error).replace(/</g, '&lt;') + '</div>';
+        } else {
+          lastQrDataUrl = data.dataUrl || null;
+          lastQrCaption = data.caption || null;
+          qrPlaceholder.innerHTML =
+            '<div class="spinner"></div><div>Waiting for QR from simulator&hellip;</div>';
+        }
+        openQr();
+        return;
+      }
+
+      if (data.type === 'CUTAWAY_PAIR_STATE') {
+        /*  The sim announces every pairing step, even when this pop-up is
+            closed; a live connection closes whatever is open.  */
+        if (data.connected) {
+          closeQr();
+        } else if (qrPopup.classList.contains('open')) {
+          setQrStatus(data.message || '');
+        }
+        return;
+      }
+
+      if (data.type === 'CUTAWAY_QR_CLOSED' || data.type === 'PAIR_CLOSED') {
+        closeQr();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && qrPopup.classList.contains('open')) closeQr();
+    });
+
+    /* =========================================================================
+       BACKEND WIRING
+       ========================================================================= */
+    const API = window.AEROTWIN_API;
+    if (API) {
+      API.start();
+
+      /* ---- mission boot ------------------------------------------------
+         Every KPI, fault and preset on this page is powered by the
+         backend's mission simulator, so make sure one is running: ask
+         politely, start one if nobody else has. ------------------------- */
+      const DEFAULT_RPM = 2400;
+
+      (async function ensureMission() {
+        try {
+          const st = await API.simStatus();
+          if (!st.is_running) {
+            await API.startMission('Dashboard session', 3600)
+              .then(() => console.log('[mission] started for this session'))
+              .catch(err => console.warn('[mission] start failed:', err.message));
+          }
+        } catch (e) {
+          console.warn('[mission] backend unreachable:', e.message);
+        }
+      })();
+
+      /*  Backend throttle from the preset buttons: rpm/3600 is the scale
+          the simulator's own model uses. Falls back to the sim iframe if
+          the backend is down, so the visuals still follow the preset.  */
+      function setPreset(name, rpm) {
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          btn.className = "preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all";
+        });
+        const current = document.getElementById('preset-' + name);
+        if (current) current.className = "preset-btn px-3 py-1 rounded text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow transition-all";
+
+        const rpmEl = document.getElementById('metric-rpm');
+        if (rpmEl) rpmEl.innerHTML = rpm.toLocaleString() + ' <span class="text-xs font-mono font-normal text-on-surface-variant">RPM</span>';
+
+        const throttle = Math.min(1, Math.max(0.05, Math.round((rpm / 3600) * 100) / 100));
+        API.setThrottle(throttle)
+          .then(() => console.log('[sim] throttle ->', throttle))
+          .catch(() => {
+            const cutFrame = document.getElementById('cutawayFrame');
+            if (cutFrame && cutFrame.contentWindow) {
+              cutFrame.contentWindow.postMessage({ type: 'CUTAWAY_SET_RPM', rpm }, '*');
+            }
+          });
+      }
+      window.setPreset = setPreset;
+
+      const CONN_STYLES = {
+        live: { label: "STATUS: LIVE", dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+        polling: { label: "STATUS: POLLING", dot: "bg-amber-500", chip: "bg-amber-50 text-amber-700 border-amber-200" },
+        offline: { label: "STATUS: DEMO MODE", dot: "bg-stone-400", chip: "bg-stone-100 text-stone-600 border-stone-300" }
+      };
+
+      const connBadge = document.getElementById('connBadge');
+      const connDot = document.getElementById('connDot');
+      const connLabel = document.getElementById('connLabel');
+
+      function renderStatus(st) {
+        const s = CONN_STYLES[st] || CONN_STYLES.offline;
+
+        connBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border " + s.chip;
+        connDot.className = "w-1.5 h-1.5 rounded-full " + s.dot + (st === 'live' ? " animate-pulse" : "");
+        connLabel.textContent = s.label;
+
+        document.getElementById('feedSource').textContent =
+          st === 'live' ? "WS FEED" : st === 'polling' ? "REST POLL" : "DEMO FEED";
+        document.querySelector('#feedBadge span').textContent =
+          st === 'live' ? "10Hz" : st === 'polling' ? "0.5Hz" : "2Hz";
+      }
+
+      const fmt = (v, d) => (v == null || isNaN(v)) ? "--" : Number(v).toLocaleString(undefined, { maximumFractionDigits: d == null ? 1 : d });
+
+      function renderFrame(f) {
+        document.getElementById('metric-rpm').textContent = fmt(f.rpm, 0);
+        const hotCyl = (f.cht || []).indexOf(Math.max(...(f.cht || [0])));
+        document.getElementById('metric-temp').textContent = fmt(f.cht?.[hotCyl], 1) + "\u00B0C";
+        document.getElementById('metric-temp-sub').textContent = "Cyl " + (hotCyl + 1) + " \u00B7 limit 240\u00B0C";
+        document.getElementById('metric-oil').textContent = fmt(f.oil_pressure_kpa * 0.145038, 1);
+        const oilOk = f.oil_pressure_kpa > 200;
+        const oilEl = document.getElementById('metric-oil-status');
+        oilEl.textContent = oilOk ? "Nominal" : "LOW";
+        oilEl.className = "text-[11px] font-mono font-semibold " + (oilOk ? "text-emerald-700" : "text-rose-700");
+
+        const isMisfire = f.injected_fault === 'MISFIRE' || /misfire/i.test(f.fault_class || '');
+        document.getElementById('metric-misfire').textContent = isMisfire ? "Detected" : "0 Detected";
+
+        const rpmNow = Math.round(f.rpm / 50) * 50;
+        document.getElementById('metric-rpm').textContent = fmt(rpmNow, 0);
+
+        const json = {
+          timestamp: f.timestamp,
+          engine_id: API.ENGINE_ID,
+          frame_id: f.frame_id,
+          observed: {
+            rpm: f.rpm, throttle: f.throttle, altitude_ft: f.altitude_ft,
+            map_kpa: f.map_kpa, fuel_flow_lph: f.fuel_flow_lph,
+            cht_c: f.cht, egt_c: f.egt,
+            oil_pressure_kpa: f.oil_pressure_kpa, oil_temp_c: f.oil_temp_c,
+            vibration_rms: f.vibration_rms, ambient_temp_c: f.ambient_temp_c
+          },
+          health: { index: f.health_index, category: f.health_category },
+          anomaly: {
+            score: f.anomaly_score, detected: f.is_anomaly,
+            contributors: (f.anomaly_contributors || []).slice(0, 3)
+          },
+          prognostics: { rul_min: f.rul_minutes, rtb_alert: f.rtb_alert },
+          injected_fault: f.injected_fault,
+          source: f.injected_fault && f.source === 'offline' ? 'demo' : (f.source || undefined)
+        };
+        document.getElementById('json-preview').innerHTML = '<code>' +
+          JSON.stringify(json, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</code>';
+      }
+
+      API.onFrame(renderFrame);
+      API.onStatus(renderStatus);
+
+      let injectTimer = null;
+      window.injectFault = function (faultType, sliderVal) {
+        const severity = Math.min(1, Math.max(0.05, sliderVal / 100));
+
+        if (faultType === 'OVERHEATING') document.getElementById('sev-thermal').textContent = severity.toFixed(2);
+        if (faultType === 'ABNORMAL_VIBRATION') document.getElementById('sev-vibration').textContent = severity.toFixed(2);
+
+        if (API.isOffline()) { API.setDemoFault(faultType, severity); return; }
+
+        clearTimeout(injectTimer);
+        injectTimer = setTimeout(() => {
+          API.injectFault(faultType, severity)
+            .then(() => console.log('[fault] injected ' + faultType + ' @ ' + severity))
+            .catch(err => {
+              console.warn('[fault] ' + err.message);
+              alert('Fault injection failed: ' + err.message);
+            });
+        }, 300);
+      };
+
+      window.clearAllFaults = function () {
+        API.setDemoFault(null);
+        if (API.isOffline()) return;
+        API.clearFaults()
+          .then(() => console.log('[fault] cleared'))
+          .catch(err => alert('Clear faults failed: ' + err.message));
+      };
+
+      window.dispatchWebhook = function () {
+        API.health()
+          .then(h => alert('Backend live \u00B7 v' + (h.version || '?') + ' \u00B7 uptime ' + h.uptime_s + 's \u00B7 sim: ' + (h.components.simulator)))
+          .catch(() => alert('Backend unreachable - page is running on demo data.'));
+      };
+
+      window.triggerRunaway = function () {
+        const slider = document.querySelector('input[oninput*="OVERHEATING"]');
+        if (slider) { slider.value = 100; }
+        window.injectFault('OVERHEATING', 100);
+        setPreset('takeoff', 5800);
+        const sev = document.getElementById('sev-thermal');
+        if (sev) sev.textContent = "1.00";
+      };
+
+      /*  Forward one frame into the cutaway iframe so the engine
+          animation follows the backend, not a local slider.  */
+      function pushFrameToSim(f) {
+        const cutFrame = document.getElementById('cutawayFrame');
+        if (cutFrame && cutFrame.contentWindow && f) {
+          cutFrame.contentWindow.postMessage(
+            { type: 'CUTAWAY_SET_RPM', rpm: Math.round(f.rpm) }, '*');
+        }
+      }
+
+      /* =========================================================================
+         BACKEND SYNC
+         The dashboard does not just listen - it actively syncs from the
+         backend and drives the sim with what it gets:
+
+           1. every 5 s  GET /api/simulation/status - if the mission died
+              (backend restart, timeout), start a new one;
+           2. every 5 s  GET /api/engine/{id}/state - a REST snapshot that
+              keeps the KPIs alive even when the websocket is down;
+           3. the state is forwarded into the cutaway iframe
+              (CUTAWAY_SET_RPM) and the RPM KPI, so the sim always mirrors
+              the backend.
+         ========================================================================= */
+      const SYNC_INTERVAL_MS = 5000;
+
+      async function syncFromBackend() {
+
+        if (API.isOffline()) return;
+
+        /*  1. mission keeper  */
+        try {
+          const st = await API.simStatus();
+          if (!st.is_running) {
+            await API.startMission('Dashboard session', 3600);
+            console.log('[sync] mission restarted');
+          }
+        } catch (e) {
+          console.warn('[sync] status failed:', e.message);
+          return;
+        }
+
+        /*  2. REST state snapshot  */
+        try {
+          const r = await fetch('/api/engine/' + API.ENGINE_ID + '/state',
+            { cache: 'no-store' });
+          if (r.ok) {
+            const state = await r.json();
+            const frame = API.flatten(state);
+
+            /*  3. push it at the UI and the sim  */
+            renderFrame(frame);
+            pushFrameToSim(frame);
+          }
+        } catch (e) {
+          /*  the WS path already renders frames; silence is fine here  */
+        }
+      }
+
+      setInterval(syncFromBackend, SYNC_INTERVAL_MS);
+
+      /*  Manual "Sync" button: run one sync pass right now.  */
+      const syncBtn = document.getElementById('syncSimBtn');
+      if (syncBtn) {
+        syncBtn.addEventListener('click', () => {
+          syncFromBackend();
+          pushFrameToSim(API.frame);
+          const prev = syncBtn.title;
+          syncBtn.title = 'Synced ' + new Date().toLocaleTimeString();
+          setTimeout(() => { syncBtn.title = prev; }, 1500);
+        });
+      }
+    } else {
+      console.warn('AEROTWIN_API not found, UI will use static demo values.');
+      document.getElementById('connLabel').textContent = "STATUS: DEMO (no API)";
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,378 @@
+
+const $ = id => document.getElementById(id);
+const detail = t => { $("detail").textContent = t; };
+const status = (t, cls) => {
+    const el = $("status");
+    el.textContent = t;
+    el.className = cls || "";
+};
+
+let stream = null, facing = "user", pc = null;
+let ctlChannel = null;          // WebRTC data channel to the desktop
+let lastSend = 0;               // REST debounce stamp
+
+/*
+    Worldwide pairing.  The QR link may carry an access key (?key=...)
+    which every phone-side relay call must present, and serve.py hands
+    out the STUN/TURN list on /__ice - TURN is what keeps the camera
+    video alive when this phone is on mobile data behind carrier CGNAT.
+    The ngrok header keeps the tunnel's interstitial page out of the way.
+*/
+let KEY = "";                   // relay access key, from the QR link
+let ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
+
+const NGROK_HEADERS = { "ngrok-skip-browser-warning": "1" };
+
+function keyQuery() {
+    return KEY ? "?key=" + encodeURIComponent(KEY) : "";
+}
+
+function relayHeaders() {
+    const h = Object.assign({}, NGROK_HEADERS);
+    if (KEY) h["x-aerotwin-key"] = KEY;
+    return h;
+}
+
+async function loadIceServers() {
+
+    try {
+        const reply = await fetch("/__ice" + keyQuery(), {
+            cache: "no-store",
+            headers: relayHeaders()
+        });
+        if (!reply.ok) return;
+        const cfg = await reply.json();
+        if (cfg && Array.isArray(cfg.iceServers) && cfg.iceServers.length) {
+            ICE_SERVERS = cfg.iceServers;
+        }
+    } catch (noIce) { /* serve.py without /__ice - the default stays */ }
+}
+
+/*
+    deflate-raw keeps the SDP small.  Falls back to plain base64 when
+    CompressionStream is missing; the desktop decoder accepts either form.
+*/
+async function deflateToB64(text) {
+
+    const blob = await new Response(
+        new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"))
+    ).blob();
+
+    const bin = String.fromCharCode(...new Uint8Array(await blob.arrayBuffer()));
+
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function inflateFromB64(b64) {
+
+    const n = b64.replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(n + "=".repeat((4 - n.length % 4) % 4));
+    const bytes = new Uint8Array(bin.length);
+
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    const out = await new Response(
+        new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))
+    ).blob();
+
+    return out.text();
+}
+
+/*
+    SDP envelopes.  Same shape as before ({t, c, s}) wrapped in JSON so the
+    answer travels as a plain POST body instead of a code a human copies.
+*/
+async function decodeCode(text) {
+
+    const obj = JSON.parse(decodeURIComponent(escape(atob(text.trim()))));
+
+    if (obj.c === "deflate") obj.s = await inflateFromB64(obj.s);
+
+    return obj;
+}
+
+async function encodeCode(obj) {
+
+    const wrapped = { t: obj.t, s: obj.s };
+
+    try {
+        wrapped.c = "deflate";
+        wrapped.s = await deflateToB64(obj.s);
+    } catch (noStream) {
+        /* older browser: plain base64, the desktop still reads it */
+    }
+
+    return JSON.stringify(wrapped);
+}
+
+/*  The answer must carry every ICE candidate: no trickle channel exists.  */
+function iceDone(conn) {
+
+    return new Promise(res => {
+
+        if (conn.iceGatheringState === "complete") return res();
+
+        const t = setTimeout(res, 1500);
+
+        conn.addEventListener("icegatheringstatechange", () => {
+            if (conn.iceGatheringState === "complete") {
+                clearTimeout(t);
+                res();
+            }
+        });
+    });
+}
+
+function stopStream() {
+
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+}
+
+async function startCamera() {
+
+    if (!navigator.mediaDevices) {
+        throw new Error("camera blocked - open this page over https (use the QR code address)");
+    }
+
+    stopStream();
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facing, width: 640, height: 480 }
+        });
+    } catch (e) {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+
+    $("preview").srcObject = stream;
+    status("camera live - hand tracking feeds the desktop", "ok");
+}
+
+async function attachToPeer() {
+
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+
+    if (sender) await sender.replaceTrack(stream.getVideoTracks()[0]);
+}
+
+$("flip").addEventListener("click", async () => {
+
+    facing = facing === "user" ? "environment" : "user";
+
+    try {
+        await startCamera();
+        if (pc && pc.connectionState === "connected") await attachToPeer();
+    } catch (e) {
+        status("camera error: " + e.message, "bad");
+    }
+});
+
+/* ======================================================================
+   COMMANDS
+   Two transports, picked automatically:
+
+     1. the WebRTC data channel (instant, works peer-to-peer);
+     2. POST /__ctl on the local server, which the dashboard polls
+        (works whenever the page itself loads - i.e. always).
+
+   ====================================================================== */
+
+function sendCmd(cmd, value) {
+
+    const msg = JSON.stringify({ type: "PHONE_CMD", cmd: cmd, value: value });
+
+    if (ctlChannel && ctlChannel.readyState === "open") {
+        ctlChannel.send(msg);
+        return;
+    }
+
+    /*  REST fallback, debounced so dragging does not flood the server. */
+    const now = Date.now();
+    if (now - lastSend < 120 && cmd === "throttle") return;
+    lastSend = now;
+
+    fetch("/__ctl" + keyQuery(), {
+        method: "POST",
+        headers: Object.assign(
+            { "Content-Type": "application/json" }, relayHeaders()),
+        body: JSON.stringify({ cmd: cmd, value: value }),
+        cache: "no-store"
+    }).catch(() => {});
+}
+
+function wireChannel(ch) {
+
+    ctlChannel = ch;
+
+    ch.addEventListener("open", () => {
+        detail("direct link to the dashboard - commands are instant");
+    });
+
+    ch.addEventListener("message", ev => {
+
+        /*  Live engine state echoed back by the dashboard. */
+        try {
+            const st = JSON.parse(ev.data);
+
+            if (st.type === "PHONE_STATE") showState(st);
+        } catch (ignore) {}
+    });
+
+    ch.addEventListener("close", () => { ctlChannel = null; });
+}
+
+function showState(st) {
+
+    if (st.phase) $("phPhase").textContent = String(st.phase);
+    if (st.rpm != null) $("phRpm").textContent = Math.round(st.rpm).toLocaleString();
+    if (st.throttle != null && document.activeElement !== $("lever")) {
+        $("lever").value = String(Math.round(st.throttle * 100));
+        $("phThrottle").textContent = Math.round(st.throttle * 100) + "%";
+    }
+    if (st.flying != null) setFlightLabel(!!st.flying);
+}
+
+/* ---- controller UI --------------------------------------------------- */
+
+$("lever").addEventListener("input", () => {
+
+    const pct = Number($("lever").value);
+
+    $("phThrottle").textContent = pct + "%";
+    sendCmd("throttle", pct / 100);
+});
+
+document.querySelectorAll("[data-act]").forEach(btn => {
+
+    btn.addEventListener("click", () => {
+
+        const act = btn.dataset.act;
+        const value = btn.dataset.value;
+
+        if (act === "flight") {
+            sendCmd("flight");
+            return;                     /* the desktop echoes the new state */
+        }
+
+        sendCmd(act, value);
+    });
+});
+
+/*  The flight button label flips with the desktop's flying state. */
+const origFlightLabel = $("flightBtn").textContent;
+
+function setFlightLabel(flying) {
+
+    $("flightBtn").textContent = flying ? "Abort flight" : origFlightLabel;
+    $("flightBtn").className = flying ? "stop" : "primary";
+}
+
+function showController() {
+
+    $("ctl").style.display = "block";
+    $("flip").style.display = "block";
+    document.body.classList.add("camhidden");   /* video collapses to a strip */
+}
+
+/* ======================================================================
+   PAIRING
+   One token from the QR link is the whole handshake:
+
+        GET  /__pair/<token>          -> the desktop's parked offer
+        POST /__pair/<token>/answer   -> this phone's answer
+
+   The desktop is polling the answer endpoint, so the moment this posts,
+   the two sides connect - no code is ever shown, typed or pasted.
+   ====================================================================== */
+async function autoPair(token) {
+
+    status("pairing...");
+
+    const reply = await fetch("/__pair/" + token + keyQuery(), {
+        cache: "no-store",
+        headers: relayHeaders()
+    });
+
+    if (!reply.ok) throw new Error("pairing link expired - scan the QR again");
+
+    const parked = await reply.json();
+
+    const invite = await decodeCode(parked.offer);
+
+    if (invite.t !== "invite" || !invite.s) throw new Error("bad offer from desktop");
+
+    await startCamera();
+
+    await loadIceServers();
+
+    if (pc) pc.close();
+
+    pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+    pc.addTrack(stream.getVideoTracks()[0], stream);
+
+    /*  The desktop owns the data channel; it arrives here. */
+    pc.addEventListener("datachannel", ev => wireChannel(ev.channel));
+
+    await pc.setRemoteDescription({ type: "offer", sdp: invite.s });
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await iceDone(pc);
+
+    const body = await encodeCode({ t: "reply", s: pc.localDescription.sdp });
+
+    const sent = await fetch("/__pair/" + token + "/answer" + keyQuery(), {
+        method: "POST",
+        headers: Object.assign(
+            { "Content-Type": "application/json" }, relayHeaders()),
+        body: JSON.stringify({ answer: body })
+    });
+
+    if (!sent.ok) throw new Error("desktop stopped waiting - scan the QR again");
+
+    detail("paired - this phone is now the engine controller");
+
+    showController();
+
+    pc.addEventListener("iceconnectionstatechange", () => {
+        if (pc.iceConnectionState === "failed" ||
+            pc.iceConnectionState === "disconnected") {
+            status("connection lost - scan the QR again", "bad");
+        }
+    });
+}
+
+/*
+    QR links carry the pairing token in the hash (plus, when the desktop
+    runs with AEROTWIN_KEY, the access key as ?key= on the link itself):
+    opening the scanned link IS the pairing.  The camera starts and the
+    reply is generated without touching anything, and the controller
+    panel comes up the moment the link lands.  Works from any network -
+    the link only needs to reach this phone, and over the tunnel it does.
+*/
+(async () => {
+
+    const params = new URLSearchParams(location.search || "");
+    const hash   = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+
+    KEY = params.get("key") || hash.get("key") || "";
+
+    const token = hash.get("p") || params.get("p");
+
+    if (!token) {
+        status("no pairing link - scan the QR on the desktop", "bad");
+        detail("open this page by scanning the code shown on the desktop.");
+        return;
+    }
+
+    try {
+        await autoPair(token);
+    } catch (e) {
+        status("pairing failed", "bad");
+        detail(e && e.message ? e.message : String(e));
+    }
+})();

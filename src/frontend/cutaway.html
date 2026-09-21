@@ -1,0 +1,5485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V8 Engine - Two-Bank Animation</title>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 10;
+            width: 300px;
+            box-sizing: border-box;
+        }
+
+        .sg {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: inline-block;
+            width: 110px;
+            font-size: 13px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+            vertical-align: middle;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #555;
+            margin: 10px 0;
+        }
+
+        #rpm, #syscut {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        /*
+            Burst watch.  The HUD line goes to amber when the engine is
+            about to burst and hard red at the limit itself.
+        */
+        #rpm.burst {
+            color: #ffb020;
+            font-weight: bold;
+        }
+
+        #rpm.burst.limit {
+            color: #ff4530;
+        }
+
+        #syscut {
+            margin-top: 2px;
+            color: #d8a24a;
+        }
+
+        button {
+            background: #23262c;
+            color: #ddd;
+            border: 1px solid #454a53;
+            border-radius: 5px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #33383f;
+            border-color: #6b727d;
+        }
+
+        #note {
+            margin-top: 6px;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #888;
+        }
+
+        #firing {
+            margin-top: 8px;
+        }
+
+        #firingTitle {
+            font-size: 11px;
+            color: #bbb;
+            margin-bottom: 5px;
+        }
+
+        #firingTitle b { color: #ffb066; }
+
+        #cylRow {
+            display: flex;
+            gap: 4px;
+        }
+
+        .cyl {
+            flex: 1;
+            padding: 3px 0;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 10px;
+            line-height: 1.35;
+            background: #232833;
+            color: #8899aa;
+            border: 1px solid #333a48;
+        }
+
+        .cyl.bankB { border-color: #4a3a3a; }
+
+        /*  A cylinder switched off in the panel.  */
+        .cyl.cut {
+            background: #2a1414;
+            border-color: #6b2b2b;
+            color: #a06060;
+            text-decoration: line-through;
+        }
+
+        .cyl .n { font-weight: bold; font-size: 11px; }
+        .cyl .s { font-size: 9px; opacity: 0.7; }
+
+        .cyl.firing {
+            background: #ff7a26;
+            color: #1a1005;
+            border-color: #ffb066;
+            box-shadow: 0 0 10px #ff7a26;
+        }
+
+        .cyl.firing .s { opacity: 0.95; }
+
+        #legend {
+            margin-top: 8px;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #bbb;
+        }
+
+        #legend .k {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        #legend .intake { background: #66ddff; box-shadow: 0 0 6px #66ddff; }
+        #legend .exhaust { background: #ff9944; box-shadow: 0 0 6px #ff9944; }
+        #legend .fire { background: #ff5522; box-shadow: 0 0 8px #ffaa33; }
+        #legend .pipe { background: #b8401f; box-shadow: 0 0 6px #3d7fd6; }
+        #legend .spark { background: #dff0ff; box-shadow: 0 0 8px #dff0ff; }
+
+        /*
+            Tooltip.  One element moved about, so every statement on the page
+            can explain itself without a forest of hidden DOM nodes.
+        */
+        #tip {
+            position: fixed;
+            z-index: 40;
+            max-width: 270px;
+            padding: 7px 9px;
+            border-radius: 6px;
+            background: rgba(12, 14, 18, 0.96);
+            border: 1px solid #4a5058;
+            color: #dfe4ea;
+            font-size: 11px;
+            line-height: 1.5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+        }
+
+        #tip b { color: #ffb066; }
+        #tip i { color: #7fd4ff; font-style: normal; }
+
+        label[data-tip], #legend [data-tip], .cyl[data-tip], #rpm[data-tip],
+        #syscut[data-tip] { cursor: help; }
+
+        /*  Panel for whatever was clicked in the 3D view.  */
+        #partPanel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 252px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #3d434c;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 10;
+            display: none;
+            box-sizing: border-box;
+        }
+
+        #partPanel h3 {
+            margin: 0 0 5px;
+            font-size: 13px;
+            color: #ffb066;
+        }
+
+        #partPanel .desc {
+            font-size: 11px;
+            line-height: 1.45;
+            color: #98a1ab;
+            margin-bottom: 9px;
+        }
+
+        #partPanel .readout {
+            font-size: 11px;
+            line-height: 1.55;
+            color: #7fd4ff;
+            margin-bottom: 9px;
+        }
+
+        #partPanel .sg label { width: 92px; font-size: 11px; }
+        #partPanel .sg input[type="range"] { width: 122px; }
+
+        #partPanel .close {
+            float: right;
+            cursor: pointer;
+            color: #888;
+            font-size: 15px;
+            line-height: 1;
+        }
+
+        #partPanel .close:hover { color: #fff; }
+
+        body.picking { cursor: crosshair; }
+
+        /*
+            Optional hand control.  Bottom right, small, and hidden until the
+            camera is actually switched on.
+        */
+        #handBox {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            width: 208px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #3d434c;
+            border-radius: 8px;
+            padding: 9px;
+            z-index: 12;
+            display: none;
+            box-sizing: border-box;
+        }
+
+        #handBox video { display: none; }
+/*
+    Phone pairing: one QR, scanned once, and the handshake completes
+    itself over the local server.  Nothing is typed, copied or pasted.
+*/
+        #pairBox { display: none; margin-top: 7px; }
+
+        #pairBox .pairTitle {
+            font-size: 9px;
+            color: #9aa3ad;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 5px 0 2px;
+        }
+
+        #pairState {
+            font-size: 10px;
+            line-height: 1.5;
+            color: #7fd4ff;
+            text-align: center;
+            margin: 2px 0 0;
+        }
+
+        #pairState.bad { color: #ff8b7e; }
+
+        #pairQr {
+            background: #fff;
+            width: max-content;
+            margin: 2px auto 4px;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        /*
+            The symbol is one canvas, drawn at an integer module pitch with
+            the quiet zone painted into the bitmap, and shown at exactly the
+            pixel size it was drawn at.  Nothing is scaled, nothing is
+            duplicated, and no module edge is anti-aliased - which is the
+            whole requirement for a phone camera to lock on.
+
+            The img rule stays as a guard: any other QR library that paints
+            a canvas plus a data-URI copy of it would otherwise stack two
+            symbols in this one white pad.
+        */
+        #pairQr canvas { display: block; image-rendering: pixelated; }
+        #pairQr img { display: none !important; }
+
+        #handBox canvas {
+            width: 190px;
+            height: 142px;
+            border-radius: 4px;
+            background: #0d0f12;
+            /*  Mirrored, so moving your hand right moves the picture right.  */
+            transform: scaleX(-1);
+        }
+
+        #handHead {
+            font-size: 10px;
+            color: #9aa3ad;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        #handClose {
+            float: right;
+            cursor: pointer;
+            color: #777;
+        }
+
+        #handClose:hover { color: #fff; }
+
+        #handState {
+            font-size: 11px;
+            color: #7fd4ff;
+            margin-top: 7px;
+            line-height: 1.45;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="ui">
+
+    <div class="sg">
+        <label data-tip="Crankshaft speed. Every cycle in the model scales
+               from this one number, and the camshafts turn at exactly half
+               crank speed, as they must on a four stroke.">Speed</label>
+        <input type="range" id="speed"
+               min="0" max="0.15" step="0.001" value="0.03">
+    </div>
+
+    <div class="sg">
+        <label data-tip="Takes whole systems off the engine, outermost first.
+               At 0 nothing is removed and nothing is sliced - the previous
+               plane cutaway is retired and parked clear of the engine.">System Cut</label>
+        <input type="range" id="cutSystems"
+               min="0" max="100" step="1" value="0">
+    </div>
+
+    <div class="sg">
+        <label data-tip="The System Cut slider is continuous but the stages
+               are not, so these snap it to the next whole stage.">Peel</label>
+        <button id="peelBack" type="button" data-tip="Put the last system back on.">&#9664; Peel</button>
+        <button id="peelNext" type="button" data-tip="Take the next system off the engine.">Peel &#9654;</button>
+    </div>
+
+    <div class="sg">
+        <label data-tip="How solid the amber case looks. 100 (the default)
+               is opaque metal; lower values make it ghostly so the pistons,
+               valves and pipes inside stay visible. A translucent case also
+               stops blocking the pointer, so you can click straight through
+               it to the parts inside.">Block See-thru</label>
+        <input type="range" id="seeThru"
+               min="0" max="100" step="1" value="100">
+    </div>
+
+    <div class="sg">
+        <label data-tip="Blades are lofted from scratch at this diameter, and
+               the studio floor drops to clear the lowest tip. At true scale
+               a real propeller would swallow the frame, so this is a
+               framing choice, not a physical one.">Prop Diameter</label>
+        <input type="range" id="propDia"
+               min="40" max="180" step="2" value="96">
+    </div>
+
+    <hr>
+
+    <div class="sg">
+        <label data-tip="Crank throw x 2. The piston position comes from the
+               slider-crank equation, so the rod stays exactly one rod length
+               at every crank angle rather than stretching.">Piston Stroke</label>
+        <input type="range" id="stroke"
+               min="0" max="60" step="0.5" value="16">
+    </div>
+
+    <div class="sg">
+        <label data-tip="Centre to centre. At top dead centre the pin sits
+               exactly this far from the crank centre, so a wrong value is
+               immediately visible as a rod that no longer reaches.">Rod Length</label>
+        <input type="range" id="rodlen"
+               min="20" max="90" step="1" value="32">
+    </div>
+
+    <div class="sg">
+        <label data-tip="Optional. Uses the webcam and hand tracking: hold up
+               1 to 5 fingers and that many systems are taken off the engine.
+               A fist (no fingers) puts it back to a complete engine. Nothing
+               is uploaded - the tracking runs inside this page.">Hand control</label>
+        <button id="handToggle" type="button" data-tip="Asks the browser for
+               camera permission, then counts fingers and peels systems.
+               Off by default: nothing happens until you press this.">Enable camera</button>
+    </div>
+
+    <div id="rpm" data-tip="Live engine state: crank angle, engine layout,
+         firing order and the RPM that the Speed slider works out to.">Engine running...</div>
+    <div id="syscut" data-tip="Which systems the System Cut slider has taken
+         off the engine. The order is engine block housing, propeller,
+         pistons, crankshaft + conrods, heads &amp; ancillaries.">System cut: complete engine</div>
+    <div id="firing">
+        <div id="firingTitle" data-tip="One chip per cylinder, showing the
+             stroke it is on right now: INT, CMP, PWR or EXH. The lit one is
+             the cylinder with the youngest power stroke, i.e. the one that
+             just fired. Click a chip to cut that cylinder.">
+            Firing order <b id="firingOrder">&mdash;</b>
+            &nbsp;<span style="color:#ff7a26">&#9679;</span> firing
+        </div>
+        <div id="cylRow"></div>
+    </div>
+
+    <div id="legend">
+        <div data-tip="Cyan particles are the air and fuel charge, drawn down
+             past the blue intake valve during the 0-180 degree intake stroke.
+             Their strength follows the Air inflow control.">
+            <span class="k intake"></span> air + fuel in (intake)
+        </div>
+        <div data-tip="Orange particles are burnt gas, pushed up past the red
+             exhaust valve during the 540-720 degree exhaust stroke.">
+            <span class="k exhaust"></span> burnt gas out (exhaust)
+        </div>
+        <div data-tip="The multicolour flash at the top of the bore. It appears
+             just after the spark and decays through the power stroke. Its
+             size and brightness are the Fuel control.">
+            <span class="k fire"></span> combustion
+        </div>
+        <div data-tip="A hard white flash at the plug electrode, starting a
+             little before top dead centre. How much before is the Spark
+             advance control - click a spark plug or a lead to change it.">
+            <span class="k spark"></span> spark at the plug
+        </div>
+    </div>
+
+    <div id="note" data-tip="How this engine was measured. Bore and bank
+         positions come from the block's own STL, not from guesswork.">
+        All eight cylinders, one per bore the block actually has. Measured:
+        crank at STL (Y 46.7, Z 14.2), deck 53.2 away, bank tilt 44.6,
+        bores at X 37.8 / 61.8 / 85.6 / 108.0. Block is Z-up (alignment
+        baked in).<br><br>
+        <b>System Cut</b> strips the engine in five stages, one at a time -
+        engine block housing, propeller, pistons, crankshaft with its rods,
+        then the heads and ancillaries. At 0 nothing is removed and nothing
+        is sliced: the previous plane cutaway is retired and parked clear of
+        the engine.
+    </div>
+</div>
+
+<!--
+    Tooltip: one element, moved about.  Every statement in the panel explains
+    itself on hover, and the 3D view reuses it to describe whatever the
+    pointer is over.
+-->
+<div id="tip"></div>
+
+<!--
+    Part panel: opens on whatever was clicked in the engine, and carries the
+    controls for that part's system.
+-->
+<div id="partPanel">
+    <span class="close" id="partClose"
+          data-tip="Close this panel. The engine keeps running unchanged.">&times;</span>
+    <h3 id="partTitle"
+        data-tip="The part or system you clicked in the engine.">&mdash;</h3>
+    <div class="desc" id="partDesc"
+         data-tip="What this part does, and what was measured to place it."></div>
+    <div class="readout" id="partReadout"
+         data-tip="Live state while you drag the controls: crank angle, RPM,
+              air, fuel, spark advance and how many cylinders are cut."></div>
+    <div id="partControls"></div>
+</div>
+
+<!--
+    Optional hand control: a small camera preview with the tracked landmarks
+    drawn on it, and what the count currently means.
+-->
+<div id="handBox" width="800" height="400">
+    <div id="handHead">hand control
+        <span id="handClose" data-tip="Stop hand tracking and release the
+              camera. The engine stays on whatever the last count set.">&times;</span>
+    </div>
+    <video id="handVideo" playsinline muted></video>
+    <canvas id="handCanvas" width="208" height="156"></canvas>
+    <div id="handState" data-tip="What the tracker can see: how many fingers,
+         and how many stages that peels. One finger is one stage.">idle</div>
+    <div id="pairBox">
+        <div class="pairTitle">scan this with the phone camera</div>
+        <div id="pairQr"></div>
+        <div id="pairState"></div>
+    </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<!--
+    Post-processing, for the glow.
+
+    The reference render is not just lit - the amber case and the flame
+    bleed light into their surroundings.  Without a bloom pass the emissive
+    surfaces stay flat and hard-edged, which is the single biggest thing
+    that reads as "CG" rather than as a photograph.  These are the non-module
+    builds that match the r128 core, so they attach themselves to THREE.
+-->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/Pass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/MaskPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+<script>
+/* =========================================================================
+   MEASURED GEOMETRY  (taken straight from the STL files)
+
+   engine_block.stl   X 0..130.81   Y 0..95.33   Z 0..90.75
+   piston.stl         head disc, axis along X, diameter 18.67  ->  bore R 9.34
+                      + a connecting rod (2 separate shells in one file)
+
+   The block's crank axis runs along X.  Bores are tilted 45.75 deg away
+   from vertical *in the YZ plane*, i.e. the banks rotate about X.  Tilting
+   them about Z (what the old code did) tilts them along the crank axis,
+   which is impossible for a real V engine.
+   ========================================================================= */
+
+const BLOCK = {
+    x: 130.81,
+    y: 95.33,
+    z: 90.75
+};
+
+const HALF = {
+    x: BLOCK.x / 2,
+    y: BLOCK.y / 2,
+    z: BLOCK.z / 2
+};
+
+/*
+    Defaults, all measured from the mesh.
+
+    Bore mouths sit at STL (Y 84, Z 52) on deck A and (Y 10, Z 51) on deck B,
+    and those two lines cross at STL (Y 46.7, Z 14.2) - the crank axis.  Y
+    lands on the block's Y centre (47.665), exactly what a symmetric V gives.
+
+    Deck-to-crank is 53.2 mm, so at TDC the crown must just reach the deck:
+
+        rodLength + stroke/2 + crownOffset + half piston height
+        = 32      + 8        + 5           + 7.8   = 52.8   (~53)
+
+    hence stroke 16, rod 32.  Bank tilt is the deck normal, 44.6 deg.
+*/
+const BANK_TILT_DEG = 44.6;    // measured bank angle, sets the tilt slider
+
+/*
+    Measured straight off the block's deck faces.
+
+    Each deck is drilled with FOUR bores of 19.8 diameter at these X
+    positions, and BOTH decks share the same four X positions - so the
+    block has eight bores in total and is a V8, not a V4.  (The other,
+    smaller holes in the deck are 7 mm valve seats.)
+
+    All eight are used - one cylinder per bore.  See CYLINDERS below.
+*/
+const CYL_X = [37.8, 61.84, 85.58, 108.0];   // spacing ~23.4
+
+/*  Crank axis to deck face, measured along the bore.  */
+const DECK_DIST = 53.2;/*  Valve seats sit at the deck, so the valves open into the head above it.  */
+const VALVE_Y   = DECK_DIST + 1;
+
+/*  Intake and exhaust sit either side of the bore centre, offset along the
+    bank, so a camshaft can run down each row.  */
+const VALVE_ROW = 5.4;
+
+/*  Camshaft height, just above the valve stem tips.  */
+const CAM_L = 81;
+
+/*  Particles per intake / exhaust stream.  */
+const STREAM_COUNT = 18;
+
+/*
+    Ignition.  The crank default below must match the Crank Y / Crank Z
+    sliders, since the plug leads are computed from it.
+*/
+const CRANK_Y = 46.7;
+const CRANK_Z = 14.2;
+
+/*  Wrist pin to piston crown.  Set so the crown tops out within a couple
+    of millimetres of the measured bore mouths in the deck.  Formerly the
+    Crown Offset slider, now a fixed constant.  */
+const CROWN_OFFSET = 5;
+
+const PLUG_BASE = DECK_DIST + 0.5;
+const PLUG_TOP  = PLUG_BASE + 16.5;   // where the lead boots on
+
+/*
+    Ignition leads are plain straight rods instead of routed wires, and
+    are 10 m long, so they leave the frame entirely and there is no end to
+    route to anything or to line up.
+*/
+const LEAD_LENGTH = 10000;
+
+/* =========================================================================
+   SCENE
+   ========================================================================= */
+
+const scene = new THREE.Scene();
+
+/*  Dark studio, like the reference render.  */
+scene.background = new THREE.Color(0x121519);
+
+/*
+    Block and internals share one parent.  The block was measured in the
+    STL's own frame (origin at a corner, +Y up) and so is every internal
+    part, so they line up by construction.  Rotating the group rotates the
+    whole engine together and can never break that alignment.
+*/
+const engineGroup = new THREE.Group();
+scene.add(engineGroup);
+
+/*
+    The block is Z-up, not Y-up.
+
+    Its cylinder decks (the flat faces the heads bolt to) are by far its
+    largest planes and BOTH of them face +Z:
+
+        deck A  n = (0, +0.700, +0.710)
+        deck B  n = (0, -0.700, +0.710)
+
+    A deck is perpendicular to its bore, so those normals ARE the bore axes
+    and the V opens toward +Z.  So rotate -90 deg about X to stand the
+    engine upright (STL +Z -> world +Y).  Baking this in means the rotation
+    sliders read 0 when the engine is upright.
+*/
+const aligned = new THREE.Group();
+aligned.rotation.x = -Math.PI / 2;
+engineGroup.add(aligned);
+
+const camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    3000
+);
+
+/*
+    Same three quarter view as before, pulled back and re-centred, because
+    the propeller puts a 96 wide disc out past the end of the crankshaft
+    and it was falling off the bottom of the frame at the old framing.
+*/
+camera.position.set(163, 72, 208);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.localClippingEnabled = true;
+
+/*  Filmic response keeps the polished metal from clipping to white.  */
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.85;
+
+document.body.appendChild(renderer.domElement);
+
+
+/* =========================================================================
+   BLOOM
+   ========================================================================= */
+
+/*
+    Threshold is set high on purpose.  In the reference only the amber case,
+    the flame and the spark bleed light; the chrome stays crisp with hard
+    highlights.  Blooming the chrome as well would turn the whole engine
+    into a soft smear, which is the failure mode of this effect.
+*/
+const bloomDefault = 0.2;
+
+const composer = new THREE.EffectComposer(renderer);
+
+composer.addPass(new THREE.RenderPass(scene, camera));
+
+const bloomPass = new THREE.UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    bloomDefault,
+    0.62,   /*  radius: how far the glow spreads  */
+    0.78    /*  threshold: only genuinely bright pixels  */
+);
+
+composer.addPass(bloomPass);
+
+/*
+    Duplicating the whole glow-stack for the top.
+
+    Note what is NOT done here: the composer's render targets are left in
+    their default LINEAR encoding, and no gamma pass is added.  The final
+    blit is what converts to sRGB, because three applies the target's
+    encoding to whichever material is writing - and when a pass writes to
+    the canvas that target is the screen, i.e. outputEncoding.  Marking the
+    render targets sRGB instead makes every pass encode again, and the
+    highlights pile up until 17% of the frame is pure white.
+*/
+
+
+/*
+    Metals are only as good as what they reflect - without an environment
+    they render almost black.  Bake a tiny studio into a cubemap with PMREM
+    so the chrome pistons and the amber case have highlights to catch.
+*/
+(function buildStudioEnvironment() {
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+
+    const studio = new THREE.Scene();
+
+    /*
+        The room is darker than it was and the softbox is bigger.  Polished
+        metal is a mirror: a brighter, larger softbox against a blacker room
+        is what puts long bright streaks on the chrome with black between
+        them, instead of a flat grey wash.  Measured - mean frame luminance
+        95 -> 107 and bright highlight area 17% -> 24%, with detail energy
+        held (1.15 -> 1.12), which is the whole point of the change.
+    */
+    studio.background = new THREE.Color(0x05060a);
+
+    function panel(color, intensity, w, h, pos, rot) {
+
+        const mesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(w, h),
+            new THREE.MeshBasicMaterial({
+                color: new THREE.Color(color).multiplyScalar(intensity),
+                side: THREE.DoubleSide
+            })
+        );
+
+        mesh.position.set(pos[0], pos[1], pos[2]);
+        mesh.rotation.set(rot[0], rot[1], rot[2]);
+
+        studio.add(mesh);
+    }
+
+    /*
+        A dark room with one big softbox and two rims.  The darkness
+        matters as much as the light: polished metal only reads as
+        polished when there is black for the highlights to sit against.
+        Over-lighting it just makes a uniformly white, dull object.
+    */
+    panel(0xffffff, 3.8, 44, 28, [0, 22, 0], [Math.PI / 2, 0, 0]);
+    panel(0xbcd4ff, 1.25, 22, 16, [-22, 6, -6], [0, Math.PI / 2, 0]);
+    panel(0xffcf94, 1.5, 22, 16, [22, 3, 6], [0, -Math.PI / 2, 0]);
+    panel(0xffffff, 0.10, 30, 30, [0, -16, 0], [-Math.PI / 2, 0, 0]);
+
+    scene.environment = pmrem.fromScene(studio, 0.04).texture;
+
+    pmrem.dispose();
+})();
+
+
+/* =========================================================================
+   CAMERA CONTROLS
+   ========================================================================= */
+
+const orbit = new THREE.OrbitControls(camera, renderer.domElement);
+
+orbit.enableDamping = true;
+orbit.dampingFactor = 0.08;
+
+/*  Frame the whole engine, heads and cams included.  */
+orbit.target.set(13, -14, 0);
+
+
+/* =========================================================================
+   LIGHTING
+   ========================================================================= */
+
+const keyLight = new THREE.DirectionalLight(0xfff2df, 0.95);
+keyLight.position.set(150, 200, 150);
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xcfe0ff, 0.35);
+fillLight.position.set(-150, 100, -150);
+scene.add(fillLight);
+
+scene.add(new THREE.AmbientLight(0x22262e));
+
+/*  A dark polished floor for the engine to sit on.  */
+const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(1600, 1600),
+    new THREE.MeshStandardMaterial({
+        color: 0x07080b,
+        metalness: 0.1,
+        roughness: 0.62,
+        envMapIntensity: 0.22
+    })
+);
+
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -(HALF.z + 6);
+
+scene.add(floor);
+
+/*
+    Stand.  A propeller's disc is taller than the engine and hangs below
+    the crank axis, so the floor has to drop under the lowest blade tip or
+    the blade passes through it and gets cut off by the floor.  The block
+    keeps its feet down on the stand instead of hovering.
+
+    Both are fitted to the current prop radius in fitPropClearance().
+*/
+const CRANK_AXIS_Y = stlZ(CRANK_Z);
+
+const stand = new THREE.Mesh(
+    new THREE.BoxGeometry(BLOCK.x + 10, 1, BLOCK.y + 10),
+    new THREE.MeshStandardMaterial({
+        color: 0x090b0e,
+        metalness: 0.2,
+        roughness: 0.55,
+        envMapIntensity: 0.35
+    })
+);
+
+scene.add(stand);
+
+function fitPropClearance(propRadius) {
+
+    /*  The more negative of the two, i.e. whichever is lower.  */
+    const floorY = Math.min(-(HALF.z + 6), CRANK_AXIS_Y - propRadius - 6);
+
+    const top = -HALF.z - 0.5;
+    const height = Math.max(1, top - floorY);
+
+    floor.position.y = floorY;
+
+    stand.geometry.dispose();
+    stand.geometry = new THREE.BoxGeometry(BLOCK.x + 10, height, BLOCK.y + 10);
+    stand.position.y = (top + floorY) / 2;
+}
+
+
+/* =========================================================================
+   CUTAWAY
+   ========================================================================= */
+
+/*
+    Cutaway plane, eating into the engine from the camera side.
+
+    Its travel is measured off the assembled engine rather than guessed.
+    The old code parked it at Z +50 and swept to -50, but the block alone
+    spans +/-47.7, so the travel bounds are taken from the geometry itself.
+*/
+const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 50);
+
+/*
+    Measure the whole engine in world space and return the two plane
+    positions that mean "clear of everything" and "past everything".
+
+    Clipping planes are world-space, so re-measuring on each change keeps
+    this correct even after the Block Rot sliders have moved the engine.
+    The block's own STL half-depth is folded in as a floor, so the parked
+    position is right even before the STLs have finished loading.
+*/
+function cutTravel() {
+
+    engineGroup.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(engineGroup);
+
+    const zMax = isFinite(box.max.z) ? Math.max(box.max.z, HALF.y) : HALF.y;
+    const zMin = isFinite(box.min.z) ? Math.min(box.min.z, -HALF.y) : -HALF.y;
+
+    return { near: zMax + 6, far: zMin - 6 };
+}
+
+/*  0 = untouched, 100 = sliced away entirely.  */
+function applyCutout(value) {
+
+    const travel = cutTravel();
+
+    clipPlane.constant =
+        travel.near + (travel.far - travel.near) * (Number(value) / 100);
+}
+
+/*
+    Parked, and parked OUTSIDE THE WORLD.
+
+    The plane keeps what satisfies dot(n, p) + constant >= 0, and n is
+    (0, 0, -1), so it keeps z <= constant: a big constant cuts nothing.
+
+    Why not just call applyCutout(0)?  Because at start-up the engine has
+    not been built yet - both STLs are still loading - so cutTravel()
+    measures an empty group, falls back to the block's own half-depth, and
+    parks the plane at z ~ +54.  World z ~ +54 runs straight through the
+    near bank's camshafts and valve springs, which lean to z ~ +57 once the
+    banks are tilted.  So "no cutout" arrived with the top of the near bank
+    sliced off.  That is the bug this parking position fixes: it cannot
+    depend on what happens to be in the scene, or on when it is called.
+*/
+const PARKED_CLIP = 1e5;
+
+function parkCutPlane() {
+    clipPlane.constant = PARKED_CLIP;
+}
+
+
+/* =========================================================================
+   SYSTEM CUT
+
+   The reference is not a cutaway at all - it is a complete engine whose
+   case happens to be translucent.  Slicing geometry with a plane is the
+   wrong tool for that, so instead whole SYSTEMS come off the engine,
+   outermost first: the propeller, then the pipes, then the ignition, and so
+   on down to a bare crank and pistons.
+
+   The mechanism is LAYERS, not visibility, and that detail matters: the
+   animation loop writes .visible on the flame, the spark and the particle
+   streams every single frame, so any part it owns would pop straight back
+   on.  A layer the camera never looks at cannot be undone that way.
+   ========================================================================= */
+
+const SYSTEMS = {};
+
+/*  The slider's current value, so a part registered later knows.  */
+let currentCut = 0;
+
+function cutRemoved(value) {
+
+    return Math.min(
+        SYSTEM_ORDER.length,
+        Math.round(Number(value) / 100 * SYSTEM_ORDER.length)
+    );
+}
+
+/*  Every renderable under an object onto one layer or the other.  */
+function markSubtree(object, off) {
+
+    if (object.isMesh || object.isPoints || object.isLine) {
+        object.layers.set(off ? HIDDEN_LAYER : 0);
+    }
+
+    for (const child of object.children) markSubtree(child, off);
+}
+
+function sys(name, ...objects) {
+
+    (SYSTEMS[name] = SYSTEMS[name] || []).push(...objects);
+
+    /*  Every registered root remembers its own system, so a raycast that
+        lands on a mesh can walk up to find out what it hit and what to say
+        about it.  */
+    for (const object of objects) object.userData.system = name;
+
+    /*
+        Parts do NOT all exist when the slider is first read: the two STLs
+        load independently, so the block can arrive after buildEngine() has
+        already applied the cut - and then it stays on screen while
+        everything around it disappears.  Re-applying on registration is
+        what keeps a late arrival in step with the slider.
+    */
+    if (currentCut > 0) {
+
+        const index = SYSTEM_ORDER.findIndex(
+
+            spec => systemKeys(spec).includes(name)
+
+        );
+
+        if (index >= 0 && index < cutRemoved(currentCut)) {
+
+            /*
+                Marked directly, not through a scene walk: sys() is always
+                called inside an .add() argument list, so at this instant the
+                part is registered but NOT yet attached, and a walk of the
+                scene cannot reach it.  That is exactly how the block stayed
+                visible after everything around it had gone.
+            */
+            for (const object of objects) markSubtree(object, true);
+        }
+    }
+
+    return objects.length === 1 ? objects[0] : objects;
+}/*
+    Five stages, in the order the engine comes apart: the block housing
+    goes first so you are looking straight into the engine, then the
+    propeller, the pistons, the crankshaft with its rods, and finally
+    everything still bolted to the heads - valves, cams, plugs, plumbing.
+
+    The hand control drives the same five stages: one finger peels the
+    first, five fingers leave the mount bare, and a fist (no fingers)
+    puts the complete engine back.  A stage may group several registered
+    systems under one key.
+*/
+const SYSTEM_ORDER = [
+    { key: "case",   label: "engine block housing" },
+    { key: "prop",   label: "propeller" },
+    { key: "piston", label: "pistons" },
+    { key: "crank",  label: "crankshaft + conrods" },
+    { key: "ancil",  keys: ["leads", "plugs", "camsA", "camsB", "valvesA",
+                            "valvesB", "studs"],
+      label: "heads & ancillaries" }
+];
+
+/*  A stage claims either its single key or every key in its group.  */
+function systemKeys(spec) {
+    return spec.keys || [spec.key];
+}
+
+/*  Layer 1 is never enabled on the camera, so nothing on it is drawn.  */
+const HIDDEN_LAYER = 1;
+
+function applySystemCut(value) {
+
+    currentCut = Number(value);
+
+    const removed = cutRemoved(value);
+
+    const hidden = SYSTEM_ORDER.map((spec, i) => i < removed);
+
+    /*
+        Which system claims which object, outermost first.
+
+        This has to be resolved per object rather than by hiding whole
+        groups, because the systems are nested: the propeller is a child of
+        the crank group.  Hiding the crank would drag the propeller with it,
+        and - worse - un-hiding the crank would switch the propeller back on
+        behind the prop system's back.  Rebuilding the state from scratch
+        every time avoids both.
+    */
+    const claim = new Map();
+
+    for (let i = 0; i < SYSTEM_ORDER.length; i++) {
+
+        for (const key of systemKeys(SYSTEM_ORDER[i])) {
+
+            for (const object of (SYSTEMS[key] || [])) {
+
+                if (!claim.has(object)) claim.set(object, i);
+            }
+        }
+    }
+
+    function walk(object, inherited) {
+
+        const own = claim.get(object);
+        const off = inherited || (own !== undefined && hidden[own]);
+
+        if (object.isMesh || object.isPoints || object.isLine) {
+            object.layers.set(off ? HIDDEN_LAYER : 0);
+        }
+
+        for (const child of object.children) walk(child, off);
+    }
+
+    walk(scene, false);
+
+    const readout = document.getElementById("syscut");
+
+    if (!readout) return;
+
+    readout.textContent = removed === 0
+        ? "System cut: complete engine"
+        : "System cut: " +
+            SYSTEM_ORDER.slice(0, removed).map(s => s.label).join(", ") +
+            " removed";
+}
+
+/*
+    Amber translucent case, like the reference.  Clearcoat with no
+    transmission keeps it cheap and avoids needing a second render pass;
+    it is non depth-writing so everything inside stays visible.  The
+    Block See-thru slider drives its opacity.
+*/
+/*
+    Emissive is what does the work here.  Amber that is only lit by the
+    studio is a dull brown plastic; real cast resin lights up from inside,
+    and in the reference the case is clearly glowing.  Roughness down and
+    clearcoat up so the outside still reads as polished.
+*/
+const blockMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xff7400,
+    emissive: 0xff5f00,
+    emissiveIntensity: 1.0,
+    metalness: 0.0,
+    roughness: 0.06,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.06,
+    envMapIntensity: 0.45,
+    clippingPlanes: [clipPlane],
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false
+});
+
+/*
+    Machined finish.
+
+    Every metal part was a flat colour with one roughness number, which is
+    why they all read as the same plastic chrome no matter which part you
+    looked at.  Real machined metal is banded: turning marks around the
+    circumference, and the roughness varies across them, so the highlights
+    break up instead of sliding about as one sheet.
+
+    The marks run along u, the direction that wraps a cylinder, which is
+    what a lathe leaves.  Drawn into a canvas and used as a roughness map
+    rather than a colour map: on metal it is the roughness that shows.
+*/
+function makeMachinedCanvas(size) {
+
+    const canvas = document.createElement("canvas");
+
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext("2d");
+
+    let seed = 90210;
+
+    function rnd() {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+    }
+
+    ctx.fillStyle = "rgb(170,170,170)";
+    ctx.fillRect(0, 0, size, size);
+
+    /*  Broad bands first, so the finish is not a uniform sheen.  */
+    for (let i = 0; i < 16; i++) {
+
+        const y = rnd() * size;
+        const v = rnd() < 0.5 ? 255 : 20;
+
+        ctx.fillStyle = "rgba(" + v + "," + v + "," + v + "," +
+            (0.06 + rnd() * 0.16).toFixed(3) + ")";
+
+        ctx.fillRect(0, y, size, 6 + rnd() * 44);
+    }
+
+    /*  Turning marks: cut in the direction that wraps the part.  */
+    for (let i = 0; i < 300; i++) {
+
+        const y = rnd() * size;
+        const light = rnd() < 0.5;
+
+        ctx.strokeStyle = light
+            ? "rgba(255,255,255," + (0.08 + rnd() * 0.5).toFixed(3) + ")"
+            : "rgba(24,24,24," + (0.08 + rnd() * 0.5).toFixed(3) + ")";
+
+        ctx.lineWidth = 0.8 + rnd() * 4.0;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.stroke();
+    }
+
+    /*  Softer mottling, as if the cut were not perfectly even.  */
+    for (let i = 0; i < 60; i++) {
+
+        const x = rnd() * size;
+        const y = rnd() * size;
+        const r = 30 + rnd() * 150;
+
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        const v = rnd() < 0.5 ? 255 : 20;
+
+        g.addColorStop(0, "rgba(" + v + "," + v + "," + v + ",0.16)");
+        g.addColorStop(1, "rgba(" + v + "," + v + "," + v + ",0)");
+
+        ctx.fillStyle = g;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+
+    /*  Fine grain, so no two pixels are identical.  */
+    for (let i = 0; i < size * 10; i++) {
+
+        const v = rnd() < 0.5 ? 255 : 40;
+
+        ctx.fillStyle = "rgba(" + v + "," + v + "," + v + "," +
+            (0.05 + rnd() * 0.22).toFixed(3) + ")";
+
+        ctx.fillRect(rnd() * size, rnd() * size, 1, 1 + rnd() * 2);
+    }
+
+    return canvas;
+}
+
+const machinedTexture = new THREE.CanvasTexture(makeMachinedCanvas(1024));
+
+machinedTexture.wrapS = THREE.RepeatWrapping;
+machinedTexture.wrapT = THREE.RepeatWrapping;
+machinedTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+/*
+    Tile it.  A single 1024 tile stretched over a whole bore or crank pin
+    makes the turning marks metres wide, which reads as a smear rather than
+    as a machined finish.  Six tiles down a part and three around it puts
+    the marks at roughly the right pitch.
+*/
+machinedTexture.repeat.set(3, 6);
+
+
+const springMaterial = new THREE.MeshStandardMaterial({
+    color: 0xb9c1c9,
+    metalness: 1.0,
+    roughness: 0.46,
+    roughnessMap: machinedTexture,
+    clippingPlanes: [clipPlane]
+});
+
+const ceramicMaterial = new THREE.MeshStandardMaterial({
+    color: 0xe9e3d4,
+    metalness: 0.05,
+    roughness: 0.55,
+    clippingPlanes: [clipPlane]
+});
+
+/*
+    Plug leads.  Real ones are black rubber, but against a near black
+    studio a black lead is invisible.  The reference engine runs a
+    yellow ignition loom, so these are that same yellow: right for the
+    look, and impossible to lose against the background.
+*/
+const leadMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd8a017,
+    metalness: 0.25,
+    roughness: 0.44,
+    envMapIntensity: 1.1,
+    clippingPlanes: [clipPlane]
+});
+
+/*  Rubber boot.  Matte and dark, so it reads as a different material from
+    the metal around it rather than as one more turned shaft.  */
+const bootMaterial = new THREE.MeshStandardMaterial({
+    color: 0x14161a,
+    metalness: 0.0,
+    roughness: 0.82,
+    envMapIntensity: 0.6,
+    clippingPlanes: [clipPlane]
+});
+
+/*
+    Material for the head studs - the one thing still bolted to the
+    outside of the heads.
+*/
+const housingMaterial = new THREE.MeshStandardMaterial({
+    color: 0xb4bcc4,
+    metalness: 1.0,
+    roughness: 0.46,
+    roughnessMap: machinedTexture,
+    clippingPlanes: [clipPlane]
+});
+
+const brassMaterial = new THREE.MeshStandardMaterial({
+    color: 0xc19a2b,
+    metalness: 1.0,
+    roughness: 0.3,
+    envMapIntensity: 1.2,
+    clippingPlanes: [clipPlane]
+});
+
+const pistonMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd6dce2,
+    metalness: 1.0,
+    roughness: 0.34,
+    roughnessMap: machinedTexture,
+    clippingPlanes: [clipPlane],
+    side: THREE.DoubleSide
+});
+
+const steelMaterial = new THREE.MeshStandardMaterial({
+    color: 0xccd3da,
+    metalness: 1.0,
+    roughness: 0.38,
+    roughnessMap: machinedTexture,
+    clippingPlanes: [clipPlane]
+});
+
+const rodMaterial = new THREE.MeshStandardMaterial({
+    color: 0xc6ced6,
+    metalness: 1.0,
+    roughness: 0.4,
+    roughnessMap: machinedTexture,
+    clippingPlanes: [clipPlane]
+});
+
+const jointMaterial = new THREE.MeshStandardMaterial({
+    color: 0x9aa2aa,
+    metalness: 1.0,
+    roughness: 0.45,
+    roughnessMap: machinedTexture,
+    clippingPlanes: [clipPlane]
+});
+
+/*
+    Chrome wants the studio's highlights, not a uniform bath of light.
+    Pushing envMapIntensity above 1 keeps the polished parts bright and
+    streaky against the now-dark room, which is what sells them as metal.
+    The amber case gets less, so it stays saturated instead of bleaching.
+*/
+/*  Piston rings read as dark banding, not as bright metal.  */
+const ringMaterial = new THREE.MeshStandardMaterial({
+    color: 0x2a2d33,
+    metalness: 0.75,
+    roughness: 0.42,
+    envMapIntensity: 0.8,
+    clippingPlanes: [clipPlane]
+});
+
+/*  Crankshaft counterweights: cast steel, darker than the journals.  */
+const counterweightMaterial = new THREE.MeshStandardMaterial({
+    color: 0x9aa1a9,
+    metalness: 0.95,
+    roughness: 0.42,
+    roughnessMap: machinedTexture,
+    envMapIntensity: 1.2,
+    clippingPlanes: [clipPlane]
+});
+
+[   pistonMaterial, rodMaterial, steelMaterial, jointMaterial,
+    springMaterial
+].forEach(m => { m.envMapIntensity = 1.4; });
+
+/*
+    The plane slice is retired.  Park it clear of the engine for good, so
+    nothing is ever half-cut, and drive the system cut instead.
+*/
+parkCutPlane();
+
+document.getElementById("cutSystems").addEventListener("input", e => {
+    applySystemCut(e.target.value);
+});
+
+applySystemCut(document.getElementById("cutSystems").value);
+
+/*
+    Peel one part at a time.  The slider is continuous but the stages are
+    not, so the buttons snap it to the next whole stage rather than nudging
+    it by a fixed number the reader has to work out.
+*/
+function peel(direction) {
+
+    const slider = document.getElementById("cutSystems");
+    const stages = SYSTEM_ORDER.length;
+    const step = 100 / stages;
+
+    const index = Math.max(
+        0,
+        Math.min(stages, Math.round(Number(slider.value) / step) + direction)
+    );
+
+    slider.value = Math.round(index * step);
+
+    applySystemCut(slider.value);
+}
+
+document.getElementById("peelNext")
+    .addEventListener("click", () => peel(1));
+
+document.getElementById("peelBack")
+    .addEventListener("click", () => peel(-1));
+
+/*
+    Block See-thru: 100 is opaque metal (depth-writing and selectable),
+    0 is the case gone entirely - a pure x-ray view of the internals.
+    The default is 100, so the engine opens as solid machinery; drag the
+    slider down when you want to see inside.
+*/
+document.getElementById("seeThru").addEventListener("input", e => {
+
+    const opacity = Number(e.target.value) / 100;
+
+    blockMaterial.opacity = opacity;
+    blockMaterial.visible = opacity > 0.004;
+
+    /*  Fully opaque metal should depth-write again.  */
+    blockMaterial.depthWrite = opacity > 0.98;
+});
+
+/*
+    Fire it once so the material starts on whatever the slider is set to,
+    rather than on a hand-written duplicate of that number.
+*/
+document.getElementById("seeThru").dispatchEvent(new Event("input"));
+
+/*
+    The glow is a fixed part of the look now: only genuinely bright pixels
+    bleed (the amber case, the flame, the spark), so there is no slider for
+    it - turn it up by making something worth glowing.
+*/
+bloomPass.strength = bloomDefault;
+
+
+/* =========================================================================
+   ENGINE BLOCK
+   =========================================================================
+   geo.center() puts the block at the world origin, so every STL-space
+   coordinate must be shifted by half the block size to land on it.
+   ========================================================================= */
+
+const loader = new THREE.STLLoader();
+
+let engineBlock = null;
+
+loader.load(
+    "engine_block.stl",
+
+    geo => {
+        geo.center();
+        geo.computeVertexNormals();
+
+        engineBlock = new THREE.Mesh(geo, blockMaterial);
+        aligned.add(sys("case", engineBlock));
+    },
+
+    undefined,
+
+    error => console.error("Failed to load engine_block.stl", error)
+);
+
+/*  STL space -> world space  */
+function stlX(x) { return x - HALF.x; }
+function stlY(y) { return y - HALF.y; }
+function stlZ(z) { return z - HALF.z; }
+
+/*  Bank tilt in radians: bank A leans +tilt, bank B leans PI - tilt.  */
+function bankAngle(bank) {
+    const t = THREE.MathUtils.degToRad(BANK_TILT_DEG);
+    return bank > 0 ? t : Math.PI - t;
+}
+
+/* =========================================================================
+   PISTON GEOMETRY
+   =========================================================================
+   piston.stl holds two separate shells: the head (a disc) and its
+   connecting rod.  We only want the head, so split the geometry into
+   connected components and keep the chunkiest one.  The rod is dropped,
+   which is what hides the "big white disc + rod" that the block was
+   showing through before.
+   ========================================================================= */
+
+function splitByComponent(geo, tol) {
+
+    tol = tol || 1e-3;
+
+    const pos = geo.attributes.position;
+    const count = pos.count;
+
+    const parent = [];
+    const idOf = new Map();
+    const vertexId = [];
+
+    const find = a => {
+        while (parent[a] !== a) {
+            parent[a] = parent[parent[a]];
+            a = parent[a];
+        }
+        return a;
+    };
+
+    const union = (a, b) => {
+        a = find(a);
+        b = find(b);
+        if (a !== b) parent[b] = a;
+    };
+
+    for (let i = 0; i < count; i++) {
+
+        const k =
+            Math.round(pos.getX(i) / tol) + "," +
+            Math.round(pos.getY(i) / tol) + "," +
+            Math.round(pos.getZ(i) / tol);
+
+        let id = idOf.get(k);
+
+        if (id === undefined) {
+            id = parent.length;
+            parent.push(id);
+            idOf.set(k, id);
+        }
+
+        vertexId.push(id);
+    }
+
+    for (let t = 0; t < count; t += 3) {
+        union(vertexId[t], vertexId[t + 1]);
+        union(vertexId[t], vertexId[t + 2]);
+    }
+
+    const groups = new Map();
+
+    for (let t = 0; t < count; t += 3) {
+
+        const root = find(vertexId[t]);
+
+        if (!groups.has(root)) groups.set(root, []);
+        groups.get(root).push(t);
+    }
+
+    const out = [];
+
+    for (const tris of groups.values()) {
+
+        const arr = new Float32Array(tris.length * 9);
+        let o = 0;
+
+        for (const t of tris) {
+            for (let k = 0; k < 3; k++) {
+                arr[o++] = pos.getX(t + k);
+                arr[o++] = pos.getY(t + k);
+                arr[o++] = pos.getZ(t + k);
+            }
+        }
+
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+        g.computeVertexNormals();
+
+        out.push(g);
+    }
+
+    return out;
+}
+
+
+/*  Pick the round stump (largest smallest-dimension) = the piston head. */
+function pickPistonHead(parts) {
+
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const g of parts) {
+
+        g.computeBoundingBox();
+
+        const s = g.boundingBox.getSize(new THREE.Vector3());
+
+        const dims = [s.x, s.y, s.z].sort((a, b) => a - b);
+        const score = dims[0];              // rod is wafer thin on one axis
+
+        if (score > bestScore) {
+            bestScore = score;
+            best = g;
+        }
+    }
+
+    return best;
+}
+
+
+/*  Built once the STL arrives, then cloned per cylinder. */
+let pistonHeadGeometry = null;
+
+loader.load(
+    "piston.stl",
+
+    geo => {
+
+        const parts = splitByComponent(geo);
+        const head = pickPistonHead(parts);
+
+        head.center();
+        pistonHeadGeometry = head;
+
+        buildEngine();
+    },
+
+    undefined,
+
+    error => console.error("Failed to load piston.stl", error)
+);
+
+
+/* =========================================================================
+   ENGINE ASSEMBLY
+   =========================================================================
+   crankAnchor sits on the crank axis.  The bore axis of every cylinder is
+   the local +Y line through that anchor, so simply rotating a bank about X
+   aims its bores at the crank - exactly how a real V engine is laid out.
+
+       crankAnchor (at crank axis)
+         |-- bankA  rotation.x = +tilt   (cylinders 1, 2)
+         |-- bankB  rotation.x = -tilt   (cylinders 3, 4)
+         |-- crankShaft / pins / rods
+
+   Inside a bank the bore axis is local +Y, so every part is laid out along
+   its local Y and the tilt is inherited automatically.
+   ========================================================================= */
+
+const crankAnchor = new THREE.Group();
+aligned.add(crankAnchor);
+
+const bankA = new THREE.Group();
+const bankB = new THREE.Group();
+
+crankAnchor.add(bankA);
+crankAnchor.add(bankB);
+
+
+/* -------------------------------------------------------------------------
+   CYLINDER TABLE
+
+   pin    : crank angle offset   (0 or 180 deg - half the cylinders rise
+            together, which is what makes a 4 cylinder crank work)
+   cycle  : 720 deg four-stroke offset, chosen so the firing order comes
+            out 1-3-4-2  (indices 0, 2, 3, 1)
+   ------------------------------------------------------------------------- */
+
+/*
+    All EIGHT cylinders, one per bore the block was measured to have.
+
+    bank   : +1 = deck A (+Y side), -1 = deck B (-Y side)
+    x      : which of the four bores along the crank axis
+    pin    : CRANKPIN angle, degrees.  Both cylinders that share a bore X
+             share this value, so they genuinely share a throw.  The layout
+             is cross-plane: 0, 90, 270, 180 - the classic V8 crank.
+    cycle  : 720 degree four-stroke offset, degrees.
+
+    A 90 degree V means the two pistons on one crankpin reach TDC 90 deg
+    apart, so with the cross-plane crank the eight firings fall evenly at
+    ~90 deg intervals.  Working them out from the pin angles gives the
+    firing order 1-2-6-3-4-5-7-8.
+*/
+const CYLINDERS = [
+
+    { bank:  1, x: CYL_X[0], pin:   0, cycle: 675.4 },   // fires 1st
+    { bank: -1, x: CYL_X[0], pin:   0, cycle: 584.6 },   // fires 2nd
+    { bank:  1, x: CYL_X[1], pin:  90, cycle: 405.4 },   // fires 4th
+    { bank: -1, x: CYL_X[1], pin:  90, cycle: 314.6 },   // fires 5th
+    { bank:  1, x: CYL_X[2], pin: 270, cycle: 225.4 },   // fires 6th
+    { bank: -1, x: CYL_X[2], pin: 270, cycle: 494.6 },   // fires 3rd
+    { bank:  1, x: CYL_X[3], pin: 180, cycle: 135.4 },   // fires 7th
+    { bank: -1, x: CYL_X[3], pin: 180, cycle:  44.6 }    // fires 8th
+];
+
+const FIRING_ORDER = "1-2-6-3-4-5-7-8";
+
+
+/*  Valve geometry  */
+/*
+    A poppet valve: sealing disc at the bottom, stem rising into the head,
+    a coil spring and a retainer on top.  The group origin is the valve
+    head, so the whole assembly slides down by the lift when it opens.
+
+    (The previous version had the stem hanging BELOW the head, which read
+    as an upside down valve once the banks were tilted correctly.)
+*/
+function createValve(color) {
+
+    const group = new THREE.Group();
+
+    const steel = new THREE.MeshStandardMaterial({
+        color: 0xd8dee6,
+        metalness: 1.0,
+        roughness: 0.11,
+        clippingPlanes: [clipPlane]
+    });
+
+    /*  Chamfered disc, so it reads as a valve face.  */
+    const head = new THREE.Mesh(
+        new THREE.CylinderGeometry(4.3, 2.4, 3.6, 40),
+        steel
+    );
+    head.position.y = 0.6;
+
+    /*  Stem, rising into the head casting.  */
+    const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(1, 1, 26, 24),
+        steel
+    );
+    stem.position.y = 14.6;
+
+    /*  Retainer where the cam presses down.  */
+    const retainer = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.5, 2.5, 1.1, 32),
+        steel
+    );
+    retainer.position.y = 26.4;
+
+    group.add(head, stem, retainer);
+
+    /*  Colour cue, so intake and exhaust still read at a glance.  */
+    const band = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.3, 1.3, 2.2, 12),
+        new THREE.MeshStandardMaterial({
+            color: color,
+            metalness: 0.35,
+            roughness: 0.4,
+            clippingPlanes: [clipPlane]
+        })
+    );
+    band.position.y = 4.4;
+
+    group.add(band);
+
+    /*  Valve spring, wrapped around the stem.  */
+    const spring = createSpring(15, 3.3, 7, 0.5, springMaterial);
+    spring.position.y = 9.6;
+
+    group.add(spring);
+
+    return group;
+}
+
+
+/*  A coil spring swept along a helix and thickened into a tube.  */
+function createSpring(height, radius, coils, wire, material) {
+
+    const points = [];        const steps = Math.round(coils * 26);
+
+    for (let i = 0; i <= steps; i++) {
+
+        const t = i / steps;
+        const angle = t * coils * Math.PI * 2;
+
+        points.push(new THREE.Vector3(
+            Math.cos(angle) * radius,
+            t * height,
+            Math.sin(angle) * radius
+        ));
+    }
+
+    return new THREE.Mesh(
+        new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3(points), steps, wire, 6, false
+        ),
+        material
+    );
+}
+
+
+/*
+    Combustion, drawn as a cluster of additive blobs in the same
+    multi-colour palette as the reference rather than one orange ball.
+*/
+const FLAME_COLOURS = [
+    0xff2d6f, 0xff8a3d, 0xffe86b, 0x62ffd0, 0x5aa8ff, 0xb46bff
+];
+
+function createFlame() {
+
+    const group = new THREE.Group();
+
+    const blobs = [];
+
+    for (let i = 0; i < FLAME_COLOURS.length; i++) {
+
+        const blob = new THREE.Mesh(
+            new THREE.SphereGeometry(1, 12, 10),
+            new THREE.MeshBasicMaterial({
+                color: FLAME_COLOURS[i],
+                transparent: true,
+                opacity: 0,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+                clippingPlanes: [clipPlane]
+            })
+        );
+
+        blob.userData.dir = new THREE.Vector3(
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1
+        ).normalize();
+
+        blob.userData.reach = 2.6 + Math.random() * 3.4;
+        blob.userData.rate = 0.7 + Math.random() * 1.5;
+        blob.userData.size = 0.5 + Math.random() * 0.6;
+
+        group.add(blob);
+        blobs.push(blob);
+    }
+
+    group.userData.blobs = blobs;
+
+    return group;
+}
+
+
+/* -------------------------------------------------------------------------
+   INTAKE / EXHAUST FLOW
+
+   Each cylinder gets two particle streams: a cyan one for the air + fuel
+   charge being drawn down past the intake valve, and an orange one for the
+   burnt gas being pushed out past the exhaust valve.  Both are children of
+   the cylinder group, so they inherit the bank tilt for free.
+   ------------------------------------------------------------------------- */
+
+function createStream(color) {
+
+    const geo = new THREE.BufferGeometry();
+
+    geo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(new Float32Array(STREAM_COUNT * 3), 3)
+    );
+
+    const mat = new THREE.PointsMaterial({
+        color: color,
+        size: 3.2,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        clippingPlanes: [clipPlane]
+    });
+
+    const stream = new THREE.Points(geo, mat);
+
+    stream.frustumCulled = false;
+    stream.visible = false;
+
+    return stream;
+}
+
+
+/*
+    Slide one stream's particles from y0 to y1.  "progress" is how far
+    through the stroke we are, so the gas visibly tracks the piston.  The
+    cloud spreads out in the middle of its travel and pinches at each end,
+    which reads as flow through a valve rather than a sliding rod.
+*/
+function updateStream(stream, jitter, y0, y1, progress, opacity, xCentre) {
+
+    stream.visible = opacity > 0.02;
+
+    if (!stream.visible) return;
+
+    stream.material.opacity = opacity * 0.95;
+
+    const arr = stream.geometry.attributes.position.array;
+
+    for (let j = 0; j < STREAM_COUNT; j++) {
+
+        /*  Stagger the particles so they enter one after another.  */
+        let u = progress * 1.45 - j / STREAM_COUNT;
+        u = Math.max(0, Math.min(1, u));
+
+        const spread = 4.6 * jitter[j * 3 + 2] * Math.sin(Math.PI * u);
+
+        arr[j * 3]     = xCentre + jitter[j * 3] * spread;
+        arr[j * 3 + 1] = y0 + (y1 - y0) * u;
+        arr[j * 3 + 2] = jitter[j * 3 + 1] * spread;
+    }
+
+    stream.geometry.attributes.position.needsUpdate = true;
+}
+
+
+/*  Filled in by buildEngine()  */
+const parts = [];
+
+
+/* -------------------------------------------------------------------------
+   CONNECTING ROD AND COUNTERWEIGHT
+   -------------------------------------------------------------------------
+   The rod is driven by stretching a unit height mesh between the two pins
+   (see the animation loop), so the shank is built exactly one unit long
+   and is only ever scaled along Y.  That leaves its cross-section at its
+   real size, which matters: scaling the section too would make the rod
+   visibly pulse as the crank turned.
+
+   The ends are fixed size and simply parked on the pins, because a big
+   end does not get longer when the rod does.
+   ------------------------------------------------------------------------- */
+
+/*  I section, extruded along Y and centred, so scale.y can stretch it.  */
+function createRodShankGeometry() {
+
+    const halfW  = 0.85;    /* across, along the crank axis     */
+    const flange = 1.45;    /* out to the flanges, fore and aft */
+    const web    = 0.26;
+    const lip    = 0.5;
+
+    const shape = new THREE.Shape();
+
+    shape.moveTo(-halfW, -flange);
+    shape.lineTo( halfW, -flange);
+    shape.lineTo( halfW, -flange + lip);
+    shape.lineTo( web,   -flange + lip);
+    shape.lineTo( web,    flange - lip);
+    shape.lineTo( halfW,  flange - lip);
+    shape.lineTo( halfW,  flange);
+    shape.lineTo(-halfW,  flange);
+    shape.lineTo(-halfW,  flange - lip);
+    shape.lineTo(-web,    flange - lip);
+    shape.lineTo(-web,   -flange + lip);
+    shape.lineTo(-halfW, -flange + lip);
+    shape.closePath();
+
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: 1,
+        bevelEnabled: true,
+        curveSegments: 48,
+        bevelSize: 0.07,
+        bevelThickness: 0.07,
+        bevelSegments: 2,
+        steps: 1
+    });
+
+    /*  Shape lies in XY and extrudes along Z, so turn the extrusion onto
+        Y - the rod's length - leaving the section in XZ.  */
+    geometry.rotateX(-Math.PI / 2);
+    geometry.center();
+
+    return geometry;
+}
+
+/*  Ring with a bore, extruded along the crank axis.  */
+function createRingGeometry(outer, bore, depth, bevel) {
+
+    const shape = new THREE.Shape();
+
+    shape.absarc(0, 0, outer, 0, Math.PI * 2, false);
+
+    const hole = new THREE.Path();
+
+    hole.absarc(0, 0, bore, 0, Math.PI * 2, true);
+
+    shape.holes.push(hole);
+
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: depth,
+        bevelEnabled: true,
+        curveSegments: 48,
+        bevelSize: bevel,
+        bevelThickness: bevel,
+        bevelSegments: 2,
+        steps: 1
+    });
+
+    /*  Bored through, but along X rather than Z.  */
+    geometry.rotateY(Math.PI / 2);
+    geometry.center();
+
+    return geometry;
+}
+
+/*
+    A cylinder head stud, sitting on the deck with its base at y = 0 and
+    its thread standing up the bore.  Four of these per cylinder are what
+    the head casting would bolt down onto, and in a cutaway they are most
+    of what says "casting" rather than "shell".
+*/
+function createHeadStud() {
+
+    const stud = new THREE.Group();
+
+    const shank = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.55, 1.55, 7.0, 20),
+        steelMaterial
+    );
+    shank.position.y = 3.5;
+
+    const washer = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.7, 2.7, 0.85, 24),
+        steelMaterial
+    );
+    washer.position.y = 0.45;
+
+    /*  Six flats, which is exactly what a hex nut is.  */
+    const nut = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.85, 2.85, 2.6, 6),
+        steelMaterial
+    );
+    nut.position.y = 2.3;
+
+    const dome = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.35, 1.55, 1.4, 16),
+        steelMaterial
+    );
+    dome.position.y = 4.3;
+
+    stud.add(shank, washer, nut, dome);
+
+    return stud;
+}
+
+/*
+    A main bearing bulkhead: the web that carries the crankshaft between
+    two throws, with its cap bolts underneath.  In the reference these are
+    the castings the crank visibly hangs from.
+
+    A ring around the JOURNAL, not the pin - the journal is on the crank
+    axis, so these sit still while the counterweights sweep either side of
+    them.  That is why they go at the midpoints between bores rather than
+    on the throws.
+*/
+function createMainBulkhead() {
+
+    const group = new THREE.Group();
+
+    group.add(new THREE.Mesh(createRingGeometry(11.5, 6.7, 8.4, 0.5), steelMaterial));
+
+    for (const side of [-1, 1]) {
+
+        /*  Along STL Z, i.e. straight down the block.  */
+        const bolt = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.95, 0.95, 7.0, 14),
+            steelMaterial
+        );
+
+        bolt.rotation.x = Math.PI / 2;
+        bolt.position.set(side * 3.6, 0, -8.6);
+        group.add(bolt);
+
+        const head = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.7, 1.7, 1.3, 6),
+            steelMaterial
+        );
+
+        head.rotation.x = Math.PI / 2;
+        head.position.set(side * 3.6, 0, -12.4);
+        group.add(head);
+    }
+
+    return group;
+}
+
+/*
+    Big end: an eye around the crank pin, plus the two cap bolts.  The
+    bolts run along the rod's own axis and sit either side of the pin in
+    the rod's swinging plane, which is where a real cap splits.
+*/
+function createRodBigEnd() {
+
+    const group = new THREE.Group();
+
+    group.add(new THREE.Mesh(createRingGeometry(5.4, 3.15, 5.4, 0.32), rodMaterial));
+
+    for (const side of [-1, 1]) {
+
+        const bolt = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.55, 0.55, 8.6, 12),
+            steelMaterial
+        );
+
+        bolt.position.set(0, -1.4, side * 4.25);
+        group.add(bolt);
+
+        const head = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.05, 1.05, 0.9, 6),
+            steelMaterial
+        );
+
+        head.position.set(0, -5.3, side * 4.25);
+        group.add(head);
+    }
+
+    return group;
+}
+
+function createRodSmallEnd() {
+
+    return new THREE.Mesh(createRingGeometry(3.5, 1.85, 3.9, 0.24), rodMaterial);
+}
+
+/*
+    Counterweight: a crescent reaching from the main journal out to just
+    past the crank pin's orbit.  Built with its lobe along +Y, so aiming it
+    away from the pin is a single rotation about X.
+*/
+function createCounterweightGeometry(outer, inner, halfAngle, thickness) {
+
+    const steps = 44;
+    const shape = new THREE.Shape();
+
+    for (let i = 0; i <= steps; i++) {
+
+        const t = -halfAngle + 2 * halfAngle * (i / steps);
+        const x = Math.sin(t) * outer;
+        const y = Math.cos(t) * outer;
+
+        if (i === 0) shape.moveTo(x, y);
+        else shape.lineTo(x, y);
+    }
+
+    for (let i = steps; i >= 0; i--) {
+
+        const t = -halfAngle + 2 * halfAngle * (i / steps);
+
+        shape.lineTo(Math.sin(t) * inner, Math.cos(t) * inner);
+    }
+
+    shape.closePath();
+
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: thickness,
+        bevelEnabled: true,
+        curveSegments: 48,
+        bevelSize: 0.5,
+        bevelThickness: 0.5,
+        bevelSegments: 3,
+        steps: 1
+    });
+
+    /*  Extrude along the crank axis.  Only X is shifted: the arc centre has
+        to stay on the origin, since that is the crank axis.  */
+    geometry.translate(0, 0, -thickness / 2);
+    geometry.rotateY(Math.PI / 2);
+
+    return geometry;
+}
+
+
+function buildEngine() {
+
+    for (let i = 0; i < CYLINDERS.length; i++) {
+
+        const spec = CYLINDERS[i];
+        const bank = spec.bank > 0 ? bankA : bankB;
+
+        /*  Which side of the V this is, for the peel order.  */
+        const side = spec.bank > 0 ? "A" : "B";
+
+        const group = new THREE.Group();
+        group.position.x = stlX(spec.x);
+        bank.add(group);
+
+        /*  Which cylinder this group is, for the tooltips and the panel.  */
+        group.userData.cyl = i + 1;
+
+        /* ---- piston head ------------------------------------------------ */
+
+        /*  Own material per cylinder, so this piston alone can glow
+            while it is the one making power.  */
+        const piston = new THREE.Mesh(
+            pistonHeadGeometry.clone(),
+            pistonMaterial.clone()
+        );
+
+        /*  Do not rely on Material.copy() carrying the clip plane across -
+            a cloned piston that escapes the cutaway is exactly the kind
+            of half-cut engine this is meant to prevent.  */
+        piston.material.clippingPlanes = [clipPlane];
+
+        /*  piston.stl is modelled lying on its side with the axis along X.
+            Standing it up (+X -> +Y) puts it on the bore axis.            */
+        piston.rotation.z = Math.PI / 2;
+
+        /*
+            Ring pack.  piston.stl is a plain disc, and three dark rings
+            near the crown are what make it read as a piston rather than a
+            bucket.  The crown sits at +X in the mesh's own frame - that
+            end is the head shell, the rod shell joins at the other - and
+            the mesh is turned +X -> +Y to stand it up the bore.
+        */
+        for (const ringX of [5.4, 4.0, 2.6]) {
+
+            const ring = new THREE.Mesh(
+                new THREE.CylinderGeometry(9.5, 9.5, 0.9, 56),
+                ringMaterial
+            );
+
+            ring.rotation.z = Math.PI / 2;
+            ring.position.x = ringX;
+
+            piston.add(ring);
+        }
+
+        group.add(sys("piston", piston));
+
+        /* ---- valves ----------------------------------------------------- */
+
+        const intakeValve = createValve(0x4488ff);
+        const exhaustValve = createValve(0xff4444);
+
+        intakeValve.position.z = VALVE_ROW * spec.bank;
+        exhaustValve.position.z = -VALVE_ROW * spec.bank;
+
+        group.add(
+            sys("valves" + side, intakeValve),
+            sys("valves" + side, exhaustValve)
+        );
+
+        /* ---- rod (lives in the crank frame, not the tilted bank) -------- */
+
+        /*
+            Three pieces: a shank that gets stretched between the two pins,
+            and two fixed size ends parked on them.  Local +Y runs from the
+            small end up to the big end, which is why the shank is built
+            exactly one unit long.
+        */
+        const rod = new THREE.Group();
+        const rodShank = new THREE.Mesh(createRodShankGeometry(), rodMaterial);
+        const rodBig = createRodBigEnd();
+        const rodSmall = createRodSmallEnd();
+
+        rod.add(rodShank, rodBig, rodSmall);
+        crankAnchor.add(sys("crank", rod));
+
+        const crankPin = new THREE.Mesh(
+            new THREE.CylinderGeometry(3, 3, 12, 36),
+            steelMaterial
+        );
+        crankPin.rotation.z = Math.PI / 2;
+        crankAnchor.add(sys("crank", crankPin));
+
+        /*
+            One counterweight per throw, not per cylinder: the two cylinders
+            sharing a pin would otherwise put two identical meshes in exactly
+            the same place and let them fight over the depth buffer.
+        */
+        let counterweight = null;
+
+        if (spec.bank > 0) {
+
+            counterweight = new THREE.Mesh(
+                createCounterweightGeometry(
+                    13, 5.5, THREE.MathUtils.degToRad(72), 8
+                ),
+                counterweightMaterial
+            );
+
+            crankAnchor.add(sys("crank", counterweight));
+        }
+
+        /* ---- spark plug ------------------------------------------------- */
+
+        const plug = new THREE.Group();
+        plug.position.y = PLUG_BASE;
+
+        const plugShell = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.7, 2.7, 4.5, 14),
+            steelMaterial
+        );
+        plugShell.position.y = 2.25;
+
+        const plugHex = new THREE.Mesh(
+            new THREE.CylinderGeometry(3.5, 3.5, 2.6, 6),
+            steelMaterial
+        );
+        plugHex.position.y = 5.8;
+
+        const plugCeramic = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.0, 2.5, 7, 14),
+            ceramicMaterial
+        );
+        plugCeramic.position.y = 10.6;
+
+        const plugTerminal = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.9, 0.9, 2.4, 10),
+            steelMaterial
+        );
+        plugTerminal.position.y = 15.3;
+
+        plug.add(plugShell, plugHex, plugCeramic, plugTerminal);
+        group.add(sys("plugs", plug));
+
+        /* ---- head studs ------------------------------------------------- */
+
+        /*
+            On the deck lands, outside the bore (radius 9.9) but inside the
+            half bore pitch (11.55), so they clear both their own bore and
+            the next cylinder's.  All four sit above the deck, as they would
+            on the real casting.
+        */
+        for (const sx of [-8.9, 8.9]) {
+
+            for (const sz of [-8.9, 8.9]) {
+
+                const stud = createHeadStud();
+
+                stud.position.set(sx, DECK_DIST, sz);
+                group.add(sys("studs", stud));
+            }
+        }
+
+        /*  The spark itself, at the electrode inside the chamber.  */
+        const spark = new THREE.Mesh(
+            new THREE.SphereGeometry(2.3, 12, 10),
+            new THREE.MeshBasicMaterial({
+                color: 0xdff0ff,
+                transparent: true,
+                opacity: 0,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+                clippingPlanes: [clipPlane]
+            })
+        );
+
+        spark.position.y = DECK_DIST - 1.5;
+        spark.visible = false;
+        group.add(sys("plugs", spark));
+
+        /* ---- plug lead -------------------------------------------------- */
+
+        /*
+            One straight rod per plug, 10 m of it, rising until it is well
+            out of shot - no routing, no distributor run, nothing to line
+            up at the far end.
+
+            It climbs along WORLD vertical rather than along the tilted
+            bore.  The cutaway plane removes everything with Z greater than
+            its position, and the near bank's bores head +Z, so a lead
+            following the bore would be sliced off a few centimetres above
+            the plug the instant the cutout left 0 - where nothing should
+            be cut at all.  In a cylinder's own frame, world vertical is
+            (0, sin a, cos a), which rises without ever gaining Z.
+
+            The 9 degree fan is applied along local X only.  Local X is
+            world X all the way down this chain, so the fan cannot
+            introduce any Z drift either.
+        */
+        const upAngle = bankAngle(spec.bank);
+
+        const fan = THREE.MathUtils.degToRad(9) *
+            Math.sign(spec.x - BLOCK.x / 2);
+
+        const leadDir = new THREE.Vector3(
+            Math.sin(fan),
+            Math.sin(upAngle) * Math.cos(fan),
+            Math.cos(upAngle) * Math.cos(fan)
+        ).normalize();
+
+        const lead = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.6, 1.6, LEAD_LENGTH, 8, 1, true),
+            leadMaterial
+        );
+
+        lead.name = "plugLead";
+        lead.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), leadDir);
+        lead.position.set(0, PLUG_TOP, 0).addScaledVector(leadDir, LEAD_LENGTH / 2);
+
+        /*
+            Rubber boot where the lead lands on the plug terminal.  Small,
+            but it is the thing that makes a bare rod read as ignition
+            wiring rather than as a rod.
+        */
+        const boot = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.1, 2.6, 5.4, 20),
+            bootMaterial
+        );
+
+        boot.quaternion.copy(lead.quaternion);
+        boot.position.set(0, PLUG_TOP - 1.6, 0)
+            .addScaledVector(leadDir, 1.6);
+
+        group.add(sys("leads", lead), sys("leads", boot));
+
+        /* ---- flow + combustion visuals ---------------------------------- */
+
+        const intakeStream = createStream(0x66ddff);
+        const exhaustStream = createStream(0xff9944);
+
+        intakeStream.position.z = VALVE_ROW;
+        exhaustStream.position.z = -VALVE_ROW;
+
+        group.add(intakeStream, exhaustStream);
+
+        /*  Combustion, in colour.  */
+        const flame = createFlame();
+
+        flame.position.y = DECK_DIST - 7;
+        flame.visible = false;
+        group.add(flame);
+
+        /*  Per-particle random offsets, fixed for the life of the stream.  */
+        const jitter = new Float32Array(STREAM_COUNT * 3);
+
+        for (let j = 0; j < STREAM_COUNT * 3; j++) {
+            jitter[j] = Math.random() * 2 - 1;
+        }
+
+        parts.push({
+            index: i + 1,
+            spec: spec,
+            group: group,
+            piston: piston,
+            intakeValve: intakeValve,
+            exhaustValve: exhaustValve,
+            rod: rod,
+            rodShank: rodShank,
+            rodBig: rodBig,
+            rodSmall: rodSmall,
+            counterweight: counterweight,
+            crankPin: crankPin,
+            plug: plug,
+            spark: spark,
+            lead: lead,
+            intakeStream: intakeStream,
+            exhaustStream: exhaustStream,
+            flame: flame,
+            jitter: jitter,
+            pin: THREE.MathUtils.degToRad(spec.pin),
+            cycle: THREE.MathUtils.degToRad(spec.cycle)
+        });
+    }
+
+    /*  Firing order strip: one chip per cylinder, lit while that cylinder
+        is on its power stroke.  */
+    const row = document.getElementById("cylRow");
+
+    for (let i = 0; i < parts.length; i++) {
+
+        const chip = document.createElement("div");
+
+        chip.className = "cyl" + (parts[i].spec.bank < 0 ? " bankB" : "");
+        chip.innerHTML =
+            `<div class="n">${i + 1}</div><div class="s">-</div>`;
+
+        row.appendChild(chip);
+
+        parts[i].chip = chip;
+        parts[i].chipStroke = chip.children[1];
+        parts[i].chipState = "";
+    }
+
+    document.getElementById("firingOrder").textContent = FIRING_ORDER;
+
+    /*
+        The parts built above are new objects on layer 0, so re-apply the
+        cut now that they exist.
+    */
+    parkCutPlane();
+    applySystemCut(document.getElementById("cutSystems").value);
+
+    /*  Chips are clickable cylinder switches, so they need their tooltips.  */
+    refreshChips();
+}
+
+
+/*
+    No distributor.  It existed only so the plug leads had terminals to
+    land on, and the leads are now straight rods running out of the frame,
+    so anything left here would be a part with eight empty terminals.
+*/
+
+
+/* =========================================================================
+   CAMSHAFTS
+   =========================================================================
+   One intake and one exhaust cam per bank, sitting just above the valve
+   stem tips with a lobe over every valve.  Lobes turn at half crank speed,
+   as they must on a four stroke.
+   ========================================================================= */
+
+const CAMS = [];
+
+function createCamshaft(bankGroup, bankSign, rowOffset) {
+
+    const shaft = new THREE.Group();
+
+    shaft.position.set(0, CAM_L, rowOffset * bankSign);
+
+    bankGroup.add(sys(bankSign > 0 ? "camsA" : "camsB", shaft));
+
+    /*  Bare shaft.  */
+    const bare = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.7, 1.7, BLOCK.x + 30, 40),
+        steelMaterial
+    );
+
+    bare.rotation.z = Math.PI / 2;
+
+    shaft.add(bare);
+
+    /*  Lobe carrier - this is the part that actually turns.  */
+    const lobes = new THREE.Group();
+
+    shaft.add(lobes);
+
+    for (const spec of CYLINDERS) {
+
+        if (spec.bank !== bankSign) continue;
+
+        const lobe = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.5, 2.5, 3.6, 28),
+            steelMaterial
+        );
+
+        /*  Stretch the round cylinder into an egg, then lay it along X.  */
+        lobe.scale.set(1.45, 1, 1);
+        lobe.rotation.z = Math.PI / 2;
+        lobe.position.x = stlX(spec.x);
+
+        lobes.add(lobe);
+    }
+
+    /*
+        Bearing journals: the polished rings a camshaft actually runs on,
+        and the shiny bands you see along a real cam.  One between each
+        pair of lobes and one inboard of each end, and they ride in the
+        turning group because they are part of the shaft.
+    */
+    const alignedCylX = CYL_X.map(stlX);
+
+    const journalX = [
+        -(HALF.x + 5),
+        (alignedCylX[0] + alignedCylX[1]) / 2,
+        (alignedCylX[1] + alignedCylX[2]) / 2,
+        (alignedCylX[2] + alignedCylX[3]) / 2,
+        HALF.x + 5
+    ];
+
+    for (const x of journalX) {
+
+        const journal = new THREE.Mesh(
+            new THREE.CylinderGeometry(3.1, 3.1, 4.2, 32),
+            steelMaterial
+        );
+
+        journal.rotation.z = Math.PI / 2;
+        journal.position.x = x;
+
+        lobes.add(journal);
+    }
+
+    /*
+        Cam caps: the split bearings that clamp the cam down to the head,
+        each with its two bolts.
+
+        These go on `shaft`, NOT on `lobes`.  `lobes` is the group that
+        turns, so a cap added there would be a bearing that rotates with
+        the shaft it is holding - the whole top end would visibly spin.
+        The journals ride in the turning group; the caps hold them still.
+    */
+    for (const x of journalX) {
+
+        const cap = new THREE.Group();
+
+        /*  Half a torus, arched over the cam: arc 0..pi sweeps the +Y
+            half once it is turned to run along X.  */
+        const arch = new THREE.Mesh(
+            new THREE.TorusGeometry(3.75, 1.3, 14, 30, Math.PI),
+            steelMaterial
+        );
+
+        arch.rotation.y = Math.PI / 2;
+        cap.add(arch);
+
+        for (const side of [-1, 1]) {
+
+            /*  Straight down into the head, from the foot of the arch.  */
+            const bolt = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.68, 0.68, 4.6, 14),
+                steelMaterial
+            );
+
+            bolt.position.set(0, -2.3, side * 4.15);
+            cap.add(bolt);
+
+            const nut = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.15, 1.15, 1.0, 6),
+                steelMaterial
+            );
+
+            nut.position.set(0, 0.45, side * 4.15);
+            cap.add(nut);
+        }
+
+        cap.position.x = x;
+        shaft.add(cap);
+    }
+
+    /*  Sprockets on the ends.  */
+    for (const end of [-1, 1]) {
+
+        const sprocket = new THREE.Mesh(
+            new THREE.CylinderGeometry(9, 9, 2.6, 56),
+            steelMaterial
+        );
+
+        sprocket.rotation.z = Math.PI / 2;
+        sprocket.position.x = end * (HALF.x + 13);
+
+        shaft.add(sprocket);
+    }
+
+    CAMS.push(lobes);
+}
+
+/*  The intake row faces the valley, the exhaust row faces outboard.  */
+createCamshaft(bankA,  1,  5.4);
+createCamshaft(bankA,  1, -5.4);
+createCamshaft(bankB, -1,  5.4);
+createCamshaft(bankB, -1, -5.4);
+
+
+/* =========================================================================
+   CRANKSHAFT
+   ========================================================================= */
+
+const crankShaftGroup = new THREE.Group();
+crankAnchor.add(sys("crank", crankShaftGroup));
+
+const crankShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(6, 6, BLOCK.x + 30, 56),
+    steelMaterial
+);
+crankShaft.rotation.z = Math.PI / 2;
+crankShaftGroup.add(crankShaft);
+
+/*
+    Bulkheads, between the throws and at both ends, so the crank reads as
+    being carried by the block rather than floating inside it.
+*/
+(function buildBulkheads() {
+
+    const pitch = CYL_X[1] - CYL_X[0];
+    const positions = [CYL_X[0] - pitch / 2];
+
+    for (let i = 0; i < CYL_X.length - 1; i++) {
+        positions.push((CYL_X[i] + CYL_X[i + 1]) / 2);
+    }
+
+    positions.push(CYL_X[CYL_X.length - 1] + pitch / 2);
+
+    for (const x of positions) {
+
+        const web = createMainBulkhead();
+
+        web.position.set(stlX(x), 0, 0);
+        crankAnchor.add(sys("crank", web));
+    }
+})();
+
+/*
+    Ring gear.  The reference's big wheel is a toothed one, so the flywheel
+    is a real gear profile rather than a smooth disc: a closed polygon
+    walked tooth by tooth and extruded.
+*/
+function createGearGeometry(radius, teeth, depth) {
+
+    const shape = new THREE.Shape();
+    const step = Math.PI * 2 / teeth;
+    const root = radius * 0.88;
+
+    let first = true;
+
+    function add(r, a) {
+
+        const x = Math.cos(a) * r;
+        const y = Math.sin(a) * r;
+
+        if (first) {
+
+            shape.moveTo(x, y);
+            first = false;
+
+        } else shape.lineTo(x, y);
+    }
+
+    for (let i = 0; i < teeth; i++) {
+
+        const a = i * step;
+
+        add(root,  a);
+        add(radius, a + step * 0.16);
+        add(radius, a + step * 0.34);
+        add(root,  a + step * 0.5);
+    }
+
+    shape.closePath();
+
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: depth,
+        bevelEnabled: true,
+        curveSegments: 48,
+        bevelSize: 0.16,
+        bevelThickness: 0.16,
+        bevelSegments: 2,
+        steps: 1
+    });
+
+    /*  Shape lies in XY, extruded along Z: stand it on the crank axis.  */
+    geometry.rotateY(Math.PI / 2);
+    geometry.center();
+
+    return geometry;
+}
+
+function createFlywheel(x, radius) {
+
+    const wheel = new THREE.Mesh(
+        createGearGeometry(radius, 44, 7),
+        new THREE.MeshStandardMaterial({
+            color: 0x3a3f46,
+            metalness: 0.95,
+            roughness: 0.28,
+            envMapIntensity: 1.2,
+            clippingPlanes: [clipPlane]
+        })
+    );
+
+    wheel.position.x = x;
+
+    return wheel;
+}
+
+/*
+    One flywheel, at the back.  There used to be one on the prop end too,
+    which the propeller hub would now be sitting inside.
+*/
+crankShaftGroup.add(createFlywheel(-(HALF.x + 14), 23));
+
+
+/* -------------------------------------------------------------------------
+   PROPELLER (rides the same rotation as the crank)
+   -------------------------------------------------------------------------
+   A blade is a twisted, tapered aerofoil - a small wing - so it is lofted
+   as a stack of aerofoil sections rather than built from boxes:
+
+     - chord tapers from a wide root to a narrow tip
+     - pitch unwinds from a steep root to a flat tip, as a real one does
+     - thickness ratio falls from 17% of chord to 5.5%
+     - the last few percent closes on an ellipse, giving a rounded tip
+     - a little rake, so the tip trails behind the root
+     - a painted tip band, because real blades have one
+
+   Section 0 sits inside the hub, so the blade appears to grow out of it.
+   ------------------------------------------------------------------------- */
+
+const PROP_ROOT_R   = 6;      /* blade root, tucked inside the hub        */
+const PROP_HUB_R    = 9;      /* hub and spinner base radius              */
+const PROP_BLADES   = 3;
+const PROP_X        = (BLOCK.x + 30) / 2;   /* where the shaft ends       */
+const PROP_STATIONS = 56;     /* spanwise sections                        */
+const PROP_SECTION  = 30;     /* points around one aerofoil                */
+
+const propellerGroup = new THREE.Group();
+propellerGroup.position.x = PROP_X;
+crankShaftGroup.add(sys("prop", propellerGroup));
+
+/*
+    The blades are varnished laminated wood, so they need an actual grain.
+    A flat colour would just be a grey prop with more work in it, so the
+    grain is generated into a canvas instead: straight spanwise streaks,
+    a few wide bands for figure, and fine open pores.
+
+    Seeded, so the grain is identical on every load rather than
+    shimmering into something new each time.
+*/
+function makeWoodCanvas(size) {
+
+    const canvas = document.createElement("canvas");
+
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext("2d");
+
+    let seed = 20240919;
+
+    function rnd() {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+    }
+
+    const base = ctx.createLinearGradient(0, 0, size, 0);
+
+    base.addColorStop(0.00, "rgb(152,106,56)");
+    base.addColorStop(0.35, "rgb(178,131,74)");
+    base.addColorStop(0.70, "rgb(160,113,61)");
+    base.addColorStop(1.00, "rgb(146, 99, 52)");
+
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, size, size);
+
+    /*  u runs around the section, v runs root to tip, so grain lines are
+        vertical in this canvas.  */
+    for (let i = 0; i < 300; i++) {
+
+        const x0 = rnd() * size;
+        const amp = 1.2 + rnd() * 6;
+        const freq = 0.6 + rnd() * 2.4;
+        const phase = rnd() * Math.PI * 2;
+
+        ctx.strokeStyle = rnd() < 0.74
+            ? "rgba(74,45,20," + (0.05 + rnd() * 0.24).toFixed(3) + ")"
+            : "rgba(226,186,132," + (0.04 + rnd() * 0.15).toFixed(3) + ")";
+
+        ctx.lineWidth = 0.6 + rnd() * 4.0;
+        ctx.beginPath();
+
+        for (let y = 0; y <= size; y += 6) {
+
+            const x = x0 + Math.sin(y / size * Math.PI * freq + phase) * amp;
+
+            if (y === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+
+        ctx.stroke();
+    }
+
+    /*  Wider bands, for the figure of the timber.  */
+    for (let i = 0; i < 10; i++) {
+
+        const x0 = rnd() * size;
+
+        ctx.strokeStyle = "rgba(88,55,26," +
+            (0.04 + rnd() * 0.10).toFixed(3) + ")";
+        ctx.lineWidth = 7 + rnd() * 24;
+        ctx.beginPath();
+
+        for (let y = 0; y <= size; y += 10) {
+
+            const x = x0 + Math.sin(y / size * Math.PI * 1.3 + i) * 15;
+
+            if (y === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+
+        ctx.stroke();
+    }
+
+    /*  Open pores, so it is not a flat wash of colour.  */
+    for (let i = 0; i < size * 6; i++) {
+
+        ctx.fillStyle = "rgba(58,34,15," +
+            (0.03 + rnd() * 0.10).toFixed(3) + ")";
+
+        ctx.fillRect(rnd() * size, rnd() * size, 1, 1 + rnd() * 3);
+    }
+
+    return canvas;
+}
+
+/*
+    Varnish sits in the grain rather than on it, so the darker grain lines
+    read slightly duller than the polished surface.  Same canvas, turned
+    into a roughness map.
+*/
+function makeRoughnessCanvas(source) {
+
+    const size = source.width;
+
+    const canvas = document.createElement("canvas");
+
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(source, 0, 0);
+
+    const image = ctx.getImageData(0, 0, size, size);
+    const d = image.data;
+
+    for (let i = 0; i < d.length; i += 4) {
+
+        const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const v = Math.max(0, Math.min(255, 55 + (255 - lum) * 0.42));
+
+        d[i] = v;
+        d[i + 1] = v;
+        d[i + 2] = v;
+    }
+
+    ctx.putImageData(image, 0, 0);
+
+    return canvas;
+}
+
+const woodCanvas = makeWoodCanvas(1024);
+
+const woodTexture = new THREE.CanvasTexture(woodCanvas);
+
+woodTexture.encoding = THREE.sRGBEncoding;
+woodTexture.wrapS = THREE.RepeatWrapping;
+woodTexture.wrapT = THREE.RepeatWrapping;
+woodTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+const woodRoughness = new THREE.CanvasTexture(makeRoughnessCanvas(woodCanvas));
+
+woodRoughness.wrapS = THREE.RepeatWrapping;
+woodRoughness.wrapT = THREE.RepeatWrapping;
+woodRoughness.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+const bladeMaterial = new THREE.MeshPhysicalMaterial({
+    map: woodTexture,
+    roughnessMap: woodRoughness,
+    color: 0xffffff,
+    metalness: 0.0,
+    roughness: 0.55,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+    envMapIntensity: 0.9,
+    side: THREE.DoubleSide,
+    clippingPlanes: [clipPlane]
+});
+
+/*  Painted tip band, gloss over the wood.  */
+const bladeTipMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xb8331f,
+    metalness: 0.0,
+    roughness: 0.3,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.08,
+    envMapIntensity: 1.0,
+    side: THREE.DoubleSide,
+    clippingPlanes: [clipPlane]
+});
+
+/*  NACA style half thickness, as a fraction of chord, u = 0 at the LE.  */
+function sectionHalfThickness(u, t) {
+
+    return 5 * t * (
+        0.2969 * Math.sqrt(u)
+        - 0.1260 * u
+        - 0.3516 * u * u
+        + 0.2843 * u * u * u
+        - 0.1015 * u * u * u * u
+    );
+}
+
+function createBladeGeometry(radius) {
+
+    const half = (PROP_SECTION - 2) / 2;
+    const last = PROP_STATIONS - 1;
+
+    const rootChord  = radius * 0.34;
+    const tipChord   = radius * 0.13;
+    const rootPitch  = THREE.MathUtils.degToRad(34);
+    const tipPitch   = THREE.MathUtils.degToRad(12);
+    const rootThick  = 0.17;
+    const tipThick   = 0.055;
+    const tipStart   = 0.93;
+    const bandFrom   = PROP_STATIONS - 3;   /* first station of the band   */
+
+    const position = [];
+
+    /*
+        u runs around the section, v runs root to tip.  That puts the
+        grain running spanwise, the way a laminated blade is made, and it
+        wraps to the leading edge doing it.
+    */
+    const uvs = [];
+
+    /*  Blades grow along +Y; the prop axis is X.  */
+    function emitRing(s) {
+
+        const r = PROP_ROOT_R + (radius - PROP_ROOT_R) * s;
+
+        let chord = rootChord + (tipChord - rootChord) * Math.pow(s, 0.8);
+
+        /*  Elliptical tip the way a real blade closes out.  */
+        if (s > tipStart) {
+            const k = (s - tipStart) / (1 - tipStart);
+            chord *= Math.sqrt(Math.max(0, 1 - k * k));
+        }
+
+        const thick = rootThick + (tipThick - rootThick) * Math.pow(s, 0.7);
+
+        /*  Pitch unwinds toward the tip.  */
+        const pitch = tipPitch +
+            (rootPitch - tipPitch) * Math.pow(1 - s, 1.5);
+
+        /*  Rake: the tip trails slightly behind the root.  */
+        const rake = -0.05 * radius * Math.pow(s, 2.5);
+
+        const cx = Math.sin(pitch);      /* chord direction, in XZ        */
+        const cz = Math.cos(pitch);
+        const nx = Math.cos(pitch);      /* section normal, in XZ         */
+        const nz = -Math.sin(pitch);
+
+        for (let i = 0; i < PROP_SECTION; i++) {
+
+            const upper = i <= half;
+
+            /*  Upper leading edge -> trailing edge, then the lower
+                surface back to the leading edge, so the ring closes.  */
+            const u = upper
+                ? i / half
+                : (PROP_SECTION - 1 - i) / half;
+
+            /*  A little camber, so the section reads as an aerofoil
+                rather than a symmetric lens.  */
+            const camber = 0.05 * chord * Math.sin(Math.PI * u);
+
+            const y = camber +
+                (upper ? 1 : -1) * sectionHalfThickness(u, thick) * chord;
+
+            const c = (u - 0.5) * chord;
+
+            position.push(
+                rake + cx * c + nx * y,
+                r,
+                cz * c + nz * y
+            );
+
+            uvs.push(i / (PROP_SECTION - 1), s);
+        }
+    }
+
+    for (let j = 0; j < PROP_STATIONS; j++) emitRing(j / last);
+
+    /*  Stitch neighbouring rings into quads, two triangles each.  */
+    const mainFaces = [];
+    const bandFaces = [];
+
+    for (let j = 0; j < last; j++) {
+
+        const target = j < bandFrom - 1 ? mainFaces : bandFaces;
+
+        for (let i = 0; i < PROP_SECTION; i++) {
+
+            const i2 = (i + 1) % PROP_SECTION;
+
+            const a = j * PROP_SECTION + i;
+            const b = j * PROP_SECTION + i2;
+            const c = (j + 1) * PROP_SECTION + i2;
+            const d = (j + 1) * PROP_SECTION + i;
+
+            target.push(a, c, b, a, d, c);
+        }
+    }
+
+    /*  Close both ends with a fan around the ring's centroid.  */
+    function capRing(ringStart, flip) {
+
+        let sx = 0, sy = 0, sz = 0;
+
+        for (let i = 0; i < PROP_SECTION; i++) {
+
+            sx += position[(ringStart + i) * 3];
+            sy += position[(ringStart + i) * 3 + 1];
+            sz += position[(ringStart + i) * 3 + 2];
+        }
+
+        const centre = position.length / 3;
+
+        position.push(
+            sx / PROP_SECTION,
+            sy / PROP_SECTION,
+            sz / PROP_SECTION
+        );
+
+        /*  The ring's own vertices carry UVs from emitRing already; only
+            this new centre point needs one.  */
+        uvs.push(0.5, flip ? 1 : 0);
+
+        const faces = [];
+
+        for (let i = 0; i < PROP_SECTION; i++) {
+
+            const a = ringStart + i;
+            const b = ringStart + (i + 1) % PROP_SECTION;
+
+            if (flip) faces.push(centre, b, a);
+            else faces.push(centre, a, b);
+        }
+
+        return faces;
+    }
+
+    const rootCap = capRing(0, false);
+    const tipCap  = capRing(last * PROP_SECTION, true);
+
+    /*
+        Two materials: bare blade, and the painted tip band.  A group has
+        to be one contiguous run of indices, so the band and the tip cap
+        are written last and become the second group.
+    */
+    const index = [].concat(mainFaces, rootCap, bandFaces, tipCap);
+
+    const geometry = new THREE.BufferGeometry();
+
+    geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(position, 3)
+    );
+
+    geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+
+    geometry.setIndex(index);
+
+    geometry.addGroup(0, mainFaces.length + rootCap.length, 0);
+    geometry.addGroup(
+        mainFaces.length + rootCap.length,
+        bandFaces.length + tipCap.length,
+        1
+    );
+
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+
+    return geometry;
+}
+
+
+const propellerBlades = new THREE.Group();
+propellerGroup.add(propellerBlades);
+
+/*  (Re)build the blades at a diameter - the slider can change it.  */
+function buildBlades(diameter) {
+
+    const radius = diameter / 2;
+
+    while (propellerBlades.children.length) {
+
+        const old = propellerBlades.children.pop();
+
+        old.geometry.dispose();
+    }
+
+    /*  Every blade shares one geometry.  */
+    const geometry = createBladeGeometry(radius);
+
+    for (let i = 0; i < PROP_BLADES; i++) {
+
+        const blade = new THREE.Mesh(
+            geometry,
+            [bladeMaterial, bladeTipMaterial]
+        );
+
+        blade.name = "propBlade";
+        blade.rotation.x = i * Math.PI * 2 / PROP_BLADES;
+
+        propellerBlades.add(blade);
+    }
+
+    fitPropClearance(radius);
+}
+
+
+/*  The hub the blades bolt to.  It sits over the end of the shaft.  */
+const propellerHub = new THREE.Mesh(
+    new THREE.CylinderGeometry(PROP_HUB_R, PROP_HUB_R, 18, 40),
+    new THREE.MeshStandardMaterial({
+        color: 0x30353b,
+        metalness: 0.85,
+        roughness: 0.34,
+        envMapIntensity: 1.0,
+        clippingPlanes: [clipPlane]
+    })
+);
+
+propellerHub.rotation.z = Math.PI / 2;
+propellerGroup.add(propellerHub);
+
+
+/*
+    Spinner, revolved from a profile so it has a real ogive curve rather
+    than a straight cone.
+*/
+(function createSpinner() {
+
+    const profile = [];
+
+    for (let i = 0; i <= 30; i++) {
+
+        const t = i / 30;
+
+        profile.push(new THREE.Vector2(
+            Math.max(
+                0.3,
+                7.6 * Math.pow(Math.cos(t * Math.PI / 2), 0.7)
+            ),
+            24 * t
+        ));
+    }
+
+    const spinner = new THREE.Mesh(
+        new THREE.LatheGeometry(profile, 44),
+        new THREE.MeshStandardMaterial({
+            color: 0xe9edf2,
+            metalness: 1.0,
+            roughness: 0.07,
+            envMapIntensity: 1.6,
+            clippingPlanes: [clipPlane]
+        })
+    );
+
+    /*  LatheGeometry revolves around +Y; stand it on the prop axis.  */
+    spinner.rotation.z = -Math.PI / 2;
+    spinner.position.x = PROP_HUB_R;
+
+    spinner.name = "spinner";
+    propellerGroup.add(spinner);
+})();
+
+
+/*  Bolt circle on the hub face, around the spinner.  */
+for (let i = 0; i < 8; i++) {
+
+    const bolt = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.9, 0.9, 1.6, 6),
+        steelMaterial
+    );
+
+    const a = i * Math.PI / 4;
+
+    bolt.rotation.z = Math.PI / 2;
+    bolt.position.set(
+        PROP_HUB_R - 0.2,
+        8.3 * Math.cos(a),
+        8.3 * Math.sin(a)
+    );
+
+    propellerGroup.add(bolt);
+}
+
+
+/*
+    Diameter slider.  Wired here, not up with the other sliders, because
+    buildBlades touches things declared in this block.
+*/
+document.getElementById("propDia").addEventListener("input", e => {
+
+    buildBlades(Number(e.target.value));
+
+    /*  Rebuilt blades arrive on layer 0, so re-apply the cut to them.  */
+    parkCutPlane();
+    applySystemCut(document.getElementById("cutSystems").value);
+});
+
+buildBlades(Number(document.getElementById("propDia").value));
+
+
+/* =========================================================================
+   MECHANICS
+   ========================================================================= */
+
+/*
+    Exact slider-crank: distance the piston pin sits below the crank centre,
+    in bore-axis terms.  Returns 0 at TDC and -stroke at BDC.
+*/
+function getPistonPosition(theta, crankRadius, rodLength) {
+
+    const sinTheta = Math.sin(theta);
+    const cosTheta = Math.cos(theta);
+
+    const inside = Math.max(
+        0,
+        rodLength * rodLength -
+        crankRadius * crankRadius * sinTheta * sinTheta
+    );
+
+    return (crankRadius * cosTheta + Math.sqrt(inside)) - rodLength;
+}
+
+
+const clock = new THREE.Clock();
+
+/* =========================================================================
+   TOOLTIPS, PICKING AND THE PART PANEL
+
+   Every statement in the panel explains itself on hover, and anything in the
+   engine can be clicked to open the controls for its system.
+
+   Two things here are easy to get wrong and are done deliberately:
+
+   1. Picking must respect the SYSTEM CUT.  Raycaster tests `visible`, but it
+      knows nothing about layers, so a system taken off the engine would still
+      be clickable in mid air.  Every candidate is checked against the
+      camera's layers for exactly that reason.
+
+   2. Picking the first mesh is not enough on its own: the hit mesh has to
+      walk up its parents to the nearest registered root to learn what system
+      and which cylinder it belongs to.
+   ========================================================================= */
+
+/*  Live settings the panel drives.  */
+const TUNE = {
+    air: 1,          /*  air inflow:  valve lift and stream strength  */
+    fuel: 1,         /*  fuel:        flame size and brightness       */
+    advance: 0.30,   /*  spark advance in radians before TDC           */
+    lift: 1,         /*  cam lift scale                               */
+    cut: new Set()   /*  cylinder numbers switched off                */
+};
+
+/* =========================================================================
+   FREE-PLAY CRANK: the kinematic hierarchy, driven by hand.
+
+   Grab any part of the moving chain - crank, piston, rod, propeller - and
+   drag along the crank's tangent; the whole hierarchy answers through the
+   one variable that matters, the crank angle.  The piston keeps solving
+   the slider-crank equation every frame, so the rod length is exact at
+   every angle you put it at, and the cams, valves, propeller and flywheel
+   all follow their real gearings.
+
+   Motion model: dragging adds angular velocity (not position), so a flick
+   spins the engine up and friction winds it down - it plays like a real
+   machine, not like a puppet.
+
+     1. pointerdown on a kinematic part  -> capture, orbit camera paused
+     2. pointermove: crank speed += (drag angle gain) each event
+     3. pointerup: release; friction keeps it spinning from the flick
+   ========================================================================= */
+
+const DRAG = {
+    active: false,
+    lastX: 0,
+    hit: null
+};
+
+/*  Drag speed to crank speed: per-pixel kick, capped so a violent swipe
+    cannot snap the chain.  The kick lands on the crank's actual rate, not
+    on the Speed slider - so a flick spins the engine up and it then coasts
+    back to whatever the throttle commands, which is what friction does.  */
+const DRAG_GAIN = 0.0012;
+const DRAG_MAX  = 0.02;
+
+function kinematicHit(hit) {
+
+    if (!hit) return false;
+
+    /*  Everything that turns, or rides something that turns, is fair
+        game: the crank system, pistons, and the propeller.  Static
+        systems (block, heads, valves, plugs, leads) stay camera-only.  */
+    return hit.system === "crank" ||
+           hit.system === "piston" ||
+           hit.system === "prop";
+}
+
+function beginCrankDrag(hit, clientX, clientY) {
+
+    DRAG.active = true;
+    DRAG.lastX = clientX;
+    DRAG.hit = hit;
+
+    orbit.enabled = false;
+
+    showTip(crankDragTip(hit), clientX, clientY);
+}
+
+function moveCrankDrag(clientX) {
+
+    if (!DRAG.active) return;
+
+    const dx = clientX - DRAG.lastX;
+    DRAG.lastX = clientX;
+
+    /*  Drag right = clockwise seen from the prop end, matching the
+        direction the Speed slider's positive value turns.  */
+    const crankRadius = Number(document.getElementById("stroke").value) / 2;
+    const gain = DRAG_GAIN * (32 / Math.max(crankRadius, 8));
+
+    SPEED.kick(THREE.MathUtils.clamp(dx * gain, -DRAG_MAX, DRAG_MAX));
+}
+
+function endCrankDrag() {
+
+    if (!DRAG.active) return;
+
+    DRAG.active = false;
+    DRAG.hit = null;
+
+    hideTip();
+
+    /*  Hand control back to the camera - the crank keeps whatever spin
+        the last flick left it with, and friction takes over.  */
+    orbit.enabled = true;
+}
+
+renderer.domElement.addEventListener("pointerdown", e => {
+
+    const hit = pickAt(e.clientX, e.clientY);
+
+    if (kinematicHit(hit)) {
+        beginCrankDrag(hit, e.clientX, e.clientY);
+    }
+});
+
+window.addEventListener("pointermove", e => moveCrankDrag(e.clientX));
+window.addEventListener("pointerup", endCrankDrag);
+window.addEventListener("pointercancel", endCrankDrag);
+
+
+/*
+    Tooltip text for a grabbed part - the drag hint follows the pointer
+    while the chain is being cranked by hand.
+*/
+function crankDragTip(hit) {
+
+    if (!hit) return null;
+
+    if (hit.system === "prop") return "drag to swing the propeller";
+    if (hit.system === "piston") return "drag to push the piston";
+    return "drag to turn the crankshaft";
+}
+
+const tipEl = document.getElementById("tip");
+const panelEl = document.getElementById("partPanel");
+
+let lastHover = 0;
+let downAt = null;
+let tipFromModel = false;
+let hoverHit = null;
+let hoverAt = { x: 0, y: 0 };
+let selected = null;
+
+function showTip(html, x, y) {
+
+    tipEl.innerHTML = html;
+    tipEl.style.opacity = 1;
+
+    const pad = 16;
+    const w = tipEl.offsetWidth;
+    const h = tipEl.offsetHeight;
+
+    tipEl.style.left = Math.max(
+        8, Math.min(x + pad, window.innerWidth - w - 8)
+    ) + "px";
+
+    tipEl.style.top = Math.max(
+        8, Math.min(y + pad, window.innerHeight - h - 8)
+    ) + "px";
+}
+
+function hideTip() {
+    tipEl.style.opacity = 0;
+}
+
+/*
+    One delegated listener covers every statement in the panel - the sliders,
+    the buttons, the readouts, the legend and the chips - so explaining a new
+    control is a data-tip attribute and nothing else.
+*/
+/*
+    Every panel, not just the main one.  The part panel and the hand control
+    box are siblings of #ui rather than children, so a listener on #ui alone
+    would quietly leave every statement in them un-explained.
+
+    The canvas is deliberately not a host: tooltips over the engine come from
+    the raycaster instead, and the two would fight over the pointer.
+*/
+const TIP_HOSTS = ["ui", "partPanel", "handBox"]
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+
+for (const host of TIP_HOSTS) {
+
+    host.addEventListener("pointerover", e => {
+
+        const el = e.target.closest ? e.target.closest("[data-tip]") : null;
+
+        if (!el) return;
+
+        tipFromModel = false;
+        showTip(el.dataset.tip, e.clientX, e.clientY);
+    });
+
+    host.addEventListener("pointerout", e => {
+
+        if (e.target.closest && e.target.closest("[data-tip]")) hideTip();
+    });
+}
+
+
+/* ---- what each system has to say, and what it can do -------------------- */
+
+/*
+    A tiny control library.  `read`/`write` point the panel at state that
+    already exists rather than a second copy of it - the RPM control drives
+    the same slider the main panel uses, so the two can never disagree.
+*/
+const TUNE_CONTROLS = {
+
+    rpm: {
+        label: "Throttle",
+        tip: "Throttle position. Wired to the same Speed slider the main panel " +
+             "uses, so the two can never disagree about how fast the engine is " +
+             "turning.",
+        min: 0, max: 0.15, step: 0.001,
+        read: () => Number(document.getElementById("speed").value),
+        write: v => {
+            const s = document.getElementById("speed");
+            s.value = v;
+            s.dispatchEvent(new Event("input"));
+        }
+    },
+
+    air: {
+        label: "Air inflow",
+        tip: "How much charge the engine gets. Scales how far the intake " +
+             "valves open and how dense the intake and exhaust streams are - a " +
+             "throttled engine does not fill its cylinders, and this is the " +
+             "visible half of that.",
+        min: 0, max: 2, step: 0.05,
+        read: () => TUNE.air,
+        write: v => { TUNE.air = v; }
+    },
+
+    fuel: {
+        label: "Fuel",
+        tip: "Scales the combustion: the size and brightness of the burn, and " +
+             "how hard the piston glows on its power stroke. At 0 the engine " +
+             "still turns over but never fires.",
+        min: 0, max: 1.5, step: 0.05,
+        read: () => TUNE.fuel,
+        write: v => { TUNE.fuel = v; }
+    },
+
+    advance: {
+        label: "Spark advance",
+        tip: "Degrees of spark advance before top dead centre. Wider means the " +
+             "plug flashes earlier, which is visible on the flash at the " +
+             "electrode.",
+        min: 0, max: 0.9, step: 0.01,
+        read: () => TUNE.advance,
+        write: v => { TUNE.advance = v; }
+    },
+
+    lift: {
+        label: "Valve lift",
+        tip: "Multiplier on the cam's real lift. At 0 the valves never open, " +
+             "and the engine cannot breathe at all.",
+        min: 0, max: 2, step: 0.05,
+        read: () => TUNE.lift,
+        write: v => { TUNE.lift = v; }
+    }
+};
+
+/*  Shared descriptions, written once - and above the table that uses them,
+    because a const read before its declaration is a dead zone, not a
+    hoisted value.  */
+const CAM_DESC =
+    "Two cams per bank, one per valve row, with a lobe over every valve " +
+    "and a bearing cap on every journal. They turn at half crank speed.";
+
+const VALVE_DESC =
+    "Poppet valves: chamfered disc, stem up into the head, retainer and a " +
+    "real coil spring. Lift scales with the Valve lift control.";
+
+const HOTSPOTS = {
+
+    prop: {
+        title: "Propeller",
+        desc: "Three lofted blades on a lathe-turned spinner, bolted to the " +
+              "front of the crankshaft. Pitch unwinds 34 to 12 degrees from " +
+              "root to tip, which is what makes it a propeller and not a fan.",
+        controls: ["rpm"]
+    },
+
+    leads: {
+        title: "Plug leads",
+        desc: "One lead per cylinder, rising vertically out of frame with a " +
+              "rubber boot on the plug terminal.",
+        controls: ["advance"]
+    },
+
+    plugs: {
+        title: "Spark plugs",
+        desc: "Eight plugs, one per bore. The flash starts before top dead " +
+              "centre and hands over to the combustion glow.",
+        controls: ["advance", "fuel"]
+    },
+
+    camsA: { title: "Camshafts, bank A", desc: CAM_DESC, controls: ["lift", "rpm"] },
+    camsB: { title: "Camshafts, bank B", desc: CAM_DESC, controls: ["lift", "rpm"] },
+
+    valvesA: { title: "Valves and springs, bank A", desc: VALVE_DESC, controls: ["lift", "air"] },
+    valvesB: { title: "Valves and springs, bank B", desc: VALVE_DESC, controls: ["lift", "air"] },
+
+    studs: {
+        title: "Head studs",
+        desc: "Four per cylinder on the deck lands, threaded, with washer, " +
+              "hex nut and dome. This is what the head casting bolts to.",
+        controls: []
+    },
+
+    case: {
+        title: "Cylinder block",
+        desc: "Amber translucent case, so everything inside stays visible - " +
+              "and while it is translucent the pointer passes through it to " +
+              "whatever is behind. Push Block See-thru to 100 to make the " +
+              "case solid and selectable again. The bores, deck height and " +
+              "bank angle were all measured off this casting.",
+        controls: []
+    },
+
+    crank: {
+        title: "Crankshaft",
+        desc: "Cross-plane crank: pins at 0, 90, 270 and 180 degrees, each " +
+              "shared by two cylinders, with a counterweight per throw and " +
+              "the main bearing bulkheads it spins in.",
+        controls: ["rpm"]
+    },
+
+    piston: {
+        title: "Piston",
+        desc: "Travel comes from the slider-crank equation, so the rod stays " +
+              "exactly one rod length at every crank angle. Click the button " +
+              "to cut this cylinder.",
+        controls: ["rpm"]
+    }
+};
+
+/* ---- picking ------------------------------------------------------------ */
+
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+
+let pickables = [];
+
+/*  Everything the user can click: every mesh on the visible layer.  The
+    floor, the stand and the hover box are not part of the engine.  */
+function refreshPickables() {
+
+    pickables = [];
+
+    scene.traverse(o => {
+
+        if (!o.isMesh || o === floor || o === stand) return;
+        if (o === hoverHelper) return;
+        if (!o.layers.test(camera.layers)) return;
+
+        pickables.push(o);
+    });
+}
+
+/*
+    Highlight box.  Deliberately a box rather than a tint on the part's own
+    material: the materials are shared, so tinting one piston would light up
+    every piston, every stud and half the valvetrain with it.
+*/
+const hoverBox = new THREE.Box3();
+const hoverHelper = new THREE.Box3Helper(hoverBox, 0xffb347);
+
+hoverHelper.material.depthTest = false;
+hoverHelper.material.transparent = true;
+hoverHelper.material.opacity = 0.85;
+hoverHelper.visible = false;
+hoverHelper.renderOrder = 5;
+
+scene.add(hoverHelper);
+
+function pickAt(clientX, clientY) {
+
+    ndc.x = (clientX / window.innerWidth) * 2 - 1;
+    ndc.y = -(clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(ndc, camera);
+
+    refreshPickables();
+
+    const hits = raycaster.intersectObjects(pickables, false);
+
+    for (const hit of hits) {
+
+        /*
+            A translucent part does not block the pointer.
+
+            The amber case is a window, so a click on it has to reach the
+            piston behind it - otherwise every interesting part in this
+            engine is unclickable, because the case is always in front of
+            it.  Make the case solid with the Block See-thru slider and it
+            starts blocking again, which is exactly when you would want to
+            select the block itself.
+
+            The same rule quietly handles the flame and the spark: they are
+            additive transparent blobs, and they should never be a click
+            target either.
+        */
+        const material = Array.isArray(hit.object.material)
+            ? hit.object.material[0]
+            : hit.object.material;
+
+        if (material && material.transparent && material.opacity < 0.98) continue;
+
+        let node = hit.object;
+        let system = null;
+        let cyl = null;
+
+        while (node) {
+
+            if (!system && node.userData.system) system = node.userData.system;
+            if (!cyl && node.userData.cyl) cyl = node.userData.cyl;
+            if (system && cyl) break;
+
+            node = node.parent;
+        }
+
+        if (system) return { object: hit.object, system, cyl };
+    }
+
+    return null;
+}
+
+/*
+    What to say about a hit.  Piston and cylinder parts get live numbers,
+    because a tooltip on a moving part that shows a fixed number is just
+    decoration.
+*/
+function tipHTML(hit) {
+
+    const spec = HOTSPOTS[hit.system];
+
+    const name = spec ? spec.title : hit.system;
+
+    let extra = "";
+
+    if (hit.cyl) {
+
+        const part = parts[hit.cyl - 1];
+
+        if (part) {
+
+            extra = "<br>Cylinder " + hit.cyl +
+                (part.spec.bank > 0 ? " · bank A" : " · bank B") +
+                "<br>stroke <i>" + (part.chipState || "-") + "</i>" +
+                " · piston " + part.piston.position.y.toFixed(1) +
+                " out along the bore" +
+                (TUNE.cut.has(hit.cyl) ? "<br><b>cylinder cut</b>" : "") +
+                "<br><i>click for controls</i>";
+        }
+    } else {
+        extra = "<br><i>click for controls</i>";
+    }
+
+    return "<b>" + name + "</b>" + extra;
+}
+
+
+/* ---- the panel ---------------------------------------------------------- */
+
+function buildPanel(hit) {
+
+    const spec = HOTSPOTS[hit.system];
+
+    if (!spec) return;
+
+    selected = hit;
+
+    document.getElementById("partTitle").textContent =
+        spec.title + (hit.cyl && hit.system !== "case" ? " · cylinder " + hit.cyl : "");
+
+    document.getElementById("partDesc").textContent = spec.desc;
+
+    const host = document.getElementById("partControls");
+
+    host.innerHTML = "";
+
+    for (const key of spec.controls) {
+
+        const def = TUNE_CONTROLS[key];
+
+        if (!def) continue;
+
+        const row = document.createElement("div");
+
+        row.className = "sg";
+
+        const label = document.createElement("label");
+
+        label.textContent = def.label;
+
+        /*  Controls built at runtime carry their own tooltip, or the panel
+            would be the one place in the page that explains nothing.  */
+        if (def.tip) label.dataset.tip = def.tip;
+
+        row.appendChild(label);
+
+        const input = document.createElement("input");
+
+        input.type = "range";
+        input.min = def.min;
+        input.max = def.max;
+        input.step = def.step;
+        input.value = def.read();
+
+        if (def.tip) input.dataset.tip = def.tip;
+
+        input.addEventListener("input", e => {
+            def.write(Number(e.target.value));
+        });
+
+        /*  Two controls can drive the same state - the throttle is on both
+            the engine panel and the propeller panel - so re-sync on show
+            and keep the readout honest.  */
+        input.addEventListener("pointerdown", () => { input.value = def.read(); });
+
+        row.appendChild(input);
+        host.appendChild(row);
+    }
+
+    /*  Cylinder parts also get a cut switch for this one cylinder.  */
+    if (hit.cyl) {
+
+        const row = document.createElement("div");
+        row.className = "sg";
+
+        const button = document.createElement("button");
+
+        button.dataset.cyl = hit.cyl;
+        button.textContent = TUNE.cut.has(hit.cyl)
+            ? "Restore cylinder"
+            : "Cut cylinder";
+
+        button.dataset.tip =
+            "Takes cylinder " + hit.cyl + " out of the firing order: no spark, " +
+            "no burn, no glow. It keeps turning over, which is what a dead " +
+            "cylinder actually looks like.";
+
+        button.addEventListener("click", () => toggleCylinder(hit.cyl));
+
+        row.appendChild(button);
+        host.appendChild(row);
+    }
+
+    panelEl.style.display = "block";
+    updatePanelReadout();
+}
+
+function toggleCylinder(cyl) {
+
+    if (TUNE.cut.has(cyl)) TUNE.cut.delete(cyl);
+    else TUNE.cut.add(cyl);
+
+    if (selected) buildPanel(selected);
+
+    refreshChips();
+}
+
+function closePanel() {
+    panelEl.style.display = "none";
+    selected = null;
+}
+
+/*
+    Live numbers in the panel refresh once a frame while it is open - the
+    throttle and degrees of advance are not things to make the user guess.
+*/
+function updatePanelReadout() {
+
+    const out = document.getElementById("partReadout");
+
+    if (!out) return;
+
+    const rpm = Math.round(Number(document.getElementById("speed").value) * 3600);
+
+    out.textContent =
+        "crank " + Math.round(THREE.MathUtils.radToDeg(crankAngle)) + "°" +
+        " · " + rpm + " RPM" +
+        " · air " + TUNE.air.toFixed(2) +
+        " · fuel " + TUNE.fuel.toFixed(2) +
+        " · advance " + Math.round(THREE.MathUtils.radToDeg(TUNE.advance)) + "°" +
+        (TUNE.cut.size ? " · cut " + TUNE.cut.size + " cyl" : "");
+}
+
+/*  Chips double as cylinder switches.  */
+function refreshChips() {
+
+    for (const part of parts) {
+
+        if (!part.chip) continue;
+
+        part.chip.dataset.tip =
+            "Cylinder " + part.index + " (" +
+            (part.spec.bank > 0 ? "bank A" : "bank B") +
+            ") fires " + (FIRING_ORDER.split("-").indexOf(String(part.index)) + 1) +
+            "th in the firing order. Click to cut it.";
+
+        /*  Once, not every refresh.  */
+        if (!part.chipWired) {
+
+            part.chipWired = true;
+
+            part.chip.addEventListener("click", () => toggleCylinder(part.index));
+        }
+
+        part.chip.classList.toggle("cut", TUNE.cut.has(part.index));
+    }
+}
+
+
+/* ---- input wiring ------------------------------------------------------- */
+
+document.getElementById("partClose").addEventListener("click", closePanel);
+
+renderer.domElement.addEventListener("pointermove", e => {
+
+    hoverAt = { x: e.clientX, y: e.clientY };
+
+    /*  Hover picking is throttled: this scene is a quarter of a million
+        triangles, and a full raycast per mouse move is wasted work.  */
+    const now = performance.now();
+
+    if (now - lastHover < 90) return;
+
+    lastHover = now;
+
+    hoverHit = pickAt(e.clientX, e.clientY);
+
+    if (hoverHit) {
+
+        hoverBox.setFromObject(hoverHit.object);
+        hoverHelper.visible = true;
+
+        tipFromModel = true;
+        showTip(tipHTML(hoverHit), e.clientX, e.clientY);
+
+        document.body.classList.add("picking");
+
+    } else {
+
+        hoverHelper.visible = false;
+        document.body.classList.remove("picking");
+
+        if (tipFromModel) {
+            tipFromModel = false;
+            hideTip();
+        }
+    }
+});
+
+/* =========================================================================
+   OPTIONAL HAND CONTROL
+
+   Point 1 to 5 fingers at the webcam and that many systems come off the
+   engine; a fist puts it back to complete.
+
+   It is strictly opt-in. Nothing touches the camera until the button is
+   pressed, and every failure path - no camera, permission refused, CDN
+   unreachable - has to leave the page exactly as it was. The tracking runs
+   inside this page; no frame is uploaded anywhere.
+   ========================================================================= */
+
+const handVideo = document.getElementById("handVideo");
+const handCanvas = document.getElementById("handCanvas");
+const handCtx = handCanvas.getContext("2d");
+const handState = document.getElementById("handState");
+const handToggle = document.getElementById("handToggle");
+const handBox = document.getElementById("handBox");
+
+const HAND = {
+    on: false,
+    landmarker: null,
+    stream: null,
+    raf: 0,
+    lastVideoTime: -1,
+    candidate: -1,
+    since: 0,
+    applied: -1
+};
+
+/*
+    Phone camera pairing.  The peer connection exists only while pairing;
+    once it connects, its inbound video stream simply replaces the webcam
+    in the same hand pipeline.
+*/
+const PHONE = {
+    pc: null,
+    connected: false,
+    inviteCode: null,
+    token: null,
+    pollTimer: null,
+    phoneOrigin: null,
+    accessKey: null,           /* relay access key from /__lanip, if any */
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    channel: null              /* data channel: phone -> dashboard control */
+};
+
+/*
+    serve.py adds this header to everything it forwards (and answers it
+    itself on its own endpoints) so an ngrok interstitial page can never
+    be mistaken for a relay response.
+*/
+const NGROK_HEADERS = { "ngrok-skip-browser-warning": "1" };
+
+/*
+    The relay endpoints (/__pair, /__ice) are same-origin here, but when
+    AEROTWIN_KEY is set the phone-side calls must present the key - this
+    desktop may park and fetch offers over the tunnel too.
+*/
+function relayHeaders() {
+    const h = Object.assign({ "ngrok-skip-browser-warning": "1" },
+        NGROK_HEADERS);
+    if (PHONE.accessKey) h["x-aerotwin-key"] = PHONE.accessKey;
+    return h;
+}
+
+/*
+    Fetch the WebRTC server list from serve.py: STUN by default, plus a
+    TURN relay when serve.py has one configured (AEROTWIN_TURN_*).  TURN
+    is what keeps the camera video alive when the phone is on mobile data
+    behind carrier CGNAT - the case plain STUN cannot pair.
+*/
+async function loadIceServers() {
+
+    try {
+        const reply = await fetch("/__ice", {
+            cache: "no-store",
+            headers: { "ngrok-skip-browser-warning": "1" }
+        });
+        if (!reply.ok) return;
+        const cfg = await reply.json();
+        if (cfg && Array.isArray(cfg.iceServers) && cfg.iceServers.length) {
+            PHONE.iceServers = cfg.iceServers;
+        }
+    } catch (noIce) { /* serve.py without /__ice - the default stays */ }
+}
+
+const pairBox   = document.getElementById("pairBox");
+const pairQr    = document.getElementById("pairQr");
+const pairState = document.getElementById("pairState");
+
+const HAND_BONES = [
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [0, 5], [5, 6], [6, 7], [7, 8],
+    [5, 9], [9, 10], [10, 11], [11, 12],
+    [9, 13], [13, 14], [14, 15], [15, 16],
+    [13, 17], [17, 18], [18, 19], [19, 20],
+    [0, 17]
+];
+
+/*
+    Count the extended fingers of a 21 point hand.
+
+    Comparing tip-to-wrist distance against pip-to-wrist distance is
+    scale invariant and, unlike checking y coordinates, it does not care
+    which way up the hand is - point the fingers at the ceiling or at the
+    camera and it still counts them.
+
+    The thumb is measured across the palm instead, from the pinky knuckle,
+    because its tip-to-wrist distance is already large when the hand is a
+    relaxed fist.
+*/
+function countFingers(lm) {
+
+    if (!lm || lm.length < 21) return 0;
+
+    const wrist = lm[0];
+
+    const dist = (a, b) => Math.hypot(
+        a.x - b.x,
+        a.y - b.y,
+        (a.z || 0) - (b.z || 0)
+    );
+
+    let count = 0;
+
+    /*  Index, middle, ring, pinky: tip is 8, 12, 16, 20 and pip 6, 10, 14, 18.  */
+    for (const [tip, pip] of [[8, 6], [12, 10], [16, 14], [20, 18]]) {
+
+        if (dist(lm[tip], wrist) > dist(lm[pip], wrist) * 1.06) count++;
+    }
+
+    /*  Thumb: tip 4 against 2, both measured from the pinky knuckle 17.  */
+    if (dist(lm[4], lm[17]) > dist(lm[2], lm[17]) * 1.06) count++;
+
+    return count;
+}
+
+/*
+    One finger is one system, exactly as asked.  A fist is none, i.e. a
+    complete engine, so dropping your hand is how you put the engine back.
+*/
+function applyHandCount(fingers) {
+
+    const stages = SYSTEM_ORDER.length;
+    const slider = document.getElementById("cutSystems");
+
+    const want = Math.max(0, Math.min(stages, Math.round(fingers)));
+
+    slider.value = Math.round(want * 100 / stages);
+
+    applySystemCut(slider.value);
+}
+
+function drawHand(lm) {
+
+    const w = handCanvas.width;
+    const h = handCanvas.height;
+
+    handCtx.clearRect(0, 0, w, h);
+
+    if (handVideo.readyState >= 2) {
+        handCtx.drawImage(handVideo, 0, 0, w, h);
+    }
+
+    if (!lm) return;
+
+    handCtx.strokeStyle = "rgba(127, 212, 255, 0.9)";
+    handCtx.lineWidth = 1.6;
+
+    for (const [a, b] of HAND_BONES) {
+
+        handCtx.beginPath();
+        handCtx.moveTo(lm[a].x * w, lm[a].y * h);
+        handCtx.lineTo(lm[b].x * w, lm[b].y * h);
+        handCtx.stroke();
+    }
+
+    for (const p of lm) {
+
+        handCtx.beginPath();
+        handCtx.arc(p.x * w, p.y * h, 2.1, 0, Math.PI * 2);
+        handCtx.fillStyle = "#ffb347";
+        handCtx.fill();
+    }
+}
+
+function handLoop() {
+
+    if (!HAND.on) return;
+
+    HAND.raf = requestAnimationFrame(handLoop);
+
+    if (handVideo.readyState < 2) return;
+
+    /*  One pass per camera frame, not per animation frame.  */
+    if (handVideo.currentTime === HAND.lastVideoTime) return;
+
+    HAND.lastVideoTime = handVideo.currentTime;
+
+    let lm = null;
+
+    try {
+
+        const result = HAND.landmarker.detectForVideo(
+            handVideo, performance.now()
+        );
+
+        lm = result && result.landmarks && result.landmarks[0]
+            ? result.landmarks[0]
+            : null;
+
+    } catch (err) {
+        lm = null;
+    }
+
+    const fingers = countFingers(lm);
+
+    drawHand(lm);
+
+    /*
+        Hold the pose before acting on it.  A tracker flickering between 4
+        and 5 fingers would otherwise peel and restore a system several times
+        a second.
+    */
+    const now = performance.now();
+
+    if (fingers !== HAND.candidate) {
+
+        HAND.candidate = fingers;
+        HAND.since = now;
+
+    } else if (now - HAND.since > 550 && fingers !== HAND.applied) {
+
+        HAND.applied = fingers;
+        applyHandCount(fingers);
+    }
+
+    handState.textContent = lm
+        ? fingers + (fingers === 1 ? " finger" : " fingers") +
+          " \u2192 " + fingers + " cut"
+        : "no hand detected";
+}
+
+function stopHand() {
+
+    HAND.on = false;
+
+    if (HAND.raf) cancelAnimationFrame(HAND.raf);
+    HAND.raf = 0;
+
+    if (HAND.stream) {
+        for (const track of HAND.stream.getTracks()) track.stop();
+        HAND.stream = null;
+    }
+
+    if (PHONE.pollTimer) {
+        clearTimeout(PHONE.pollTimer);
+        PHONE.pollTimer = null;
+    }
+
+    if (PHONE.pc) {
+        PHONE.pc.close();
+        PHONE.pc = null;
+    }
+    PHONE.connected = false;
+    PHONE.token = null;
+    PHONE.inviteCode = null;
+    pairBox.style.display = "none";
+
+    handVideo.srcObject = null;
+    handBox.style.display = "none";
+
+    HAND.candidate = -1;
+    HAND.applied = -1;
+    HAND.lastVideoTime = -1;
+
+    handToggle.textContent = "Enable camera";
+    handState.textContent = "idle";
+}
+
+async function startHand() {
+
+    if (HAND.on) return;
+
+    handToggle.textContent = "Starting...";
+    handState.textContent = "loading hand tracking";
+    handBox.style.display = "block";
+
+    try {
+
+        /*
+            Camera first, model second.
+
+            The camera is the half the user has to approve, and it is the
+            half that fails instantly when there is no webcam - so asking for
+            it first means a refusal reports itself at once, instead of after
+            a download that may hang on a blocked CDN.  The model, which is
+            the slow part, is then loaded on demand rather than at page load,
+            because this whole feature is optional and most visitors will
+            never press the button.
+        */
+        HAND.stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480 }
+        });
+
+        const vision = await import(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs"
+        );
+
+        const fileset = await vision.FilesetResolver.forVisionTasks(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+
+        /*
+            GPU first, CPU as the fallback: the WASM GPU delegate needs a
+            working WebGL2 context, and on machines without one the whole
+            feature used to die instead of just losing the speed-up.
+        */
+        const model = {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/" +
+                "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+        };
+
+        try {
+            HAND.landmarker = await vision.HandLandmarker.createFromOptions(
+                fileset,
+                { baseOptions: { ...model, delegate: "GPU" },
+                  numHands: 1, runningMode: "VIDEO" }
+            );
+        } catch (gpuErr) {
+            HAND.landmarker = await vision.HandLandmarker.createFromOptions(
+                fileset,
+                { baseOptions: { ...model, delegate: "CPU" },
+                  numHands: 1, runningMode: "VIDEO" }
+            );
+        }
+
+        handVideo.srcObject = HAND.stream;
+        await handVideo.play();
+
+        HAND.on = true;
+        HAND.applied = -1;
+        HAND.candidate = -1;
+
+        handToggle.textContent = "Stop camera";
+        handState.textContent = "show 1-5 fingers";
+
+        HAND.raf = requestAnimationFrame(handLoop);
+
+    } catch (err) {
+
+        /*
+            No camera, permission refused, or the CDN is unreachable.  This
+            is an optional extra, so failing has to cost the page nothing:
+            say why, release whatever was opened, and stay off.
+        */
+        const why = err && err.message ? err.message : String(err);
+
+        stopHand();
+
+        handToggle.textContent = "Retry camera";
+        handState.textContent = "unavailable: " + why;
+        handBox.style.display = "block";
+    }
+}
+
+handToggle.addEventListener("click", () => {
+    if (HAND.on) stopHand();
+    else startHand();
+});
+
+document.getElementById("handClose").addEventListener("click", stopHand);
+
+
+/*
+    Pair a phone as the camera - plain WebRTC over the local network.
+
+    The handshake itself rides the same local server that serves this page:
+    the offer is parked under a one-time token, the token rides to the phone
+    inside the QR link, and the phone posts its answer back.  No code is
+    ever shown, typed, copied or pasted on either side - scanning is the
+    only human step.  From then on the video is a direct browser-to-browser
+    stream on the local network, and MediaPipe here on the desktop tracks it
+    exactly as it tracked the webcam.
+*/
+
+/*
+    No trickle ICE: there is no signaling channel after the one POST, so
+    the answer has to carry every candidate with it.  Waiting for the
+    gathering state (with a hard timeout so a stuck STUN probe cannot hang
+    the pairing) does exactly that.
+*/
+async function iceComplete(pc) {
+
+    return new Promise(resolve => {
+
+        if (pc.iceGatheringState === "complete") return resolve();
+
+        const giveUp = setTimeout(resolve, 1500);
+
+        pc.addEventListener("icegatheringstatechange", () => {
+
+            if (pc.iceGatheringState === "complete") {
+                clearTimeout(giveUp);
+                resolve();
+            }
+        });
+    });
+}
+
+/*
+    deflate-raw shrinks an SDP from ~1.5 KB to a few hundred bytes.  Browsers
+    without CompressionStream fall back to plain base64; the decoder
+    accepts either form.
+*/
+async function deflateToB64(text) {
+
+    const blob = await new Response(
+        new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"))
+    ).blob();
+
+    const bin = String.fromCharCode(...new Uint8Array(await blob.arrayBuffer()));
+
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function inflateFromB64(b64) {
+
+    const n = b64.replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(n + "=".repeat((4 - n.length % 4) % 4));
+    const bytes = new Uint8Array(bin.length);
+
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    const out = await new Response(
+        new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))
+    ).blob();
+
+    return out.text();
+}
+
+async function decodeReply(json) {
+
+    const obj = JSON.parse(json);
+
+    if (obj.c === "deflate") obj.s = await inflateFromB64(obj.s);
+
+    return obj;
+}
+
+async function makeInviteCode(sdp) {
+
+    const payload = { t: "invite", s: sdp };
+
+    try {
+        payload.c = "deflate";
+        payload.s = await deflateToB64(sdp);
+    } catch (noStream) {
+        /* older browser: plain base64, the phone still reads it */
+    }
+
+    return JSON.stringify(payload);
+}
+
+/*
+    The phone address.  serve.py reports the machine's LAN address and its
+    https port on /__lanip - a browser cannot see the host's own LAN IP.
+    Without serve.py it falls back to whatever address this page came from.
+*/
+async function ensureLanIp() {
+
+    if (PHONE.phoneOrigin) return;
+
+    try {
+        const reply = await fetch("/__lanip", { cache: "no-store" });
+        const info = await reply.json();
+
+        /*  A public origin (ngrok tunnel / AEROTWIN_PUBLIC_ORIGIN) beats
+            the LAN address: the QR becomes scannable by ANY phone. */
+        if (info && info.public) {
+            PHONE.phoneOrigin = info.public;
+        } else if (info && info.ip) {
+            PHONE.phoneOrigin = info.scheme + "://" + info.ip + ":" + info.port;
+        }
+
+        /*  The relay access key is only handed to this machine, and only
+            rides the QR link from here. */
+        if (info && info.key) {
+            PHONE.accessKey = info.key;
+        }
+    } catch (noEndpoint) {
+        /* plain http.server - fall through to the browser's hostname */
+    }
+
+    if (PHONE.phoneOrigin) return;
+
+    const h = location.hostname;
+
+    if (!h || h === "localhost" || h === "127.0.0.1") {
+        throw new Error(
+            "run serve.py so the QR can carry the PC's address - " +
+            "this page cannot see it itself"
+        );
+    }
+
+    PHONE.phoneOrigin = location.origin;
+}
+
+function phoneUrl() {
+
+    if (PHONE.phoneOrigin) {
+        const url = PHONE.phoneOrigin + "/phone.html";
+        return PHONE.accessKey ? url + "?key=" + encodeURIComponent(PHONE.accessKey) : url;
+    }
+
+    const port = location.port ? ":" + location.port : "";
+    return "http://" + (location.hostname || "localhost") + port + "/phone.html";
+}
+
+/* =========================================================================
+   THE PAIRING QR
+
+   Drawn here, by hand, into one canvas.
+
+
+     1. qrcode.js paints the symbol into a canvas AND then makes a second
+        copy of it as an <img>, and it sets that img's display inline - so
+        the stylesheet rule that was meant to hide it lost.  Two identical
+        symbols stacked inside one white pad are not one readable code.
+
+     2. It sizes each module to width / moduleCount, which is fractional
+        for almost every payload.  Fractional modules get anti-aliased to
+        grey and the edges stop being crisp black and white, which is the
+        one thing a phone camera needs in order to lock on.
+
+     3. There was no quiet zone.  A QR needs four clear modules on every
+        side, and the 8px of CSS padding was less than one module once the
+        payload grew past a few dozen characters.
+
+   All three are fixed by owning the drawing: an integer module pitch, a
+   real four-module quiet zone painted into the bitmap, one canvas, and no
+   resampling anywhere.
+   ========================================================================= */
+
+const QR_MAX_PX = 288;   /*  the symbol is never drawn wider than this  */
+const QR_QUIET  = 4;     /*  modules of clear margin on every side      */
+
+/*
+    Draw `text` into `canvas` and return its module count.  Throws if the
+    text will not fit any QR version.
+*/
+function drawQr(canvas, text) {
+
+    /*  Version 0 lets the library pick the smallest symbol that fits.  */
+    const model = qrcode(0, "M");
+
+    model.addData(text);
+    model.make();
+
+    const count = model.getModuleCount();
+    const span  = count + QR_QUIET * 2;
+
+    /*  Whole pixels per module, so no module is ever drawn half dark and
+        no edge is anti-aliased.  */
+    const scale = Math.max(1, Math.floor(QR_MAX_PX / span));
+
+    canvas.width  = span * scale;
+    canvas.height = span * scale;
+
+    /*  And shown at exactly the size it was drawn, so the browser is never
+        asked to resample it either.  */
+    canvas.style.width  = (span * scale) + "px";
+    canvas.style.height = (span * scale) + "px";
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#000000";
+
+    for (let row = 0; row < count; row++) {
+
+        for (let col = 0; col < count; col++) {
+
+            if (!model.isDark(row, col)) continue;
+
+            ctx.fillRect(
+                (col + QR_QUIET) * scale,
+                (row + QR_QUIET) * scale,
+                scale,
+                scale
+            );
+        }
+    }
+
+    return count;
+}
+
+/*
+    The token is 16 hex characters, so the code stays tiny and always
+    scannable - the handshake itself never rides the symbol.
+*/
+function refreshPairQr() {
+
+    const url = phoneUrl() + "#p=" + PHONE.token;
+
+    pairQr.innerHTML = "";
+    pairState.className = "";
+    pairState.textContent = "waiting for the phone to scan...";
+
+    if (typeof qrcode !== "function") {
+
+        pairState.textContent =
+            "QR library unavailable - serve phone.html from this PC and " +
+            "open it on the phone.";
+        pairState.className = "bad";
+        return;
+    }
+
+    const canvas = document.createElement("canvas");
+
+    pairQr.appendChild(canvas);
+
+    try {
+        drawQr(canvas, url);
+    } catch (overflow) {
+
+        canvas.remove();
+
+        pairState.textContent = "could not draw the pairing code: " + overflow;
+        pairState.className = "bad";
+    }
+}
+
+function setPairStatus(text, bad) {
+
+    pairState.textContent = text;
+    pairState.className = bad ? "bad" : "";
+
+    handState.textContent = text;
+
+    /*  Tell the embedding dashboard, if any, where pairing stands.  */
+    try {
+        parent.postMessage({ type: "CUTAWAY_PAIR_STATE",
+            message: text,
+            connected: !!PHONE.connected }, "*");
+    } catch (noHost) {}
+}
+
+function announcePhoneLive() {
+
+    HAND.on = true;
+    HAND.applied = -1;
+    HAND.candidate = -1;
+    HAND.lastVideoTime = -1;
+    PHONE.connected = true;
+    pairBox.style.display = "none";
+
+    setPairStatus("phone camera live");
+
+    handState.textContent = "phone camera live - show 1-5 fingers";
+    HAND.raf = requestAnimationFrame(handLoop);
+}
+
+async function startPhonePair() {
+
+    stopHand();
+
+    handBox.style.display = "block";
+    pairBox.style.display = "block";
+    handToggle.textContent = "Enable camera";
+    handState.textContent = "making invite code...";
+
+    try {
+
+        await loadIceServers();
+
+        PHONE.pc = new RTCPeerConnection({ iceServers: PHONE.iceServers });
+
+        PHONE.pc.addTransceiver("video", { direction: "recvonly" });
+
+        /*
+            Control channel. Once the phone is paired, this little pipe
+            turns the handset into a live throttle lever: it sends
+            {type:"PHONE_CMD", cmd, value} messages, this page relays
+            them to the embedding dashboard, and the dashboard's live
+            engine state comes back the other way. The phone page also
+            keeps a REST fallback, so control never depends on the
+            channel alone.
+        */
+        PHONE.channel = PHONE.pc.createDataChannel("ctl");
+
+        PHONE.channel.onopen = () => {
+            handState.textContent = "phone control channel open";
+        };
+
+        PHONE.channel.onmessage = ev => {
+
+            try {
+                const cmd = JSON.parse(ev.data);
+                if (cmd && cmd.type === "PHONE_CMD") {
+                    parent.postMessage({ type: "PHONE_CMD",
+                        cmd: cmd.cmd, value: cmd.value }, "*");
+                }
+            } catch (ignore) {}
+        };
+
+        PHONE.channel.onclose = () => { PHONE.channel = null; };
+
+        PHONE.pc.ontrack = event => {
+
+            handVideo.srcObject = event.streams[0];
+            handVideo.play().catch(() => {});
+
+            announcePhoneLive();
+        };
+
+        PHONE.pc.onconnectionstatechange = () => {
+
+            const state = PHONE.pc && PHONE.pc.connectionState;
+
+            if (PHONE.connected &&
+                (state === "failed" || state === "disconnected" ||
+                 state === "closed")) {
+                handState.textContent = "phone disconnected";
+                stopHand();
+            }
+        };
+
+        const offer = await PHONE.pc.createOffer();
+        await PHONE.pc.setLocalDescription(offer);
+        await iceComplete(PHONE.pc);
+
+        PHONE.inviteCode = await makeInviteCode(PHONE.pc.localDescription.sdp);
+
+        /*
+            Park the offer under a one-time token on the local server.
+            The token is the only thing that rides the QR - the phone
+            fetches the offer with it and posts its answer back, so the
+            handshake completes itself and there is nothing to paste.
+        */
+        const parked = await fetch("/__pair", {
+            method: "POST",
+            headers: Object.assign(
+                { "Content-Type": "application/json" }, relayHeaders()),
+            body: JSON.stringify({ offer: PHONE.inviteCode })
+        });
+
+        if (!parked.ok) {
+            throw new Error(
+                "pairing needs serve.py (the local server that serves " +
+                "this page) - it is not reachable"
+            );
+        }
+
+        PHONE.token = (await parked.json()).token;
+
+        await ensureLanIp();
+        refreshPairQr();
+        pollForAnswer();
+
+        setPairStatus("waiting for the phone to scan...");
+
+    } catch (err) {
+
+        handState.textContent =
+            "pairing failed: " + (err && err.message ? err.message : String(err));
+    }
+}
+
+/*
+    Watch for the phone's answer arriving on the relay.  A short interval,
+    not a long poll, keeps a dead server harmless; after two minutes the
+    session expires server-side and the desktop asks you to scan again.
+*/
+function pollForAnswer() {
+
+    if (PHONE.pollTimer) clearTimeout(PHONE.pollTimer);
+
+    PHONE.pollTimer = setTimeout(async () => {
+
+        if (!PHONE.token || PHONE.connected || !PHONE.pc) return;
+
+        try {
+
+            const reply = await fetch("/__pair/" + PHONE.token + "/answer",
+                { cache: "no-store", headers: relayHeaders() });
+
+            if (reply.ok) {
+
+                const data = await reply.json();
+
+                if (data.state === "answered" && data.answer) {
+                    await acceptPhoneReply(data.answer);
+                    return;                    /*  stop polling once answered  */
+                }
+
+                if (data.state === "waiting") {
+                    pollForAnswer();
+                    return;
+                }
+            }
+
+            /*  404 = session expired or the server restarted  */
+            setPairStatus("pairing session expired - scan the QR again", true);
+            PHONE.token = null;
+
+        } catch (serverGone) {
+
+            setPairStatus("pairing server unreachable - scan the QR again", true);
+            PHONE.token = null;
+        }
+    }, 1000);
+}
+
+async function acceptPhoneReply(rawJson) {
+
+    try {
+
+        const reply = await decodeReply(rawJson);
+
+        if (!reply || reply.t !== "reply" || !reply.s) {
+            throw new Error("that is not a phone reply code");
+        }
+
+        await PHONE.pc.setRemoteDescription({ type: "answer", sdp: reply.s });
+
+        setPairStatus("connecting to phone...");
+
+    } catch (err) {
+
+        setPairStatus(
+            "bad reply: " + (err && err.message ? err.message : String(err)),
+            true
+        );
+    }
+}
+
+/*
+    A drag to orbit the camera also ends in a click event, and the last thing
+    that should happen after spinning the view is a panel about whatever the
+    pointer happened to stop over.  Anything that moved more than a few
+    pixels between press and release is a drag, not a click.
+*/
+renderer.domElement.addEventListener("pointerdown", e => {
+    downAt = { x: e.clientX, y: e.clientY };
+});
+
+renderer.domElement.addEventListener("click", e => {
+
+    const dragged = downAt &&
+        Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 5;
+
+    /*  A drag that cranked the engine is not a click, and the panel
+        must not pop open when the hand lets go of a part.  */
+    const cranked = DRAG.active;
+
+    downAt = null;
+
+    if (dragged || cranked) return;
+
+    const hit = pickAt(e.clientX, e.clientY);
+
+    if (hit) buildPanel(hit);
+    else closePanel();
+});
+
+
+let crankAngle = 0;
+
+/*  The cylinder currently on its power stroke, for the firing order strip.  */
+let lastFired = null;
+
+/*  Reused scratch objects - avoids allocating every frame.  */
+const scratchDir = new THREE.Vector3();
+const scratchPistonPin = new THREE.Vector3();
+const scratchCrankPin = new THREE.Vector3();
+const scratchRodX = new THREE.Vector3();
+const scratchRodZ = new THREE.Vector3();
+const rodBasis = new THREE.Matrix4();
+const UP = new THREE.Vector3(0, 1, 0);
+
+
+/* =========================================================================
+   CRANK SPEED MODEL
+
+   One integrator owns how fast the crank is actually turning.  The Speed
+   slider (and the dashboard) only ever set the COMMANDED throttle; the
+   real rate eases toward it every frame, exactly like a machine with
+   rotating mass:
+
+     - preset / backend changes  ->  the engine audibly spools up and
+       down instead of snapping between speeds
+     - dragging a part           ->  kicks add to the real rate, so a
+       flick over-revs and then coasts back to the throttle
+     - friction                  ->  the approach is exponential, so the
+       last few RPM settle gently rather than stepping
+
+   The kinematic hierarchy below reads this one number; nothing else in
+   the file may integrate crank speed.
+   ========================================================================= */
+
+/*
+    Burst watch limits.  The HUD quotes rpm = value * 3600, and the
+    Takeoff preset is 5800 rpm - so the warn band opens just above it and
+    the hard limit sits where a real small turboprop would be redlined.
+
+    The host (reading the backend) can flag the states directly; this page
+    also watches its own RPM readout, so the protection works even when
+    the dashboard is not driving.
+*/
+const BURST_WARN_RPM   = 5900;
+const BURST_LIMIT_RPM  = 6400;
+const BURST_RECOVER    = 0.05;   /*  fast idle while protecting  */    const hostBurst = { aboutToBurst: false, overLimit: false, detail: "", at: 0 };
+
+    /*
+        Where the aircraft is in its mission - STARTUP / TAKEOFF / CLIMB /
+        CRUISE / DESCENT / LANDING - relayed by the dashboard from the
+        backend's live frame. Shown as a second HUD line under the RPM
+        readout; hidden when nothing is driving.
+    */
+    let hostFlightPhase = "";
+
+    function setHostFlightPhase(phase) {
+
+        hostFlightPhase = String(phase || "");
+
+        let el = document.getElementById("flightPhase");
+
+        if (!el) {
+
+            const hud = document.getElementById("rpm");
+
+            if (!hud) return;
+
+            el = document.createElement("div");
+            el.id = "flightPhase";
+            el.style.cssText =
+                "font:600 11px/1.4 'JetBrains Mono',monospace;" +
+                "letter-spacing:0.08em;margin-top:2px;color:#7fb4d8;";
+            hud.insertAdjacentElement("afterend", el);
+        }
+
+        if (!hostFlightPhase) {
+            el.style.display = "none";
+            return;
+        }
+
+        el.style.display = "block";
+        el.textContent = "FLIGHT PHASE \u00B7 " + hostFlightPhase;
+    }
+
+const SPEED = {
+
+    throttle: Number(document.getElementById("speed").value),
+    rate: Number(document.getElementById("speed").value),
+    hostHold: 0,          /*  seconds left of a host-driven throttle  */
+
+    update(delta) {
+
+        /*  Mass + friction: approach the commanded rate, about 1.6/s.  */
+        const k = Math.min(1, 1.6 * delta);
+
+        this.rate += (this.throttle - this.rate) * k;
+
+        if (this.hostHold > 0) this.hostHold -= delta;
+    },
+
+    /*  A drag kick lands on the REAL rate, not the slider: the engine
+        over-revs while you push it and coasts back afterwards.  */
+    kick(amount) {
+        this.rate = THREE.MathUtils.clamp(this.rate + amount, -0.2, 0.2);
+    },
+
+    setThrottle(value, hostSeconds) {
+
+        this.throttle = value;
+
+        if (hostSeconds) this.hostHold = hostSeconds;
+    }
+};
+
+
+function animate() {
+
+    requestAnimationFrame(animate);
+
+    const delta = clock.getDelta();
+
+    /* ---- inputs --------------------------------------------------------- */
+
+    /*  The real crank rate, from the speed model - not the slider.  */
+    SPEED.update(delta);
+
+    const speed = SPEED.rate;
+
+    /*  Geometry constants, formerly Bank Tilt / Crown Offset / Crank Y /
+        Crank Z sliders.  All measured off the block's own STL - see the
+        BLOCK / CYL_X / BANK_TILT_DEG block near the top of the file.  */
+    const tilt = THREE.MathUtils.degToRad(BANK_TILT_DEG);
+    const stroke = Number(document.getElementById("stroke").value);
+    const rodLength = Number(document.getElementById("rodlen").value);
+    const crownOffset = CROWN_OFFSET;
+    const crankY = CRANK_Y;
+    const crankZ = CRANK_Z;
+
+    crankAngle = (crankAngle + speed * delta * 60) % (Math.PI * 2);
+
+    /*  A drag kick can spin the crank backwards; keep the angle positive
+        so every readout stays in 0..360.  */
+    if (crankAngle < 0) crankAngle += Math.PI * 2;
+
+    const theta = crankAngle;
+    const crankRadius = stroke / 2;
+
+    /* ---- anchor + banks ------------------------------------------------- */
+
+    crankAnchor.position.set(0, stlY(crankY), stlZ(crankZ));
+
+    /*
+        Bore axes are (0, +0.700, +0.710) and (0, -0.700, +0.710): the
+        banks spread in +/-Y and SHARE +Z.  Rotating a bank by +tilt sends
+        its local +Y to (0, cos t, sin t) - correct for bank A.  Bank B
+        needs (0, -cos t, sin t), which is tilt measured from -Y, i.e.
+        PI - tilt, NOT -tilt.  Using -tilt would aim bank B back down the
+        block and collapse the V.
+    */
+    bankA.rotation.x = tilt;
+    bankB.rotation.x = Math.PI - tilt;
+
+    crankShaftGroup.rotation.x = theta;
+
+    /*  Cams turn at half crank speed on a four stroke.  */
+    for (const lobes of CAMS) lobes.rotation.x = theta / 2;
+
+    /* ---- whole engine orientation --------------------------------------- */
+
+    /*  The engine is built upright and stays that way; the old Engine Rot
+        X / Z sliders are gone.  Rotation stays at the default 0.  */
+
+    /* ---- per cylinder --------------------------------------------------- */
+
+    let displayAngle = theta;
+
+    let firingPart = null;
+    let firingAge = Infinity;
+
+    for (const part of parts) {
+
+        const spec = part.spec;
+
+        /*  This cylinder's bank rotation about X.  */
+        const a = spec.bank > 0 ? tilt : Math.PI - tilt;
+
+        /*  The crankpin angle is absolute, so the two cylinders sharing a
+            bore land on the same throw.  The piston phase is that pin angle
+            measured back from this bank's bore axis.                       */
+        const phi = theta + part.pin;
+        const psi = phi - a;
+
+        const displacement = getPistonPosition(
+            psi, crankRadius, rodLength
+        );
+
+        /*  Piston pin sits (rodLength + displacement) out along the bore,
+            so at TDC it is exactly rodLength from the crank centre - which
+            is what keeps the rod the right length.                         */
+        const pinY = rodLength + displacement;
+
+        /*  Head centre, a little further up the bore than the pin.  */
+        const crownY = pinY + crownOffset;
+
+        part.piston.position.y = crownY;
+
+        /*  Four stroke cycle, 0 to 720 degrees:
+
+            0-180   intake      piston down, intake valve open
+            180-360 compression piston up
+            360-540 power       piston down, combustion at 360
+            540-720 exhaust     piston up, exhaust valve open
+        */
+        const cycle = (theta + part.cycle) % (Math.PI * 4);
+
+        /*  Which of the four strokes this cylinder is on right now.  */
+        const stroke = cycle < Math.PI ? "INT"
+            : cycle < Math.PI * 2 ? "CMP"
+            : cycle < Math.PI * 3 ? "PWR"
+            : "EXH";
+
+        /*  Chip letter.  Only touched when the stroke actually changes, so
+            the DOM is not rewritten every frame.  */
+        const shownStroke = TUNE.cut.has(part.index) ? "OFF" : stroke;
+
+        if (part.chipState !== shownStroke) {
+
+            part.chipState = shownStroke;
+            part.chipStroke.textContent = shownStroke;
+        }
+
+        /*
+            Find the cylinder that fired most recently, i.e. the one showing
+            PWR with the least of its power stroke elapsed.  This block is an
+            89.2 degree V, so its firing intervals alternate 90.8 / 89.2 and
+            a plain "is it on the power stroke" test would light one, two or
+            three chips depending on the instant.  Picking the youngest power
+            stroke keeps the strip stepping cleanly through the firing order.
+        */
+        if (stroke === "PWR" && !TUNE.cut.has(part.index)) {
+
+            const age = cycle - Math.PI * 2;
+
+            if (age < firingAge) {
+                firingAge = age;
+                firingPart = part;
+            }
+        }
+
+        /*  Glow the piston down its power stroke, brightest just after
+            the spark.  */
+        const power = (stroke === "PWR" && !TUNE.cut.has(part.index))
+            ? TUNE.fuel * (0.25 + 0.75 * (1 - (cycle - Math.PI * 2) / Math.PI))
+            : 0;
+
+        part.piston.material.emissive.setHex(0xff5a12);
+        part.piston.material.emissiveIntensity = 0.9 * power;
+
+        /*  A cylinder cut from the panel still turns over, it just stops
+            firing: that is what a dead cylinder looks like.  */
+        const dead = TUNE.cut.has(part.index);
+
+        const intakeOpen = cycle < Math.PI && !dead;
+        const exhaustOpen = cycle > Math.PI * 3;
+
+        /*
+            Lift scales with cam lift and with air inflow - a throttled
+            engine does not fill its cylinders, and this is the visible half
+            of that.
+        */
+        const charge = TUNE.lift * TUNE.air;
+
+        const intakeLift = intakeOpen ? Math.sin(cycle) * 5 * charge : 0;
+        const exhaustLift = exhaustOpen
+            ? Math.sin(cycle - Math.PI * 3) * 5 * TUNE.lift
+            : 0;
+
+        part.intakeValve.position.y = VALVE_Y - intakeLift;
+        part.exhaustValve.position.y = VALVE_Y - exhaustLift;
+
+        /*  Air + fuel drawn in past the intake valve, tracking the piston.  */
+        updateStream(
+            part.intakeStream, part.jitter,
+            VALVE_Y + 14, pinY + 5,
+            intakeOpen ? cycle / Math.PI : 0,
+            intakeOpen ? Math.sin(cycle) * TUNE.air : 0,
+            0
+        );
+
+        /*  Burnt gas pushed out past the exhaust valve.  */
+        updateStream(
+            part.exhaustStream, part.jitter,
+            pinY + 5, VALVE_Y + 20,
+            exhaustOpen ? (cycle - Math.PI * 3) / Math.PI : 0,
+            exhaustOpen ? Math.sin(cycle - Math.PI * 3) * TUNE.air : 0,
+            0
+        );
+
+        /*  Ignition: a hard spark right at TDC, a touch of advance, then
+            the burn follows it.  */
+        const rel = cycle - Math.PI * 2;
+
+        /*  Advance is a panel control now, so the window it opens is state
+            rather than a constant.  */
+        const sparkWindow = TUNE.advance;
+
+        if (!dead && Math.abs(rel) < sparkWindow) {
+
+            const k = 1 - Math.abs(rel) / sparkWindow;
+
+            part.spark.visible = true;
+            part.spark.material.opacity = k;
+            part.spark.scale.setScalar(0.6 + 1.1 * k);
+
+        } else {
+            part.spark.visible = false;
+        }
+
+        /*  No spark, no burn - and fuel scales how much of one there is.  */
+        const burn = (!dead && TUNE.fuel > 0.01 && rel > -0.05 && rel < 1.5)
+            ? TUNE.fuel * Math.exp(-2.2 * Math.max(rel, 0))
+            : 0;
+
+        if (burn > 0.02) {
+
+            part.flame.visible = true;
+
+            const blobs = part.flame.userData.blobs;
+
+            for (let b = 0; b < blobs.length; b++) {
+
+                const blob = blobs[b];
+                const u = blob.userData;
+
+                const wobble =
+                    0.5 + 0.5 * Math.sin(rel * u.rate * 6 + u.reach);
+
+                blob.material.opacity = burn * (0.3 + 0.55 * wobble);
+
+                blob.position
+                    .copy(u.dir)
+                    .multiplyScalar(u.reach * (0.35 + 0.9 * wobble));
+
+                blob.scale.setScalar(
+                    u.size * (0.55 + 1.2 * burn) * (0.7 + 0.6 * wobble)
+                );
+            }
+
+        } else {
+            part.flame.visible = false;
+        }
+
+        scratchCrankPin.set(
+            stlX(spec.x),
+            crankRadius * Math.cos(phi),
+            crankRadius * Math.sin(phi)
+        );
+
+        part.crankPin.position.copy(scratchCrankPin);
+
+        /*  Piston pin expressed in the crank frame (undo the bank tilt).  */
+        scratchPistonPin.set(
+            stlX(spec.x),
+            pinY * Math.cos(a),
+            pinY * Math.sin(a)
+        );
+
+        /*  Stretch the rod between the two pins.  */
+        scratchDir.subVectors(scratchCrankPin, scratchPistonPin);
+
+        const span = scratchDir.length();
+
+        part.rod.position
+            .copy(scratchPistonPin)
+            .add(scratchCrankPin)
+            .multiplyScalar(0.5);
+
+        /*
+            Only the shank stretches.  The ends are fixed size and get
+            parked on their pins, so the big end stays round instead of
+            swelling and shrinking once per revolution.
+        */
+        part.rodShank.scale.y = span;
+        part.rodBig.position.y = span / 2;
+        part.rodSmall.position.y = -span / 2;
+
+        /*
+            Aim the rod along the pin to pin line, but build the frame from
+            the crank axis rather than from the shortest rotation: a rod's
+            big end is square to its pin, and the shortest rotation would
+            roll it round as the crank came about.
+        */
+        scratchDir.normalize();
+        scratchRodX.set(1, 0, 0).projectOnPlane(scratchDir).normalize();
+        scratchRodZ.crossVectors(scratchRodX, scratchDir).normalize();
+
+        rodBasis.makeBasis(scratchRodX, scratchDir, scratchRodZ);
+        part.rod.quaternion.setFromRotationMatrix(rodBasis);
+
+        /*  The counterweight always points away from its pin.  */
+        if (part.counterweight) {
+
+            part.counterweight.position.set(stlX(spec.x), 0, 0);
+            part.counterweight.rotation.x = phi + Math.PI;
+        }
+    }
+
+    /*  Light the chip of whichever cylinder is firing right now.  */
+    if (firingPart !== lastFired) {
+
+        if (lastFired) lastFired.chip.classList.remove("firing");
+        if (firingPart) firingPart.chip.classList.add("firing");
+
+        lastFired = firingPart;
+    }
+
+    /* ---- interaction readouts ------------------------------------------- */
+
+    /*  Live numbers while the panel is open, and a tooltip that follows the
+        part under the pointer.  */
+    if (panelEl.style.display === "block") updatePanelReadout();
+
+    if (hoverHit) {
+
+        if (!hoverHit.object.layers.test(camera.layers)) {
+
+            /*  The system it belongs to was peeled off under the pointer.  */
+            hoverHit = null;
+            hoverHelper.visible = false;
+
+            if (tipFromModel) {
+                tipFromModel = false;
+                hideTip();
+            }
+
+        } else if (tipFromModel) {
+
+            showTip(tipHTML(hoverHit), hoverAt.x, hoverAt.y);
+        }
+    }
+
+    /* ---- hud ------------------------------------------------------------ */
+
+    const rpm = Math.round(speed * 60 * 60);
+
+    /*
+        Burst watch.  The host (reading the backend) can flag the state,
+        and this page double-checks the RPM it can see itself - whichever
+        trips first wins.  Over the hard limit the page protects itself:
+        it cuts the commanded throttle to a fast idle until the overspeed
+        actually clears.
+    */
+    const hostFresh = performance.now() - hostBurst.at < 3000;
+
+    const overLimit = rpm >= BURST_LIMIT_RPM ||
+        (hostFresh && hostBurst.overLimit);
+
+    const aboutToBurst = !overLimit &&
+        (rpm >= BURST_WARN_RPM || (hostFresh && hostBurst.aboutToBurst));
+
+    const hud = document.getElementById("rpm");
+
+    if (overLimit || aboutToBurst) {
+
+        hud.classList.add("burst");
+        hud.classList.toggle("limit", overLimit);
+
+        hud.textContent = overLimit
+            ? `!! OVERSPEED ${rpm} RPM - CUTTING THROTTLE !!` +
+              (hostFresh && hostBurst.detail ? " | " + hostBurst.detail : "")
+            : `ABOUT TO BURST | ${rpm} RPM | THROTTLE BACK NOW` +
+              (hostFresh && hostBurst.detail ? " | " + hostBurst.detail : "");
+
+        if (overLimit) {
+
+            SPEED.setThrottle(BURST_RECOVER, 3);
+
+            const s = document.getElementById("speed");
+            s.value = String(BURST_RECOVER);
+        }
+
+    } else {
+
+        hud.classList.remove("burst");
+
+        hud.textContent =
+            `Crank ${THREE.MathUtils.radToDeg(displayAngle).toFixed(0)}°` +
+            ` | V${CYLINDERS.length} cross-plane` +
+            ` | firing ${FIRING_ORDER} | ${rpm} RPM`;
+    }
+
+    /* ---- render --------------------------------------------------------- */
+
+    orbit.update();
+
+    /*
+        Through the composer, since that is where the bloom lives.  With
+        strength 0 this is just the direct render with one extra blit.
+    */
+    composer.render();
+}
+
+animate();
+
+
+/* =========================================================================
+   RESIZE
+   ========================================================================= */
+
+window.addEventListener("resize", () => {
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+    bloomPass.setSize(window.innerWidth, window.innerHeight);
+});
+
+
+/* =========================================================================
+   HOST MESSAGES
+
+   The AeroTwin dashboard embeds this page in its cutaway box and forwards
+   its RPM presets here.  Same mapping as aerotwin-bridge.js uses for the
+   sih cockpit: the HUD quotes value * 3600, so value = rpm / 3600 keeps
+   this page's own readout equal to the host's number.  The slider's range
+   is widened to cover a real engine, but only while the host is driving -
+   by hand it keeps its original 0..0.15 sweep.
+   ========================================================================= */
+
+const HOST_RPM_PER_UNIT = 3600;
+
+/*  Interactive throttle band, matching the engine model: ground idle at
+    zero stick, rated power at full stick. The dashboard slider and the
+    phone controller both speak 0..1 throttle.                     */
+const HOST_IDLE_RPM = 1200;
+const HOST_MAX_RPM = 5800;
+
+/*
+    Speed changes from the host no longer snap: they land on the speed
+    model as a new commanded throttle, and the engine spools there over
+    roughly half a second per 1000 rpm - which is what an engine with
+    rotating mass does.
+*/
+function applyHostRpm(rpm) {
+
+    SPEED.setThrottle(rpm / HOST_RPM_PER_UNIT, 3);
+
+    const speedEl = document.getElementById("speed");
+
+    /*  The slider tracks the command for the hand driver, but the rate
+        itself is the model's - so nothing here can snap the chain.  */
+    speedEl.max = String(Math.max(Number(speedEl.max) || 0,
+        rpm / HOST_RPM_PER_UNIT));
+    speedEl.value = String(rpm / HOST_RPM_PER_UNIT);
+}
+
+/*  A 0..1 throttle command from the dashboard or the paired phone,
+    mapped across the engine's idle..rated band. The engine then spools
+    to it through the same speed model as every other command.   */
+function applyHostThrottle(throttle) {
+
+    const t = Math.min(1, Math.max(0, Number(throttle) || 0));
+    applyHostRpm(HOST_IDLE_RPM + t * (HOST_MAX_RPM - HOST_IDLE_RPM));
+}
+
+/*
+    Dashboard QR hand-off.
+
+    When the host asks for a pairing QR (CUTAWAY_REQUEST_QR), this page
+    builds the real invite - its own WebRTC offer, parked on the local
+    server under a one-time token - and sends the QR bitmap back as a data
+    URL.  The token is all the code carries, so the symbol is always tiny
+    and scannable.  The phone opens the link, and the handshake completes
+    itself: the answer comes back through the relay and polling in this
+    page picks it up.  Nothing is ever pasted anywhere.
+
+    One RTCPeerConnection exists per invite, so asking twice simply
+    replaces the old one; refreshPairQr() runs only when the token has
+    actually been issued.
+*/
+async function buildDashboardQr() {
+
+    try {
+
+        if (!PHONE.pc || PHONE.pc.connectionState === "closed" || !PHONE.token) {
+            await startPhonePair();          /*  makes PHONE.token  */
+        } else if (!PHONE.inviteCode) {
+            handState.textContent = "still making the invite code...";
+            return;
+        }
+
+        await ensureLanIp();
+
+        const canvas = document.createElement("canvas");
+        const url    = phoneUrl() + "#p=" + PHONE.token;
+
+        drawQr(canvas, url);
+
+        parent.postMessage({
+            type: "CUTAWAY_SHOW_QR",
+            dataUrl: canvas.toDataURL("image/png"),
+            caption: PHONE.phoneOrigin && PHONE.phoneOrigin.startsWith("https://") &&
+                     !/^https:\/\/(127\.|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(PHONE.phoneOrigin)
+                ? "Scan this with ANY phone - it pairs over the internet. " +
+                  "Camera and throttle work from anywhere."
+                : "Scan this with the phone (same Wi-Fi). The camera " +
+                  "pairs by itself - no code to type or paste."
+        }, "*");
+
+    } catch (err) {
+
+        parent.postMessage({
+            type: "CUTAWAY_SHOW_QR",
+            error: String(err && err.message || err)
+        }, "*");
+    }
+}
+
+window.addEventListener("message", (event) => {
+
+    const msg = event.data;
+
+    if (!msg || typeof msg !== "object") return;
+
+    if (msg.type === "CUTAWAY_SET_RPM") {
+
+        const rpm = Math.max(0, Number(msg.rpm) || 0);
+
+        if (!rpm) return;
+
+        applyHostRpm(rpm);
+        return;
+    }
+
+    /*  Direct throttle command (0..1) from the dashboard or the phone
+        controller - same spool behaviour as an RPM command.       */
+    if (msg.type === "CUTAWAY_SET_THROTTLE") {
+
+        applyHostThrottle(msg.throttle);
+        return;
+    }
+
+    /*
+        The backend's verdict on the engine, relayed by the dashboard:
+        speed up / slow down as a commanded throttle, plus the health
+        flags that drive the burst watch.
+    */
+    if (msg.type === "CUTAWAY_ENGINE_STATE") {
+
+        if (msg.rpm !== undefined) {
+            applyHostRpm(Math.max(0, Number(msg.rpm) || 0));
+        }
+
+        hostBurst.aboutToBurst = !!msg.aboutToBurst;
+        hostBurst.overLimit    = !!msg.overLimit;
+        hostBurst.detail       = String(msg.detail || "");
+        hostBurst.at           = performance.now();
+
+        /*  The dashboard relays the mission phase alongside the state. */
+        if (msg.phase !== undefined) setHostFlightPhase(msg.phase);
+
+        return;
+    }
+
+    if (msg.type === "CUTAWAY_REQUEST_QR") {
+        buildDashboardQr();
+        return;
+    }
+
+    /*  A host that already holds the phone's answer itself can still
+        hand it over; everything else arrives through the relay.  */
+    if (msg.type === "CUTAWAY_PHONE_REPLY") {
+
+        acceptPhoneReply(String(msg.reply || ""));
+        return;
+    }
+
+    /*  Live engine state for the phone controller: the dashboard
+        publishes, this page relays it into the data channel.  */
+    if (msg.type === "PHONE_STATE") {
+
+        if (PHONE.channel && PHONE.channel.readyState === "open") {
+            PHONE.channel.send(JSON.stringify(msg));
+        }
+        return;
+    }
+});
+</script>
+
+</body>
+</html>

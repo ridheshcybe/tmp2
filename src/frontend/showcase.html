@@ -356,6 +356,28 @@
       margin: 0 0 44px;
     }
 
+    /* ── KINETIC TYPOGRAPHY ─────────────────────────────────────────────
+       data-kinetic headings are split into characters by the script below;
+       each char rises and un-rotates on a staggered spring curve when the
+       element enters the viewport. */
+
+    [data-kinetic] .char {
+      display: inline-block;
+      white-space: pre;
+      opacity: 0;
+      transform: translateY(1.15em) rotate(9deg);
+      transition:
+        transform 0.85s cubic-bezier(0.19, 1, 0.22, 1),
+        opacity 0.45s linear;
+      transition-delay: calc(var(--i, 0) * 26ms);
+      will-change: transform, opacity;
+    }
+
+    [data-kinetic].kinetic-in .char {
+      opacity: 1;
+      transform: translateY(0) rotate(0);
+    }
+
     /* ── REDUCED MOTION / ACCESSIBILITY ───────────────────────────────── */
 
     @media (prefers-reduced-motion: reduce) {
@@ -403,7 +425,7 @@
       <p class="kicker">SIH 26054 · DRDO · AERO PISTON ENGINE HEALTH</p>
 
       <h1 class="display" data-kinetic>MEET THE <span class="yellow">TWIN.</span></h1>
-      <h2 class="display" data-kinetic-sub>Failure, predicted 42 minutes before the alarm.</h2>
+      <h2 class="display" data-kinetic>Failure, predicted 42 minutes before the alarm.</h2>
 
       <p class="lede">
         A running engine dissolves into <b>pure data</b> — <b>20+ telemetry channels</b>,
@@ -591,6 +613,48 @@
       } else {
         requestAnimationFrame(frame);
       }
+    })();
+
+    /* Kinetic typography: split data-kinetic headings into characters and
+       reveal them on a stagger when they scroll into view. Skipped under
+       reduced motion so text is never trapped invisible. */
+    (() => {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      function split(el) {
+        let i = 0;
+        const walk = node => {
+          [...node.childNodes].forEach(child => {
+            if (child.nodeType === Node.TEXT_NODE) {
+              const frag = document.createDocumentFragment();
+              for (const ch of child.textContent) {
+                const span = document.createElement("span");
+                span.className = "char";
+                span.style.setProperty("--i", i++);
+                span.textContent = ch;
+                frag.appendChild(span);
+              }
+              node.replaceChild(frag, child);
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+              walk(child);
+            }
+          });
+        };
+        walk(el);
+      }
+
+      const targets = document.querySelectorAll("[data-kinetic]");
+      targets.forEach(split);
+
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add("kinetic-in");
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.35 });
+      targets.forEach(el => io.observe(el));
     })();
 
     /* Live status badge: jitter the latency readout around 0.4ms. */

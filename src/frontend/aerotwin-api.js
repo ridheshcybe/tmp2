@@ -190,6 +190,10 @@
     }
 
     function wsUrl() {
+        // Cloud/https deployments serve the API on this same origin (no :8081).
+        if (location.protocol === "https:") {
+            return "wss://" + location.host + "/ws/telemetry/" + ENGINE_ID;
+        }
         const host = location.hostname || "127.0.0.1";
         return "ws://" + host + ":" + BACKEND_WS_PORT + "/ws/telemetry/" + ENGINE_ID;
     }

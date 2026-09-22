@@ -1,0 +1,9 @@
+backup_full_2026-09-20
+backup_2026-09-21
+brag-output*
+archive_cleanup_2026-09-20.zip
+backup_full_2026-09-20.zip
+node_modules
+venv
+.git
+sih/frontend/node_modules

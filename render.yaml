@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: aerotwin
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: AEROTWIN_SERVE_FRONTEND
+        value: "1"
+      # Set this to your real URL after the first deploy:
+      - key: CORS_ORIGINS
+        value: https://aerotwin.onrender.com

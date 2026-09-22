@@ -274,6 +274,32 @@ async def log_requests(request: Request, call_next):
 #  Direct Run
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  Optional: serve the standalone dashboard from this same origin (cloud deploys)
+#  Enabled with AEROTWIN_SERVE_FRONTEND=1. Mounted last so /api and /ws routes
+#  registered above always win.
+# ══════════════════════════════════════════════════════════════════════════════
+
+import os as _os
+
+if _os.environ.get("AEROTWIN_SERVE_FRONTEND", "").strip() == "1":
+    from pathlib import Path as _Path
+
+    _frontend_dir = _Path(
+        _os.environ.get(
+            "AEROTWIN_FRONTEND_DIR",
+            str(_Path(__file__).resolve().parents[2] / "src" / "frontend"),
+        )
+    )
+    if _frontend_dir.is_dir():
+        app.mount(
+            "/",
+            StaticFiles(directory=str(_frontend_dir), html=True),
+            name="dashboard",
+        )
+        logger.info(f"Serving dashboard from {_frontend_dir}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

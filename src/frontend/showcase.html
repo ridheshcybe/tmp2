@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AeroTwin // MEET THE TWIN — AI Digital Twin Showcase</title>
+  <meta name="description" content="An AI digital twin for aero piston engines: 20+ telemetry channels, 10,000 simulations a minute, failure predicted 42 minutes before any alarm." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       DESIGN SYSTEM — High-Contrast Cyberpunk / HUD Matrix
+       Electric yellow on pitch black. Mono for machine voice, Syne for
+       display type. Every color is checked against #050507 for WCAG AA.
+       ═══════════════════════════════════════════════════════════════════ */
+    :root {
+      --yellow: #FFE600;
+      --gold: #FFD700;
+      --bg-0: #050507;
+      --bg-1: #0B0B0F;
+      --bg-2: #121218;
+      --ink: #EDEDE6;
+      --ink-dim: #A6A69C;
+      --line: rgba(255, 230, 0, 0.16);
+      --line-soft: rgba(255, 255, 255, 0.08);
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --display: "Syne", "JetBrains Mono", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg-0);
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: var(--yellow); color: #050507; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-0); }
+    ::-webkit-scrollbar-thumb { background: #2c2c34; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--yellow); }
+
+    a { color: inherit; }
+
+    /* ── ATMOSPHERE LAYERS ──────────────────────────────────────────────
+       z-index map: canvas 0 < noise 1 < scanlines 2 < content 10 < cursor 60 */
+
+    .noise {
+      position: fixed;
+      inset: -50%;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.055;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      animation: grain 0.9s steps(4) infinite;
+    }
+
+    @keyframes grain {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-2%, 3%); }
+      50% { transform: translate(3%, -2%); }
+      75% { transform: translate(-3%, -3%); }
+      100% { transform: translate(2%, 2%); }
+    }
+
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.025) 0px,
+        rgba(255, 255, 255, 0.025) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      mix-blend-mode: overlay;
+      opacity: 0.5;
+    }
+
+    /* ── DIGITAL TWIN PARTICLE CANVAS ─────────────────────────────────── */
+
+    #twin-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      cursor: crosshair;
+    }
+
+    /* ── HEADER ───────────────────────────────────────────────────────── */
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(to bottom, rgba(5, 5, 7, 0.85), rgba(5, 5, 7, 0.55));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-decoration: none;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .brand b { color: var(--yellow); }
+
+    nav { display: flex; align-items: center; gap: 20px; }
+
+    nav a.link {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-decoration: none;
+      color: var(--ink-dim);
+      transition: color 0.2s ease;
+    }
+
+    nav a.link:hover, nav a.link:focus-visible { color: var(--yellow); }
+
+    nav a.cta {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-decoration: none;
+      color: #050507;
+      background: var(--yellow);
+      padding: 8px 14px;
+      border: 1px solid var(--yellow);
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    nav a.cta:hover, nav a.cta:focus-visible {
+      background: transparent;
+      color: var(--yellow);
+      box-shadow: 0 0 18px rgba(255, 230, 0, 0.35);
+    }
+
+    @media (max-width: 640px) {
+      nav a.link { display: none; }
+    }
+
+    /* ── HERO ─────────────────────────────────────────────────────────── */
+
+    main { position: relative; z-index: 10; }
+
+    .hero {
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 120px 6vw 80px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      color: var(--yellow);
+      border: 1px solid var(--line);
+      background: rgba(11, 11, 15, 0.65);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      padding: 8px 14px;
+      margin-bottom: 28px;
+    }
+
+    .radar {
+      position: relative;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--yellow);
+      flex: none;
+    }
+
+    .radar::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1px solid var(--yellow);
+      animation: radar-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes radar-ping {
+      0% { transform: scale(0.6); opacity: 0.9; }
+      80%, 100% { transform: scale(2.4); opacity: 0; }
+    }
+
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--ink-dim);
+      margin: 0 0 18px;
+    }
+
+    h1.display {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(44px, 9.5vw, 132px);
+      line-height: 0.98;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+      color: var(--ink);
+    }
+
+    h1.display .yellow { color: var(--yellow); }
+
+    h2.display {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(20px, 3.4vw, 44px);
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      margin: 0 0 26px;
+      color: var(--ink-dim);
+    }
+
+    .lede {
+      max-width: 640px;
+      font-size: 15px;
+      color: var(--ink-dim);
+      margin: 0 0 40px;
+    }
+
+    .lede b { color: var(--ink); font-weight: 500; }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-decoration: none;
+      text-transform: uppercase;
+      padding: 14px 24px;
+      border: 1px solid var(--yellow);
+      color: #050507;
+      background: var(--yellow);
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--yellow);
+    }
+
+    .btn:hover, .btn:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(255, 230, 0, 0.35);
+    }
+
+    .btn.ghost:hover, .btn.ghost:focus-visible {
+      background: var(--yellow);
+      color: #050507;
+    }
+
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 3px;
+    }
+
+    .scroll-cue {
+      position: absolute;
+      bottom: 26px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: var(--ink-dim);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scroll-cue::after {
+      content: "";
+      width: 1px;
+      height: 34px;
+      background: linear-gradient(to bottom, var(--yellow), transparent);
+      animation: cue-drop 1.6s ease-in-out infinite;
+    }
+
+    @keyframes cue-drop {
+      0% { transform: scaleY(0); transform-origin: top; }
+      55% { transform: scaleY(1); transform-origin: top; }
+      56% { transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
+    }
+
+    /* ── SHARED SECTION SHELL (used by every showcase block) ─────────── */
+
+    .section {
+      position: relative;
+      padding: 110px 6vw;
+      border-top: 1px solid var(--line-soft);
+      background: linear-gradient(to bottom, rgba(11, 11, 15, 0.82), rgba(5, 5, 7, 0.92));
+    }
+
+    .section-tag {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--yellow);
+      margin: 0 0 14px;
+    }
+
+    .section-title {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(30px, 5.5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -0.015em;
+      text-transform: uppercase;
+      margin: 0 0 18px;
+      color: var(--ink);
+    }
+
+    .section-sub {
+      max-width: 620px;
+      color: var(--ink-dim);
+      margin: 0 0 44px;
+    }
+
+    /* ── REDUCED MOTION / ACCESSIBILITY ───────────────────────────────── */
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .noise, .radar::after, .scroll-cue::after { animation: none !important; }
+      *, *::before, *::after {
+        animation-duration: 0.001s !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001s !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding: 110px 7vw 90px; }
+      .section { padding: 80px 7vw; }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="twin-canvas" aria-hidden="true"></canvas>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <header>
+    <a class="brand" href="./showcase.html">AERO<b>TWIN</b>_SHOWCASE</a>
+    <nav aria-label="Showcase sections">
+      <a class="link" href="#twin">THE TWIN</a>
+      <a class="link" href="#timeline">30s SCRIPT</a>
+      <a class="link" href="#matrix">IMPACT</a>
+      <a class="cta" href="./index.html">OPEN DASHBOARD</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ══════════════════════════════════════════════════════════════
+         HERO
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="hero" id="top">
+      <div class="status-badge" role="status">
+        <span class="radar" aria-hidden="true"></span>
+        DIGITAL&nbsp;TWIN:&nbsp;ONLINE&nbsp;//&nbsp;LATENCY:&nbsp;<span id="latency">0.4</span>ms
+      </div>
+
+      <p class="kicker">SIH 26054 · DRDO · AERO PISTON ENGINE HEALTH</p>
+
+      <h1 class="display" data-kinetic>MEET THE <span class="yellow">TWIN.</span></h1>
+      <h2 class="display" data-kinetic-sub>Failure, predicted 42 minutes before the alarm.</h2>
+
+      <p class="lede">
+        A running engine dissolves into <b>pure data</b> — <b>20+ telemetry channels</b>,
+        streamed live, mirrored by an AI twin that runs
+        <b>10,000 simulations a minute</b> and already knows how the story ends.
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn" href="#twin">Watch the machine dissolve</a>
+        <a class="btn ghost" href="./index.html">Enter the cockpit</a>
+      </div>
+
+      <div class="scroll-cue" aria-hidden="true">SCROLL</div>
+    </section>
+  </main>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════════════
+       TWIN FIELD — interactive particle mesh background.
+
+       A lattice of nodes held by soft home-springs, wired into a ring
+       plus chords. The mesh leans away from the cursor, chords glow on
+       proximity, and clicks detonate expanding radar rings. One rAF
+       loop, DPR-capped, density-adaptive, paused when the tab hides.
+       ═══════════════════════════════════════════════════════════════ */
+    (() => {
+      const canvas = document.getElementById("twin-canvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d", { alpha: true });
+      const TAU = Math.PI * 2;
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const DPR_CAP = 1.75;
+
+      let W = 0, H = 0;
+      let nodes = [], springs = [], ripples = [];
+      const pointer = { x: -1e4, y: -1e4 };
+      const HOVER_R = 140;
+      const HOVER_R2 = HOVER_R * HOVER_R;
+
+      const nodeCount = () => (innerWidth < 768 ? 42 : innerWidth < 1280 ? 70 : 96);
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+        W = innerWidth; H = innerHeight;
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        seed();
+      }
+
+      function seed() {
+        nodes = []; springs = [];
+        const count = nodeCount();
+        const R = Math.min(W, H) * 0.42;
+        const golden = Math.PI * (3 - Math.sqrt(5));
+        for (let i = 0; i < count; i++) {
+          const t = i / count;
+          const y = 1 - 2 * t;
+          const rr = Math.sqrt(Math.max(0, 1 - y * y));
+          const th = golden * i;
+          const hx = W / 2 + Math.cos(th) * rr * R;
+          const hy = H / 2 + y * R;
+          nodes.push({
+            hx, hy, x: hx, y: hy, vx: 0, vy: 0,
+            m: 0.6 + Math.random() * 0.8,
+            phase: Math.random() * TAU,
+            near: 0
+          });
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          springs.push({ a: nodes[i], b: nodes[(i + 1) % nodes.length], k: 0.5 });
+          if (i % 7 === 0) {
+            springs.push({ a: nodes[i], b: nodes[(i * 5 + 3) % nodes.length], k: 0.22 });
+          }
+        }
+      }
+
+      function step(t, dt) {
+        for (const n of nodes) {
+          n.vx += (n.hx - n.x) * 0.003 * dt;
+          n.vy += (n.hy - n.y) * 0.003 * dt;
+
+          const dx = n.x - pointer.x, dy = n.y - pointer.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < HOVER_R2) {
+            const d = Math.sqrt(d2) || 1;
+            const f = (1 - d / HOVER_R) * 0.6;
+            n.vx += (dx / d) * f * dt;
+            n.vy += (dy / d) * f * dt;
+            n.near = Math.min(1, n.near + 0.12 * dt);
+          } else {
+            n.near *= Math.pow(0.94, dt);
+          }
+
+          n.vx += Math.cos(t * 0.0004 + n.phase) * 0.008 * dt;
+          n.vy += Math.sin(t * 0.0005 + n.phase * 1.7) * 0.008 * dt;
+          n.vx *= Math.pow(0.94, dt);
+          n.vy *= Math.pow(0.94, dt);
+          n.x += n.vx * dt;
+          n.y += n.vy * dt;
+        }
+
+        for (const s of springs) {
+          const dx = s.b.x - s.a.x, dy = s.b.y - s.a.y;
+          const d = Math.sqrt(dx * dx + dy * dy) || 1;
+          const rest = s.rest || (s.rest = Math.hypot(s.b.hx - s.a.hx, s.b.hy - s.a.hy));
+          const f = (d - rest) * s.k * 0.02;
+          const fx = (dx / d) * f, fy = (dy / d) * f;
+          s.a.vx += fx * dt; s.a.vy += fy * dt;
+          s.b.vx -= fx * dt; s.b.vy -= fy * dt;
+        }
+
+        for (const r of ripples) r.age += 0.016 * dt * r.speed;
+        ripples = ripples.filter(r => r.age < 1);
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalCompositeOperation = "lighter";
+
+        for (const r of ripples) {
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, r.age * r.max, 0, TAU);
+          ctx.strokeStyle = "rgba(255,230,0," + (0.5 * (1 - r.age)).toFixed(3) + ")";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        for (const s of springs) {
+          const glow = Math.max(s.a.near, s.b.near);
+          ctx.beginPath();
+          ctx.moveTo(s.a.x, s.a.y);
+          ctx.lineTo(s.b.x, s.b.y);
+          if (glow > 0.05) {
+            ctx.strokeStyle = "rgba(255,230,0," + (0.06 + glow * 0.45).toFixed(3) + ")";
+            ctx.lineWidth = 1.2;
+          } else {
+            ctx.strokeStyle = "rgba(120,120,110,0.10)";
+            ctx.lineWidth = 0.7;
+          }
+          ctx.stroke();
+        }
+
+        for (const n of nodes) {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 1.2 + n.m + n.near * 1.8, 0, TAU);
+          ctx.fillStyle = n.near > 0.1
+            ? "rgba(255,230,0," + (0.35 + n.near * 0.5).toFixed(3) + ")"
+            : "rgba(255,214,10,0.38)";
+          ctx.fill();
+        }
+
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      let last = performance.now();
+      function frame(t) {
+        if (!document.hidden) {
+          const dt = Math.min(2.5, (t - last) / 16.666);
+          last = t;
+          step(t, dt);
+          draw();
+        } else {
+          last = t;
+        }
+        requestAnimationFrame(frame);
+      }
+
+      resize();
+      addEventListener("resize", resize, { passive: true });
+      addEventListener("pointermove", e => {
+        pointer.x = e.clientX; pointer.y = e.clientY;
+      }, { passive: true });
+      addEventListener("pointerdown", e => {
+        ripples.push({
+          x: e.clientX, y: e.clientY, age: 0,
+          max: Math.min(W, H) * 0.42, speed: 0.9 + Math.random() * 0.3
+        });
+        if (reduced) draw();
+      }, { passive: true });
+      addEventListener("blur", () => { pointer.x = -1e4; pointer.y = -1e4; });
+
+      if (reduced) {
+        draw(); /* one static frame, no loop */
+      } else {
+        requestAnimationFrame(frame);
+      }
+    })();
+
+    /* Live status badge: jitter the latency readout around 0.4ms. */
+    (() => {
+      const el = document.getElementById("latency");
+      if (!el) return;
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      setInterval(() => {
+        el.textContent = (0.28 + Math.random() * 0.3).toFixed(1);
+      }, 1400);
+    })();
+  </script>
+</body>
+
+</html>

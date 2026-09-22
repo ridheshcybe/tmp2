@@ -758,8 +758,86 @@
       transform: translateY(0) rotate(0);
     }
 
-    /* ── REDUCED MOTION / ACCESSIBILITY ───────────────────────────────── */
+    /* ── FX LAYER: CURSOR / TILT / REVEALS ─────────────────────────────
+       The native cursor stays visible (a11y); a neon ring trails it and
+       magnetizes to interactive elements. [data-tilt] cards rotate in 3D
+       with a moving glare. [data-reveal] blocks rise in on scroll (the
+       hidden state is scoped to .js so content is never lost without
+       JavaScript). Desktop-pointer-only; skipped under reduced motion. */
 
+    .cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 60;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--yellow);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-100px, -100px);
+      opacity: 0;
+      transition: width 0.25s ease, height 0.25s ease, opacity 0.3s ease;
+      will-change: transform;
+    }
+
+    .cursor-ring .cursor-dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 4px;
+      margin: -2px 0 0 -2px;
+      border-radius: 50%;
+      background: var(--yellow);
+    }
+
+    .cursor-ring.is-active {
+      width: 52px;
+      height: 52px;
+      background: rgba(255, 230, 0, 0.08);
+      border-color: var(--gold);
+    }
+
+    .cursor-ring.is-down { transform-origin: center; }
+
+    @media (pointer: coarse), (hover: none) {
+      .cursor-ring { display: none; }
+    }
+
+    /* 3D tilt cards */
+    [data-tilt] {
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    [data-tilt] .tilt-glare {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at var(--gx, 50%) var(--gy, 50%),
+        rgba(255, 230, 0, 0.10),
+        transparent 55%
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    [data-tilt]:hover .tilt-glare { opacity: 1; }
+
+    /* scroll reveals — hidden state only when JS is running */
+    .js [data-reveal] {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+      transition-delay: calc(var(--d, 0) * 90ms);
+    }
+
+    .js [data-reveal].revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .noise, .radar::after, .scroll-cue::after { animation: none !important; }
@@ -1755,6 +1833,96 @@
       }, { threshold: 0.6 });
       counters.forEach(el => io.observe(el));
     })();
+
+    /* ═══════════════════════════════════════════════════════════════════
+       FX LAYER — magnetic cursor ring, 3D tilt cards, scroll reveals.
+
+       The native cursor stays visible; a neon ring trails it with inertia
+       and magnetizes to interactive elements. [data-tilt] cards rotate in
+       3D toward the pointer with a moving glare. [data-reveal] blocks rise
+       in on scroll (hidden state is scoped to .js, so content is never
+       lost without JavaScript). Desktop-pointer-only; everything here is
+       skipped under reduced motion or coarse pointers.
+       ═══════════════════════════════════════════════════════════════ */
+    (() => {
+      const fine = matchMedia("(pointer: fine)").matches;
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!fine || reduced) return;
+
+      const ring = document.createElement("div");
+      ring.className = "cursor-ring";
+      ring.innerHTML = '<span class="cursor-dot"></span>';
+      document.body.appendChild(ring);
+
+      let mx = -100, my = -100, rx = -100, ry = -100;
+      let seen = false;
+
+      addEventListener("pointermove", e => {
+        mx = e.clientX; my = e.clientY;
+        if (!seen) { rx = mx; ry = my; seen = true; ring.style.opacity = "1"; }
+      }, { passive: true });
+
+      addEventListener("pointerdown", () => ring.classList.add("is-down"));
+      addEventListener("pointerup", () => ring.classList.remove("is-down"));
+      addEventListener("blur", () => { ring.style.opacity = "0"; seen = false; });
+      document.addEventListener("mouseleave", () => { ring.style.opacity = "0"; });
+      document.addEventListener("mouseenter", () => { if (seen) ring.style.opacity = "1"; });
+
+      (function loop() {
+        rx += (mx - rx) * 0.18;                 /* trailing inertia */
+        ry += (my - ry) * 0.18;
+        const half = ring.offsetWidth / 2;
+        ring.style.transform = "translate(" + (rx - half) + "px," + (ry - half) + "px)";
+        requestAnimationFrame(loop);
+      })();
+
+      /* magnetize: grow the ring over links/buttons */
+      document.querySelectorAll("a, button").forEach(el => {
+        el.addEventListener("pointerenter", () => ring.classList.add("is-active"));
+        el.addEventListener("pointerleave", () => ring.classList.remove("is-active"));
+      });
+
+      /* 3D tilt with glare on [data-tilt] cards */
+      document.querySelectorAll("[data-tilt]").forEach(card => {
+        const glare = document.createElement("div");
+        glare.className = "tilt-glare";
+        card.appendChild(glare);
+        card.style.transition = "transform 0.15s ease-out";
+
+        card.addEventListener("pointermove", e => {
+          const r = card.getBoundingClientRect();
+          const px = (e.clientX - r.left) / r.width;
+          const py = (e.clientY - r.top) / r.height;
+          const max = 6;                        /* degrees */
+          card.style.transform =
+            "perspective(900px) rotateX(" + ((0.5 - py) * max).toFixed(2) +
+            "deg) rotateY(" + ((px - 0.5) * max).toFixed(2) + "deg)";
+          card.style.setProperty("--gx", (px * 100).toFixed(1) + "%");
+          card.style.setProperty("--gy", (py * 100).toFixed(1) + "%");
+        });
+
+        card.addEventListener("pointerleave", () => {
+          card.style.transform = "perspective(900px) rotateX(0) rotateY(0)";
+        });
+      });
+
+      /* scroll reveals */
+      const revealed = document.querySelectorAll("[data-reveal]");
+      if (revealed.length) {
+        document.documentElement.classList.add("js");
+        const io = new IntersectionObserver(entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              e.target.classList.add("revealed");
+              io.unobserve(e.target);
+            }
+          });
+        }, { threshold: 0.18 });
+        revealed.forEach(el => io.observe(el));
+      }
+    })();
+
+    /* Live status badge: jitter the latency readout around 0.4ms. */
 
     /* Live status badge: jitter the latency readout around 0.4ms. */
     (() => {

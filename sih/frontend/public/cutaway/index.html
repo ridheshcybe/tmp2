@@ -3962,6 +3962,7 @@ const PHONE = {
     token: null,
     pollTimer: null,
     phoneOrigin: null,
+    publicOrigin: false,       /* true when phoneOrigin is a tunnel/public URL */
     accessKey: null,           /* relay access key from /__lanip, if any */
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     channel: null              /* data channel: phone -> dashboard control */
@@ -4392,8 +4393,11 @@ async function makeInviteCode(sdp) {
 */
 async function ensureLanIp() {
 
-    if (PHONE.phoneOrigin) return;
-
+    /*  Always re-ask serve.py, never cache the answer: a public origin
+        (ngrok tunnel / AEROTWIN_PUBLIC_ORIGIN) can appear AFTER the first
+        QR was drawn, and free-tier tunnels change URL on every restart.
+        A stale origin is why a QR would pair on the LAN but fail from the
+        internet.  Public beats LAN on every generation. */
     try {
         const reply = await fetch("/__lanip", { cache: "no-store" });
         const info = await reply.json();
@@ -4402,8 +4406,15 @@ async function ensureLanIp() {
             the LAN address: the QR becomes scannable by ANY phone. */
         if (info && info.public) {
             PHONE.phoneOrigin = info.public;
+            PHONE.publicOrigin = true;
         } else if (info && info.ip) {
-            PHONE.phoneOrigin = info.scheme + "://" + info.ip + ":" + info.port;
+            /*  No tunnel right now.  Adopt the LAN address unless a LAN
+                origin is already cached; a previously cached PUBLIC origin
+                is dropped - its tunnel is gone, the URL would 404. */
+            if (!PHONE.phoneOrigin || PHONE.publicOrigin) {
+                PHONE.phoneOrigin = info.scheme + "://" + info.ip + ":" + info.port;
+                PHONE.publicOrigin = false;
+            }
         }
 
         /*  The relay access key is only handed to this machine, and only
@@ -5393,10 +5404,9 @@ async function buildDashboardQr() {
         parent.postMessage({
             type: "CUTAWAY_SHOW_QR",
             dataUrl: canvas.toDataURL("image/png"),
-            caption: PHONE.phoneOrigin && PHONE.phoneOrigin.startsWith("https://") &&
-                     !/^https:\/\/(127\.|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(PHONE.phoneOrigin)
-                ? "Scan this with ANY phone - it pairs over the internet. " +
-                  "Camera and throttle work from anywhere."
+            caption: PHONE.publicOrigin
+                ? "Scan this with ANY phone - it pairs over the internet " +
+                  "(" + PHONE.phoneOrigin + "). Camera and throttle work from anywhere."
                 : "Scan this with the phone (same Wi-Fi). The camera " +
                   "pairs by itself - no code to type or paste."
         }, "*");

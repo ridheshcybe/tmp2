@@ -356,6 +356,76 @@
       margin: 0 0 44px;
     }
 
+    /* ── PISTON → TWIN DISINTEGRATION SECTION ─────────────────────────── */
+
+    .morph-stage {
+      position: relative;
+      border: 1px solid var(--line-soft);
+      background: var(--bg-1);
+      overflow: hidden;
+    }
+
+    #morph-canvas {
+      display: block;
+      width: 100%;
+      height: clamp(380px, 62vh, 620px);
+      cursor: crosshair;
+    }
+
+    .morph-hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      color: var(--ink-dim);
+      pointer-events: none;
+    }
+
+    .morph-hud b { color: var(--yellow); font-weight: 500; }
+
+    .morph-controls {
+      position: absolute;
+      left: 16px;
+      bottom: 14px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .morph-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--yellow);
+      background: rgba(11, 11, 15, 0.7);
+      border: 1px solid var(--line);
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .morph-btn:hover, .morph-btn:focus-visible {
+      background: var(--yellow);
+      color: #050507;
+    }
+
+    .morph-caption {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 26px;
+      margin-top: 14px;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+    }
+
     /* ── KINETIC TYPOGRAPHY ─────────────────────────────────────────────
        data-kinetic headings are split into characters by the script below;
        each char rises and un-rotates on a staggered spring curve when the
@@ -439,6 +509,38 @@
       </div>
 
       <div class="scroll-cue" aria-hidden="true">SCROLL</div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         PISTON → TWIN DISINTEGRATION (scroll-driven morph stage)
+         ═══════════════════════════════════ autowire: morph section -->
+    <section class="section" id="twin">
+      <p class="section-tag">// 01 — THE DISSOLUTION</p>
+      <h2 class="section-title" data-kinetic>From iron to information.</h2>
+      <p class="section-sub">
+        Scroll to dissolve the vintage piston particle-by-particle — every point
+        re-forms into the wireframe digital twin. Fire shockwaves with your cursor;
+        clicks detonate the cloud.
+      </p>
+
+      <div class="morph-stage">
+        <canvas id="morph-canvas"></canvas>
+        <div class="morph-hud">
+          <span>MODE&nbsp;<b id="morph-mode">VINTAGE PISTON</b></span>
+          <span id="morph-status">SUBSTRATE&nbsp;<b>100.0%</b></span>
+        </div>
+        <div class="morph-controls">
+          <button class="morph-btn" id="morph-replay" type="button">REPLAY DISSOLUTION</button>
+          <button class="morph-btn" data-morph-shock type="button">DETONATE</button>
+        </div>
+      </div>
+
+      <div class="morph-caption">
+        <span>◦ 2,200 PARTICLES</span>
+        <span>◦ SCROLL TO MORPH</span>
+        <span>◦ MOVE FOR SHOCKWAVES</span>
+        <span>◦ CLICK TO DETONATE</span>
+      </div>
     </section>
   </main>
 
@@ -655,6 +757,267 @@
         });
       }, { threshold: 0.35 });
       targets.forEach(el => io.observe(el));
+    })();
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PISTON → TWIN DISINTEGRATION MORPH
+
+       One particle cloud, two target point-sets on a shared 150x100
+       blueprint grid: a silhouette piston (crown, rings, skirt, pin)
+       and a perspective wireframe twin lattice. Particles ease between
+       targets in three phases while scrolling through the pinned stage;
+       every mouse-move shockwave scatters nearby particles, each click
+       blasts them, and an auto-detach wave dissolves the piston
+       particle-by-particle as the scroll crosses the threshold.
+       ═══════════════════════════════════════════════════════════════ */
+    (() => {
+      const canvas = document.getElementById("morph-canvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const TAU = Math.PI * 2;
+      const GRID_W = 150, GRID_H = 100;          /* blueprint units */
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const DPR_CAP = 1.75;
+      const COUNT = innerWidth < 768 ? 900 : 2200;
+
+      /* ── target generation, blueprint space ─────────────────────────── */
+
+      function rand(a, b) { return a + Math.random() * (b - a); }
+
+      function targetsPiston() {
+        const pts = [];
+        const N = COUNT;
+        /* crown: filled dome disc, y 8..20 */
+        for (let i = 0; i < N * 0.22; i++) {
+          const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 46;
+          const dome = Math.cos((r / 46) * Math.PI / 2) * 6;
+          pts.push({ x: 75 + Math.cos(a) * r, y: 14 + Math.sin(a) * r * 0.55 - dome });
+        }
+        /* ring grooves: three arcs, y 20..27 */
+        [22, 24.5, 27].forEach(gy => {
+          for (let i = 0; i < N * 0.045; i++) {
+            const a = rand(0, TAU);
+            pts.push({ x: 75 + Math.cos(a) * 46, y: gy + Math.sin(a) * 1.6 });
+          }
+        });
+        for (let i = 0; i < N * 0.40; i++) {
+          const side = Math.random() < 0.5 ? -1 : 1;
+          pts.push({ x: 75 + side * 46 + rand(-1.5, 1.5), y: rand(30, 78) });
+        }
+        /* pin boss: dense disc inside the skirt, y 52..62 */
+        for (let i = 0; i < N * 0.11; i++) {
+          const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 15;
+          pts.push({ x: 75 + Math.cos(a) * r, y: 57 + Math.sin(a) * r * 0.7 });
+        }
+        while (pts.length < N) pts.push(pts[(Math.random() * pts.length) | 0]);
+        return pts.slice(0, N);
+      }
+
+      function targetsTwin() {
+        const pts = [];
+        const N = COUNT;
+        /* three decks of a perspective lattice, x 25..125, y 20..80 */
+        for (let i = 0; i < N; i++) {
+          const t = i / N;
+          const deck = i % 3;
+          const y = 20 + deck * 26 + t * 4;
+          const x = 25 + t * 100 + Math.sin(t * 24 + deck * 2.1) * 6;
+          const z = Math.sin(t * 15 + deck * 1.3) * 12;
+          /* crude perspective: lower/right decks drift inward */
+          const persp = 1 - deck * 0.06;
+          pts.push({
+            x: 75 + (x - 75) * persp,
+            y: y + z * 0.35
+          });
+        }
+        return pts;
+      }
+      
+      /* ── particles ─────────────────────────────────────────────────── */
+
+      let particles = [];
+      let shocks = [];        /* active mouse shockwaves {x,y,age} */
+      let mouse = { x: -1e4, y: -1e4, inside: false };
+      let progress = 0;       /* 0 = piston, 1 = twin (scroll-driven) */
+      let engage = 0;         /* 0..1, rises when stage is on screen */
+      let morphT = 0;         /* smoothed phase clock, eased in code */
+      let detached = 0;
+      let raf = 0, running = false;
+      const modeEl = document.getElementById("morph-mode");
+      const statusEl = document.getElementById("morph-status");
+
+      function buildParticles() {
+        const piston = targetsPiston();
+        const twin = targetsTwin();
+        particles = piston.map((p, i) => ({
+          hx: p.x, hy: p.y,               /* piston home (blueprint) */
+          tx: twin[i].x, ty: twin[i].y,   /* twin target */
+          x: rand(0, GRID_W), y: rand(-20, GRID_H),
+          vx: 0, vy: 0,
+          detach: -1,                     /* seconds until auto-detach */
+          seed: Math.random() * TAU
+        }));
+      }
+
+      function project(p) {                 /* blueprint -> pixels */
+        return [
+          p.x * (canvas.clientWidth / GRID_W),
+          p.y * (canvas.clientHeight / GRID_H)
+        ];
+      }
+
+      /* progress from the pinned stage: 0 before, 1 after scrolling past */
+      function readProgress() {
+        const stage = canvas.parentElement;
+        const r = stage.getBoundingClientRect();
+        const vh = innerHeight;
+        const visible = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+        engage = Math.max(0, Math.min(1, visible / Math.min(r.height, vh)));
+        const mid = r.top + r.height / 2 - vh / 2;   /* px before center */
+        progress = Math.max(0, Math.min(1, 0.5 - mid / (r.height + vh)));
+      }
+
+      function step(t, dt) {
+        readProgress();
+        const eased = progress * progress * (3 - 2 * progress);
+        /* phase clock: drift, swap, settle — total ~2.4 units */
+        morphT = Math.min(2.4, morphT + 0.014 * dt * (0.2 + engage));
+        let morph;
+        if (morphT < 1) morph = 0;                             /* drift */
+        else if (morphT < 1.6) morph = (morphT - 1) / 0.6;     /* swap */
+        else morph = 1;                                        /* settle */
+        const mEase = morph * morph * (3 - 2 * morph);
+
+        const shockR = 90;
+
+        for (const p of particles) {
+          /* home drifts toward twin as the eased morph rises */
+          const hx = p.hx + (p.tx - p.hx) * mEase;
+          const hy = p.hy + (p.ty - p.hy) * mEase;
+
+          if (p.detach < 0) {
+            /* schedule auto-detach through the drift->swap boundary */
+            if (morph > 0.02 && morph < 0.85) {
+              p.detach = rand(0.1, 1.4) * (0.4 + (1 - morph));
+            }
+          } else {
+            p.detach -= 0.016 * dt;
+          }
+
+          if (p.detach >= 0 && p.detach <= 0) {
+            /* detach impulse: explode away from the piston home */
+            const a = rand(0, TAU);
+            p.vx += Math.cos(a) * rand(6, 22);
+            p.vy += Math.sin(a) * rand(6, 22) - 6;
+            detached++;
+          }
+
+          /* spring toward the (morphing) home */
+          p.vx += (hx - p.x) * 0.012 * dt;
+          p.vy += (hy - p.y) * 0.012 * dt;
+
+          /* gentle cursor repel inside the stage */
+          if (mouse.inside) {
+            const mdx = p.x - mouse.x, mdy = p.y - mouse.y;
+            const md2 = mdx * mdx + mdy * mdy;
+            if (md2 < 144) {
+              const md = Math.sqrt(md2) || 1;
+              const mf = (1 - md / 12) * 0.5;
+              p.vx += (mdx / md) * mf * dt;
+              p.vy += (mdy / md) * mf * dt;
+            }
+          }
+
+          /* mouse shockwaves: outward impulse inside the expanding ring */
+          for (const s of shocks) {
+            const dx = p.x - s.x, dy = p.y - s.y;
+            const d = Math.hypot(dx, dy);
+            const ring = Math.abs(d - s.age * 160);
+            if (ring < shockR) {
+              const f = (1 - ring / shockR) * 3.2;
+              p.vx += (dx / (d || 1)) * f * dt;
+              p.vy += (dy / (d || 1)) * f * dt;
+            }
+          }
+
+          p.vx *= Math.pow(0.92, dt);
+          p.vy *= Math.pow(0.92, dt);
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+        }
+        for (const s of shocks) s.age += 0.016 * dt;
+        shocks = shocks.filter(s => s.age < 1.2);
+
+        /* HUD readouts */
+        const modeText = mEase < 0.5 ? "VINTAGE PISTON" : "DIGITAL TWIN";
+        if (modeEl && modeEl.textContent !== modeText) modeEl.textContent = modeText;
+        if (statusEl) {
+          statusEl.innerHTML = "SUBSTRATE&nbsp;<b>" + (100 - mEase * 100).toFixed(1) + "%</b>";
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+        ctx.globalCompositeOperation = "lighter";
+        const scaleX = canvas.clientWidth / GRID_W;
+        const scaleY = canvas.clientHeight / GRID_H;
+        for (const p of particles) {
+          ctx.beginPath();
+          ctx.arc(p.x * scaleX, p.y * scaleY, 1.4, 0, TAU);
+          ctx.fillStyle = "rgba(255,230,0,0.55)";
+          ctx.fill();
+        }
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      function frame(t) {
+        if (!running) return;
+        if (!document.hidden) {
+          step(t, 1);
+          draw();
+        }
+        raf = requestAnimationFrame(frame);
+      }
+
+      function start() { if (!running) { running = true; raf = requestAnimationFrame(frame); } }
+      function stop() { running = false; cancelAnimationFrame(raf); }
+
+      buildParticles();
+      if (reduced) {
+        /* one static frame: fully-formed twin */
+        for (const p of particles) { p.x = p.tx; p.y = p.ty; }
+        draw();
+      } else {
+        const io = new IntersectionObserver(entries => {
+          entries.forEach(e => e.isIntersecting ? start() : stop());
+        }, { threshold: 0.05 });
+        io.observe(canvas);
+        canvas.addEventListener("pointermove", e => {
+          const r = canvas.getBoundingClientRect();
+          mouse.x = ((e.clientX - r.left) / r.width) * GRID_W;
+          mouse.y = ((e.clientY - r.top) / r.height) * GRID_H;
+          mouse.inside = true;
+        }, { passive: true });
+        canvas.addEventListener("pointerleave", () => { mouse.inside = false; mouse.x = -1e4; mouse.y = -1e4; });
+        canvas.addEventListener("pointerdown", e => {
+          const r = canvas.getBoundingClientRect();
+          shocks.push({
+            x: ((e.clientX - r.left) / r.width) * GRID_W,
+            y: ((e.clientY - r.top) / r.height) * GRID_H,
+            age: 0
+          });
+        });
+        document.querySelectorAll("[data-morph-shock]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            for (let k = 0; k < 3; k++) shocks.push({ x: rand(20, 130), y: rand(10, 90), age: k * 0.12 });
+          });
+        });
+        const replay = document.getElementById("morph-replay");
+        if (replay) replay.addEventListener("click", () => {
+          morphT = 0; detached = 0; shocks = [];
+          buildParticles();
+        });
+      }
     })();
 
     /* Live status badge: jitter the latency readout around 0.4ms. */

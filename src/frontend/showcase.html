@@ -566,6 +566,176 @@
       color: var(--ink-dim);
     }
 
+    /* ── IMPACT MATRIX + COUNTERS ─────────────────────────────────────── */
+
+    .matrix {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--line-soft);
+    }
+
+    @media (max-width: 720px) {
+      .matrix { grid-template-columns: 1fr; }
+    }
+
+    .matrix-col {
+      padding: 34px 30px 40px;
+      border-right: 1px solid var(--line-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.4s ease;
+    }
+
+    .matrix-col:last-child { border-right: none; }
+
+    @media (max-width: 720px) {
+      .matrix-col { border-right: none; border-bottom: 1px solid var(--line-soft); }
+      .matrix-col:last-child { border-bottom: none; }
+    }
+
+    .matrix-col h3 {
+      font-family: var(--display);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 0 4px;
+    }
+
+    .matrix-col .tag {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      margin-bottom: 18px;
+    }
+
+    .matrix-col.human { background: rgba(255, 64, 64, 0.03); }
+    .matrix-col.human h3 { color: #ff6b5e; }
+    .matrix-col.human .tag { color: #ff6b5e; }
+
+    .matrix-col.ai { background: rgba(255, 230, 0, 0.02); }
+    .matrix-col.ai h3 { color: var(--yellow); }
+    .matrix-col.ai .tag { color: var(--yellow); }
+
+    .loop {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--line-soft);
+      font-size: 12px;
+    }
+
+    .loop:last-child { border-bottom: none; }
+
+    .loop .k { color: var(--ink-dim); letter-spacing: 0.08em; }
+    .loop .v { font-weight: 700; letter-spacing: 0.06em; text-align: right; }
+
+    .matrix-col.human .loop .v { color: #ff6b5e; }
+    .matrix-col.ai .loop .v { color: var(--yellow); }
+
+    /* slow, sleepy pulse for the human column */
+    .matrix-col.human::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 20%, rgba(255, 64, 64, 0.05), transparent 60%);
+      animation: human-pulse 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes human-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .matrix-col.ai::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 70% 30%, rgba(255, 230, 0, 0.06), transparent 60%);
+      animation: ai-flicker 2.2s steps(3) infinite;
+      pointer-events: none;
+    }
+
+    @keyframes ai-flicker {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+      73% { opacity: 0.85; }
+    }
+
+    /* ---- counters ---- */
+
+    .counters {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line-soft);
+      border: 1px solid var(--line-soft);
+      margin-top: 56px;
+    }
+
+    @media (max-width: 860px) {
+      .counters { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 420px) {
+      .counters { grid-template-columns: 1fr; }
+    }
+
+    .counter {
+      background: var(--bg-1);
+      padding: 30px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s ease, background 0.25s ease;
+    }
+
+    .counter:hover { background: #15151d; }
+
+    .counter::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, var(--yellow), transparent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .counter:hover::before { transform: scaleX(1); }
+
+    .counter .num {
+      font-family: var(--display);
+      font-size: clamp(40px, 5.6vw, 68px);
+      font-weight: 800;
+      line-height: 1;
+      color: var(--yellow);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .counter .num small {
+      font-size: 0.35em;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ink-dim);
+      margin-left: 6px;
+    }
+
+    .counter .lbl {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      color: var(--ink-dim);
+    }
+
     /* ── KINETIC TYPOGRAPHY ─────────────────────────────────────────────
        data-kinetic headings are split into characters by the script below;
        each char rises and un-rotates on a staggered spring curve when the
@@ -718,6 +888,57 @@
         </div>
 
         <p class="tl-hint">◦ DRAG TO SCRUB · SPACE TO PLAY/STOP · TOGGLE SFX LAYERS</p>
+      </div>
+    </section>
+    <!-- ══════════════════════════════════════════════════════════════
+         IMPACT MATRIX + COUNTERS
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="section" id="matrix">
+      <p class="section-tag">// 03 — HUMAN vs TWIN</p>
+      <h2 class="section-title" data-kinetic>Two clocks. One engine.</h2>
+      <p class="section-sub">
+        A human reacts to an alarm. The twin is already running the next
+        simulation. Same telemetry, two very different latencies:
+      </p>
+
+      <div class="matrix">
+        <div class="matrix-col human" data-tilt>
+          <h3>Human in the Loop</h3>
+          <p class="tag">⚠ REACTIVE · SLUGGISH</p>
+          <div class="loop"><span class="k">ALARM → ACTION</span><span class="v">~42 min late</span></div>
+          <div class="loop"><span class="k">TELEMETRY EYES-ON</span><span class="v">spot checks</span></div>
+          <div class="loop"><span class="k">SIMS PER MINUTE</span><span class="v">≈ 0</span></div>
+          <div class="loop"><span class="k">FAULT CONTEXT</span><span class="v">manual notes</span></div>
+          <div class="loop"><span class="k">FAILURE MODE</span><span class="v">surprise</span></div>
+        </div>
+        <div class="matrix-col ai" data-tilt>
+          <h3>AI Digital Twin</h3>
+          <p class="tag">PREDICTIVE · 0.4ms LOOPS</p>
+          <div class="loop"><span class="k">ALARM → ACTION</span><span class="v">42 min early</span></div>
+          <div class="loop"><span class="k">TELEMETRY EYES-ON</span><span class="v">20+ channels, 10Hz</span></div>
+          <div class="loop"><span class="k">SIMS PER MINUTE</span><span class="v">10,000</span></div>
+          <div class="loop"><span class="k">FAULT CONTEXT</span><span class="v">isolated + quarantined</span></div>
+          <div class="loop"><span class="k">FAILURE MODE</span><span class="v">predicted, planned</span></div>
+        </div>
+      </div>
+
+      <div class="counters">
+        <div class="counter">
+          <div class="num" data-count="85">0</div>
+          <div class="lbl">WORDS IN THE CUT</div>
+        </div>
+        <div class="counter">
+          <div class="num" data-count="30"><span>0</span><small>SEC</small></div>
+          <div class="lbl">TOTAL RUNTIME</div>
+        </div>
+        <div class="counter">
+          <div class="num" data-count="0"><span>0</span><small>%</small></div>
+          <div class="lbl">BLANK SILENCE</div>
+        </div>
+        <div class="counter">
+          <div class="num" data-count="42"><span>0</span><small>MIN</small></div>
+          <div class="lbl">BEFORE THE ALARM</div>
+        </div>
       </div>
     </section>
   </main>
@@ -1488,6 +1709,51 @@
       });
 
       renderTime();
+    })();
+
+    /* Scroll-triggered counters: tween 0 -> target with an eased rAF
+       tween when each .counter enters the viewport. Fires once. */
+    (() => {
+      const counters = document.querySelectorAll("[data-count]");
+      if (!counters.length) return;
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function finalize(el, target) {
+        /* keep any small unit suffix, replace the number span/text */
+        const unit = el.querySelector("small");
+        if (unit) {
+          const span = el.querySelector("span") || document.createElement("span");
+          span.textContent = target;
+          if (!span.parentNode) el.prepend(span);
+        } else {
+          el.textContent = target;
+        }
+      }
+
+      function tween(el) {
+        const target = parseInt(el.dataset.count, 10) || 0;
+        if (reduced) { finalize(el, target); return; }
+        const dur = 1400;
+        const t0 = performance.now();
+        const span = el.querySelector("span");
+        const plain = !span;
+        const node = span || el;
+        (function frame(now) {
+          const p = Math.min(1, (now - t0) / dur);
+          const eased = 1 - Math.pow(1 - p, 3);       /* cubic ease-out */
+          node.textContent = Math.round(target * eased);
+          if (p < 1) requestAnimationFrame(frame);
+        })(t0);
+      }
+
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          tween(e.target);
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.6 });
+      counters.forEach(el => io.observe(el));
     })();
 
     /* Live status badge: jitter the latency readout around 0.4ms. */

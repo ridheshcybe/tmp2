@@ -10,7 +10,10 @@ setlocal
 cd /d "%~dp0"
 
 REM ---- pick a Python interpreter --------------------------------------
-set "PY=venv\Scripts\python.exe"
+REM Absolute path on purpose: the service manager below runs from sih\,
+REM so a relative "venv\Scripts\python.exe" would resolve to
+REM sih\venv\... which does not exist.
+set "PY=%~dp0venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 
 %PY% --version >nul 2>&1

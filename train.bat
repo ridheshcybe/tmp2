@@ -6,7 +6,9 @@ REM ============================================================
 setlocal
 cd /d "%~dp0"
 
-set "PY=venv\Scripts\python.exe"
+REM Absolute path on purpose: we pushd into sih\ below, so a relative
+REM "venv\Scripts\python.exe" would resolve to sih\venv\... (missing).
+set "PY=%~dp0venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 
 echo Using interpreter: %PY%

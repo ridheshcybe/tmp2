@@ -82,17 +82,15 @@ binary — your authtoken config at `%LOCALAPPDATA%\ngrok\ngrok.yml` is kept).
 .\run.bat
 ```
 
-The startup banner now lists the tunnel. Get the public URL either from the
-console or:
-
-```
-curl http://127.0.0.1:4040/api/tunnels
-```
+The startup banner **prints the public URL directly** (`PUBLIC : https://…ngrok-free.app`);
+it is also available at `curl http://127.0.0.1:4040/api/tunnels` while running.
 
 Share `https://<random>.ngrok-free.app/index.html` (dashboard) or
 `/showcase.html`. Because `serve.py` detects the tunnel automatically, the
-**phone-pairing QR now works from any phone on any network** — no LAN required.
-Free ngrok shows each visitor a one-time interstitial ("Visit Site").
+**phone-pairing QR works from any phone on any network** — the QR re-reads the
+current tunnel URL on every generation, so even the free tier's rotating URLs
+always land in a freshly drawn QR. Free ngrok shows each visitor a one-time
+interstitial ("Visit Site").
 
 **Optional — pin a stable URL:** reserve a static domain at
 https://dashboard.ngrok.com (free), set it once, and the tunnel URL never

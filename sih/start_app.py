@@ -81,6 +81,33 @@ def _tunnel_service():
         "env": {},
     }
 
+def _tunnel_public_url(timeout_s=15):
+    """Poll ngrok's local API for the live https tunnel URL.
+
+    Returns the public origin (e.g. https://xxxx.ngrok-free.app) or None
+    when the tunnel did not report one within the timeout.  ngrok needs a
+    few seconds after the process is listening to register the tunnel.
+    """
+    import json as _json
+    import urllib.request
+
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(
+                    "http://127.0.0.1:%d/api/tunnels" % NGROK_API_PORT,
+                    timeout=2) as up:
+                data = _json.loads(up.read().decode("utf-8"))
+            for tun in data.get("tunnels", []):
+                url = str(tun.get("public_url", ""))
+                if url.startswith("https://"):
+                    return url.rstrip("/")
+        except Exception:
+            pass
+        time.sleep(0.5)
+    return None
+
+
 SERVICES = [
     {
         "name": "backend",
@@ -209,8 +236,17 @@ def start_all():
         print("    Dashboard : http://localhost:" + str(FRONTEND_PORT) + "/index.html")
         print("    Backend   : http://127.0.0.1:" + str(BACKEND_PORT) + "/health")
         if tunnel:
-            print("    Phone     : the pairing QR now carries a public ngrok")
-            print("                URL - ANY phone, on ANY network, can pair")
+            public = _tunnel_public_url()
+            if public:
+                print("")
+                print("    PUBLIC    : " + public + "   (share these - work from any network)")
+                print("      Dashboard     : " + public + "/index.html")
+                print("      Showcase      : " + public + "/showcase.html")
+                print("      Phone pairing : scan the QR in the dashboard (it carries this URL)")
+            else:
+                print("")
+                print("    [WARN] ngrok is running but reported no public URL yet -")
+                print("           check sih/.tunnel.log (local access still works)")
         else:
             print("    Phone     : LAN only - to pair from any network, install")
             print("                ngrok and set NGROK_AUTHTOKEN (docs/FRONTEND.md)")
@@ -244,6 +280,10 @@ def status():
         state = "RUNNING" if port_busy(svc["port"]) else "STOPPED"
         print("  " + svc["name"].ljust(9) + " : " + state.ljust(7)
               + " (port " + str(svc["port"]) + ")")
+    if tunnel and port_busy(NGROK_API_PORT):
+        public = _tunnel_public_url(timeout_s=3)
+        if public:
+            print("  public    : " + public)
     if not tunnel:
         print("  (worldwide pairing off: ngrok binary or authtoken missing)")
     print("")

@@ -114,7 +114,12 @@ def _fit_anomaly(
     ).fit(Xs)
 
     val_decision = model.decision_function(scaler.transform(X_val_healthy.values))
-    threshold = float(np.percentile(val_decision, ANOMALY_VAL_P * 100.0))
+    # decision_function: HIGHER = more normal; windows are flagged when the
+    # decision falls BELOW the threshold.  To keep the healthy false-alarm
+    # rate at (1 - ANOMALY_VAL_P), the threshold must sit at the matching
+    # LOWER quantile of healthy validation decisions — using the upper
+    # quantile here inverted the test and flagged ~96% of healthy windows.
+    threshold = float(np.percentile(val_decision, (1.0 - ANOMALY_VAL_P) * 100.0))
     return model, scaler, threshold
 
 

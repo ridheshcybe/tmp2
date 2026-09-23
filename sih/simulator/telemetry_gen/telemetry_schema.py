@@ -49,7 +49,13 @@ class MissionPhase(str, Enum):
     MANUAL = "MANUAL"
 
 
-PHASE_ORDER: List[MissionPhase] = list(MissionPhase)
+# Canonical flight-phase sequence flown by the default mission plan.
+# MANUAL is an interactive session mode (idle-parked), not a flight phase:
+# it is deliberately excluded so the default plan, phase-order tests and the
+# ML one-hot feature list stay consistent.
+PHASE_ORDER: List[MissionPhase] = [
+    p for p in MissionPhase if p is not MissionPhase.MANUAL
+]
 
 # ──────────────────────────────────────────────────────────────────────────
 #  Fault types

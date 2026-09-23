@@ -1,0 +1,41 @@
+{
+  "accuracy": 0.8854875283446711,
+  "anomaly_false_alarm_rate": 0.050724637681159424,
+  "anomaly_precision": 0.9267015706806283,
+  "anomaly_recall": 0.29207920792079206,
+  "anomaly_roc_auc": 0.7761455493375424,
+  "f1_macro": 0.8624121967104716,
+  "latency_mean_s": 69.0,
+  "latency_median_s": 34.0,
+  "latency_p95_s": 219.9999999999999,
+  "per_class_f1": {
+    "ABNORMAL_VIBRATION": 0.9875,
+    "ALTERNATOR_DEGRADATION": 0.9875,
+    "HEALTHY": 0.8404423380726699,
+    "INJECTOR_DEGRADATION": 0.9811320754716981,
+    "LUBRICATION_FAILURE": 0.9811320754716981,
+    "MISFIRE": 0.9811320754716981,
+    "OVERHEATING": 0.9811320754716981,
+    "SENSOR_DRIFT": 0.5217391304347826,
+    "SENSOR_DROPOUT": 0.5
+  },
+  "per_class_recall": {
+    "ABNORMAL_VIBRATION": 1.0,
+    "ALTERNATOR_DEGRADATION": 1.0,
+    "HEALTHY": 0.7450980392156863,
+    "INJECTOR_DEGRADATION": 1.0,
+    "LUBRICATION_FAILURE": 1.0,
+    "MISFIRE": 1.0,
+    "OVERHEATING": 1.0,
+    "SENSOR_DRIFT": 0.75,
+    "SENSOR_DROPOUT": 1.0
+  },
+  "rul_min_mae": 1.4457883015628612,
+  "rul_min_r2": 0.32064845468624703,
+  "rul_min_rmse": 2.687447929175105,
+  "rul_within_20pct": 0.5861678004535147,
+  "runs_detected": 8.0,
+  "severity_mae": 0.08338883010291709,
+  "severity_r2": 0.631430904435888,
+  "severity_rmse": 0.19654382999071282
+}

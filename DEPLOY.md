@@ -145,6 +145,31 @@ CORS_ORIGINS            = https://aerotwin-up6k.onrender.com
 AEROTWIN_FRONTEND_DIR   = /opt/render/project/src/src/frontend
 ```
 
+> Optional manual step (30 s, dashboard-only): Service → Settings →
+> **Health Check Path** → `/health` → Save. The REST API cannot modify
+> service settings, so this one toggle stays manual.
+
+#### Public-demo protection (built in)
+
+- **Rate limiting** (always on): `/api/*` → 120 req/min per IP, everything
+  else 600 req/min; `/health` is exempt. Over the limit → `429` +
+  `Retry-After`. Tune with `RATE_LIMIT_API_PER_MIN` /
+  `RATE_LIMIT_GENERAL_PER_MIN`, or `TRUSTED_PROXY_CIDRS` behind proxies.
+- **API key gate** (opt-in): set `AEROTWIN_API_KEY=<secret>` to enable.
+  Reads stay open by default (`AEROTWIN_KEY_OPEN_READ=1`); mutations and
+  WebSocket handshakes require `X-API-Key: <secret>` (or `?key=<secret>`).
+  Open pages as `/index.html?key=<secret>` — the dashboard forwards the key
+  to every mutating call and the WS automatically. Private mode:
+  `AEROTWIN_KEY_OPEN_READ=0` locks reads too.
+
+#### CI & models
+
+- GitHub Actions (`.github/workflows/ci.yml`) runs the Python suite and a
+  Docker build + endpoint/mission smoke test on every push.
+- Trained models are baked into the repo (`sih/ml/models/`), so
+  `/health` reports `ml_models: "loaded"` in production. Retrain with
+  `python -m ml.train --runs-per-fault 3 --healthy-runs 6 --step 10`.
+
 To redeploy manually: Render dashboard → aerotwin → **Manual Deploy**, or
 just push a commit to the branch. First build takes ~6–10 min
 (scikit-learn is the big install); wake from idle ~50 s.

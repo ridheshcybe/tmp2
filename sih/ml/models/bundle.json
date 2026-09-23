@@ -1,0 +1,266 @@
+{
+  "anomaly_contamination": 0.1,
+  "anomaly_threshold": -0.02264164923554792,
+  "anomaly_val_decision_std": 0.04958192181958814,
+  "class_names": [
+    "ABNORMAL_VIBRATION",
+    "ALTERNATOR_DEGRADATION",
+    "HEALTHY",
+    "INJECTOR_DEGRADATION",
+    "LUBRICATION_FAILURE",
+    "MISFIRE",
+    "OVERHEATING",
+    "SENSOR_DRIFT",
+    "SENSOR_DROPOUT"
+  ],
+  "feature_names": [
+    "throttle",
+    "altitude_ft",
+    "ambient_temp_c",
+    "rpm",
+    "phase_MissionPhase.STARTUP",
+    "phase_MissionPhase.TAKEOFF",
+    "phase_MissionPhase.CLIMB",
+    "phase_MissionPhase.CRUISE",
+    "phase_MissionPhase.ENDURANCE",
+    "phase_MissionPhase.DESCENT",
+    "phase_MissionPhase.LANDING",
+    "fuel_flow_lph",
+    "oil_temp_c",
+    "battery_v",
+    "alternator_a",
+    "injection_timing_deg",
+    "cht_spread",
+    "egt_spread",
+    "r_cht_avg",
+    "r_cht_max",
+    "r_egt_avg",
+    "r_egt_max",
+    "r_fuel",
+    "r_oil_p",
+    "r_oil_t",
+    "r_vib",
+    "r_batt",
+    "r_alt",
+    "roll_mean_r_egt_60s",
+    "roll_std_r_egt_60s",
+    "roll_mean_r_cht_60s",
+    "roll_mean_r_vib_60s",
+    "roll_std_r_vib_60s",
+    "roll_mean_r_oilp_60s",
+    "trend_r_egt_180s",
+    "trend_r_vib_180s",
+    "trend_r_oilp_180s",
+    "corr_egt_cht",
+    "corr_oilp_rpm",
+    "corr_fuel_rpm",
+    "corr_vib_rpm"
+  ],
+  "healthy_residual_stats": {
+    "r_alt": {
+      "mean": -0.017990228335399625,
+      "std": 0.6419746220699803
+    },
+    "r_batt": {
+      "mean": -0.0073838914758137635,
+      "std": 0.10850716309887508
+    },
+    "r_cht_avg": {
+      "mean": -2.7557287936269947,
+      "std": 18.400620895719353
+    },
+    "r_cht_max": {
+      "mean": 12.889370443104184,
+      "std": 15.994741031353682
+    },
+    "r_egt_avg": {
+      "mean": 0.4360937240320986,
+      "std": 2.660839742327743
+    },
+    "r_egt_max": {
+      "mean": 14.937184184771324,
+      "std": 4.530370057508026
+    },
+    "r_fuel": {
+      "mean": 0.0033369238432516984,
+      "std": 0.11668132941709283
+    },
+    "r_oil_p": {
+      "mean": 0.11869869295071557,
+      "std": 3.5391443035729946
+    },
+    "r_oil_t": {
+      "mean": -24.17522442845652,
+      "std": 23.250249810059394
+    },
+    "r_vib": {
+      "mean": -0.0011835408041359176,
+      "std": 0.03815201710272107
+    }
+  },
+  "metrics": {
+    "_confusion": {
+      "classes": [
+        "ABNORMAL_VIBRATION",
+        "ALTERNATOR_DEGRADATION",
+        "HEALTHY",
+        "INJECTOR_DEGRADATION",
+        "LUBRICATION_FAILURE",
+        "MISFIRE",
+        "OVERHEATING",
+        "SENSOR_DRIFT",
+        "SENSOR_DROPOUT"
+      ],
+      "matrix": [
+        [
+          79,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          79,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          266,
+          0,
+          0,
+          0,
+          0,
+          10,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          78,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          78,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          0,
+          78,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          78,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          45,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0
+        ],
+        [
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          15
+        ]
+      ]
+    },
+    "accuracy": 0.8854875283446711,
+    "anomaly_false_alarm_rate": 0.050724637681159424,
+    "anomaly_precision": 0.9267015706806283,
+    "anomaly_recall": 0.29207920792079206,
+    "anomaly_roc_auc": 0.7761455493375424,
+    "f1_macro": 0.8624121967104716,
+    "latency_mean_s": 69.0,
+    "latency_median_s": 34.0,
+    "latency_p95_s": 219.9999999999999,
+    "per_class_f1": {
+      "ABNORMAL_VIBRATION": 0.9875,
+      "ALTERNATOR_DEGRADATION": 0.9875,
+      "HEALTHY": 0.8404423380726699,
+      "INJECTOR_DEGRADATION": 0.9811320754716981,
+      "LUBRICATION_FAILURE": 0.9811320754716981,
+      "MISFIRE": 0.9811320754716981,
+      "OVERHEATING": 0.9811320754716981,
+      "SENSOR_DRIFT": 0.5217391304347826,
+      "SENSOR_DROPOUT": 0.5
+    },
+    "per_class_recall": {
+      "ABNORMAL_VIBRATION": 1.0,
+      "ALTERNATOR_DEGRADATION": 1.0,
+      "HEALTHY": 0.7450980392156863,
+      "INJECTOR_DEGRADATION": 1.0,
+      "LUBRICATION_FAILURE": 1.0,
+      "MISFIRE": 1.0,
+      "OVERHEATING": 1.0,
+      "SENSOR_DRIFT": 0.75,
+      "SENSOR_DROPOUT": 1.0
+    },
+    "rul_min_mae": 1.4457883015628612,
+    "rul_min_r2": 0.32064845468624703,
+    "rul_min_rmse": 2.687447929175105,
+    "rul_within_20pct": 0.5861678004535147,
+    "runs_detected": 8.0,
+    "severity_mae": 0.08338883010291709,
+    "severity_r2": 0.631430904435888,
+    "severity_rmse": 0.19654382999071282
+  },
+  "training": {
+    "healthy_runs": 6,
+    "runs": 30,
+    "runs_per_fault": 3,
+    "seed": 7,
+    "severity": 0.7,
+    "windows": 2940
+  },
+  "trend_s": 180,
+  "window_s": 60
+}

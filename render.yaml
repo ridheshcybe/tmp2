@@ -23,3 +23,9 @@ services:
         value: https://aerotwin-up6k.onrender.com
       - key: PYTHON_VERSION
         value: "3.12.6"
+      # Optional public-demo protection (set a value to enable the gate):
+      # - key: AEROTWIN_API_KEY
+      #   sync: false
+      # Rate limiting is always on; defaults: 120 req/min per IP on /api/*.
+      # - key: RATE_LIMIT_API_PER_MIN
+      #   value: "120"

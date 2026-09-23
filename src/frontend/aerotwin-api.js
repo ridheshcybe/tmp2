@@ -26,6 +26,16 @@
     const BACKEND_HTTP = "";                     // same-origin, via serve.py proxy
     const BACKEND_WS_PORT = 8081;
 
+    // Optional API key: when the backend runs with AEROTWIN_API_KEY, pages
+    // can be opened as /index.html?key=<secret>.  The key is then attached
+    // to mutating calls and the WebSocket URL automatically.  Reads stay
+    // open by default (AEROTWIN_KEY_OPEN_READ=1), so normal browsing works.
+    const API_KEY = new URLSearchParams(location.search).get("key") || "";
+    function withKey(url) {
+        if (!API_KEY) return url;
+        return url + (url.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(API_KEY);
+    }
+
     /* ------------------------------------------------------------------ */
     /*  flatten: EngineState -> flat frame                                 */
     /* ------------------------------------------------------------------ */
@@ -192,10 +202,9 @@
     function wsUrl() {
         // Cloud/https deployments serve the API on this same origin (no :8081).
         if (location.protocol === "https:") {
-            return "wss://" + location.host + "/ws/telemetry/" + ENGINE_ID;
+            return withKey("wss://" + location.host + "/ws/telemetry/" + ENGINE_ID);
         }
-        const host = location.hostname || "127.0.0.1";
-        return "ws://" + host + ":" + BACKEND_WS_PORT + "/ws/telemetry/" + ENGINE_ID;
+        return withKey("ws://" + (location.hostname || "127.0.0.1") + ":" + BACKEND_WS_PORT + "/ws/telemetry/" + ENGINE_ID);
     }
 
     function connectWs() {
@@ -239,7 +248,7 @@
 
     async function pollOnce() {
         try {
-            const r = await fetch(BACKEND_HTTP + "/api/engine/" + ENGINE_ID + "/state",
+            const r = await fetch(withKey(BACKEND_HTTP + "/api/engine/" + ENGINE_ID + "/state"),
                 { cache: "no-store" });
             if (!r.ok) return false;
             emit(flatten(await r.json()));
@@ -283,8 +292,9 @@
 
     async function api(method, path, body) {
         const opts = { method, headers: { "Content-Type": "application/json" }, cache: "no-store" };
+        if (API_KEY) opts.headers["X-API-Key"] = API_KEY;
         if (body !== undefined) opts.body = JSON.stringify(body);
-        const r = await fetch(BACKEND_HTTP + path, opts);
+        const r = await fetch(withKey(BACKEND_HTTP + path), opts);
         if (!r.ok) {
             let detail = r.statusText;
             try { detail = (await r.json()).detail || detail; } catch (e) {}

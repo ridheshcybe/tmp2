@@ -296,6 +296,20 @@ async def log_requests(request: Request, call_next):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  Public-demo protection: rate limiting + optional API key gate.
+#  Added LAST so they are the OUTERMOST layers: they run before CORS/GZip,
+#  cover WebSocket handshakes, and unauthorized floods get throttled before
+#  touching any auth or app logic.
+# ══════════════════════════════════════════════════════════════════════════════
+
+from backend.api_gate import install as _install_api_gate
+from backend.rate_limit import install as _install_rate_limit
+
+_install_api_gate(app)      # inner of the two (reads AEROTWIN_API_KEY env)
+_install_rate_limit(app)    # outermost: /api 120 req/min per IP, rest 600
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  Direct Run
 # ══════════════════════════════════════════════════════════════════════════════
 

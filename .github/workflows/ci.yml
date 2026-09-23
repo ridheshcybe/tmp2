@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Python test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: ${{ github.workspace }}/sih:${{ github.workspace }}/sih/backend:${{ github.workspace }}/sih/ml:${{ github.workspace }}/sih/simulator
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install backend deps
+        run: pip install -r sih/backend/requirements.txt pytest pytest-asyncio
+
+      - name: Run test suite
+        run: python -m pytest sih/backend/tests sih/ml/tests sih/simulator/telemetry_gen/tests -q
+
+  docker:
+    name: Docker build + smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t aerotwin:ci .
+
+      - name: Start container
+        run: |
+          docker rm -f aerotwin-ci >/dev/null 2>&1 || true
+          docker run -d --name aerotwin-ci -p 8081:8081 -e PORT=8081 aerotwin:ci
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:8081/health >/dev/null; then break; fi
+            sleep 1
+          done
+
+      - name: Smoke test endpoints
+        run: |
+          set -e
+          curl -sf http://127.0.0.1:8081/health | grep -q '"status":"ok"'
+          curl -sf -o /dev/null http://127.0.0.1:8081/index.html
+          curl -sf -o /dev/null http://127.0.0.1:8081/docs
+
+          # Mission lifecycle: start -> frames stored -> auto-complete
+          MID=$(curl -sf -X POST http://127.0.0.1:8081/api/missions/start \
+            -H 'Content-Type: application/json' \
+            -d '{"profile":"manual","duration_s":4,"name":"ci"}' \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['mission_id'])")
+          sleep 6
+          curl -sf "http://127.0.0.1:8081/api/missions/$MID" \
+            | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+assert d['status'] == 'COMPLETED', d['status']
+assert d['stats']['frame_count'] > 0, 'no telemetry stored'
+print('mission lifecycle OK:', d['stats']['frame_count'], 'frames')
+"
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker logs aerotwin-ci 2>&1 | tail -50
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f aerotwin-ci >/dev/null 2>&1 || true

@@ -1,9 +1,15 @@
 # DEPLOY.md — Running and Deploying AeroTwin
 
-> **Already working as of this commit:** `run.bat` starts everything (the
-> path bug that caused *"The system cannot find the path specified"* is fixed),
-> the dashboard is also served straight from the backend, and the Docker/Render
-> files exist. This guide runs from **verified, tested steps** — not theory.
+> **LIVE NOW:** https://aerotwin-up6k.onrender.com (Render free tier,
+> auto-deploys on push to `feature/awwwards-overnight-showcase`).
+> Verified 2026-09-23: health, dashboard, docs, mission lifecycle, fault
+> injection and WebSocket streaming all confirmed working in production.
+>
+> Hardening fixes in this branch (all smoke-tested in Docker + production):
+> backend ships `ml`/`simulator` packages so real ML code runs (was silent
+> fallback), the frame→DB→WebSocket pipeline actually stores data, missions
+> auto-complete and flush their tail frames, WebSockets survive garbage
+> input and slow clients, error responses no longer leak internals.
 
 ---
 
@@ -126,33 +132,36 @@ git push -u origin feature/awwwards-overnight-showcase
 (Backups in this workspace are excluded from the Docker build by `.dockerignore`,
 so push size is the only cost.)
 
-### 3.2 — Create the service
+### 3.2 — Service already created ✅
 
-**WHERE:** https://dashboard.render.com
+The service exists: **aerotwin** → `https://aerotwin-up6k.onrender.com`
+(free plan, Singapore region, Python runtime, autoDeploy on commit).
 
-1. Sign in **with GitHub** → **New → Web Service** → pick your repo and the
-   `feature/awwwards-overnight-showcase` branch.
-2. Render reads `render.yaml`: runtime **Docker**, plan **Free**, health check
-   `/health`. Click **Create Web Service** — first build takes ~3–6 min
-   (scikit-learn is the big install).
-3. Copy your URL (e.g. `https://aerotwin.onrender.com`), then in
-   **Environment** set:
+Environment variables (managed via the Render MCP):
 
-   ```
-   CORS_ORIGINS = https://aerotwin.onrender.com
-   ```
+```
+AEROTWIN_SERVE_FRONTEND = 1
+CORS_ORIGINS            = https://aerotwin-up6k.onrender.com
+AEROTWIN_FRONTEND_DIR   = /opt/render/project/src/src/frontend
+```
 
-   and redeploy once. (Same-origin pages don't strictly need it, but set it to
-   your exact URL anyway — future-proof.)
+To redeploy manually: Render dashboard → aerotwin → **Manual Deploy**, or
+just push a commit to the branch. First build takes ~6–10 min
+(scikit-learn is the big install); wake from idle ~50 s.
+
+> Note: `render.yaml` in the repo is documentation-only (the live service was
+> created outside Blueprints and uses the Python runtime, not Docker). Don't
+> run a Blueprint sync from it — it would try to create a second service.
+> Optional cleanup in the dashboard: set **Health Check Path** to `/health`.
 
 ### 3.3 — What you get
 
 | Check | URL |
 |---|---|
-| Dashboard | `https://aerotwin.onrender.com/index.html` |
-| Showcase | `https://aerotwin.onrender.com/showcase.html` |
-| Health | `https://aerotwin.onrender.com/health` |
-| API docs | `https://aerotwin.onrender.com/docs` |
+| Dashboard | `https://aerotwin-up6k.onrender.com/index.html` |
+| Showcase | `https://aerotwin-up6k.onrender.com/showcase.html` |
+| Health | `https://aerotwin-up6k.onrender.com/health` |
+| API docs | `https://aerotwin-up6k.onrender.com/docs` |
 
 Free-tier behavior to expect:
 - **Sleeps** after 15 min without traffic; next visit wakes it in ~50 s.

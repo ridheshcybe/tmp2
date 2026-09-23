@@ -1,18 +1,25 @@
+# ⚠️ The live service already exists and is NOT managed by this blueprint:
+#   aerotwin (aerotwin-up6k.onrender.com, srv-dap3glugekts73flecs0)
+#   runtime: python (not docker) — build/start commands below mirror it.
+# Running Render Blueprints on this repo would try to create a SECOND
+# service named "aerotwin". Only use this file as documentation of the
+# current configuration, or delete it if you adopt blueprint sync.
 services:
   - type: web
     name: aerotwin
-    runtime: docker
+    runtime: python
     plan: free
-    healthCheckPath: /health
+    region: singapore
+    branch: feature/awwwards-overnight-showcase
     autoDeploy: true
+    buildCommand: pip install -r sih/backend/requirements.txt
+    startCommand: cd sih && PYTHONPATH="$PWD:$PWD/backend" AEROTWIN_SERVE_FRONTEND=1 AEROTWIN_FRONTEND_DIR="$PWD/../src/frontend" uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    # TODO(manual): set Health Check Path to /health in the Render dashboard
+    # (the API/MCP cannot modify service settings, only env vars).
     envVars:
       - key: AEROTWIN_SERVE_FRONTEND
         value: "1"
-      # Render injects PORT; the image defaults to 8081 when absent.
-      - key: PORT
-        value: "10000"
-      # Same-origin dashboard (served by the backend itself) needs no CORS,
-      # but keep the exact public origin here so any future cross-origin
-      # client works.  Comma-separate extra origins; "*" allows all.
       - key: CORS_ORIGINS
-        value: https://aerotwin.onrender.com
+        value: https://aerotwin-up6k.onrender.com
+      - key: PYTHON_VERSION
+        value: "3.12.6"

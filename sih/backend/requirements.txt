@@ -34,4 +34,4 @@ jinja2==3.1.5
 httpx==0.28.1
 
 # Utilities
-orjson==3.10.13
+orjson==3.12.0

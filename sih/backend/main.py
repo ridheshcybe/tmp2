@@ -275,14 +275,17 @@ async def log_requests(request: Request, call_next):
 # ══════════════════════════════════════════════════════════════════════════════
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Optional: serve the standalone dashboard from this same origin (cloud deploys)
-#  Enabled with AEROTWIN_SERVE_FRONTEND=1. Mounted last so /api and /ws routes
-#  registered above always win.
+#  Serve the standalone dashboard from this same origin (cloud deploys and local)
+#  Serve the standalone dashboard from this same origin by default (cloud
+#  deploys and local). Set AEROTWIN_SERVE_FRONTEND=0 to disable explicitly.
+#  Mounted last so /api and /ws routes registered above always win.
 # ══════════════════════════════════════════════════════════════════════════════
 
 import os as _os
 
-if _os.environ.get("AEROTWIN_SERVE_FRONTEND", "").strip() == "1":
+_serve_frontend = _os.environ.get("AEROTWIN_SERVE_FRONTEND", "").strip()
+
+if _serve_frontend != "0":
     from pathlib import Path as _Path
 
     _frontend_dir = _Path(

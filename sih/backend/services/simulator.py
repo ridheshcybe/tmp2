@@ -141,7 +141,10 @@ class SimulatorService:
             # A new mission replaces the running one: the dashboard always
             # keeps an interactive session alive, so "start" must actually
             # switch profiles (manual -> test_flight) rather than no-op.
+            # Finalize the outgoing mission first so its buffered telemetry
+            # is flushed and its status does not stay RUNNING forever.
             await self.stop()
+            await self.finalize_mission()
 
         self._running = True
         self._mission_id = mission_id
@@ -194,6 +197,29 @@ class SimulatorService:
             except asyncio.CancelledError:
                 pass
             self._task = None
+
+    async def finalize_mission(self) -> None:
+        """Flush buffered telemetry and mark the mission COMPLETED.
+
+        Called when a mission ends naturally or is replaced.  Without it the
+        last <=50 buffered frames were lost on every mission end and the
+        mission status stayed RUNNING forever.
+        """
+        mission_id = self._mission_id
+        if not mission_id:
+            return
+        try:
+            from backend.database import flush_telemetry, update_mission
+            await flush_telemetry()
+            await update_mission(
+                mission_id,
+                status="COMPLETED",
+                ended_at=datetime.now(timezone.utc).isoformat() + "Z",
+            )
+            print(f"[Simulator] Mission {mission_id[:8]} completed "
+                  f"({self._frame_id} frames)")
+        except Exception as e:
+            print(f"[Simulator] Mission finalize failed: {e}")
 
     def inject_fault(
         self,
@@ -305,6 +331,10 @@ class SimulatorService:
 
         except asyncio.CancelledError:
             pass
+        else:
+            # Mission ran to its planned duration: persist the tail frames
+            # and finalize before the task exits.
+            await self.finalize_mission()
         finally:
             self._running = False
 

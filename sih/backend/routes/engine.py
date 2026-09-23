@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from backend.config import get_settings
 
@@ -69,7 +69,12 @@ async def get_engine_state(engine_id: str) -> Dict[str, Any]:
 
 
 @router.get("/{engine_id}/telemetry")
-async def get_engine_telemetry(engine_id: str, limit: int = 100) -> Dict[str, Any]:
+async def get_engine_telemetry(
+    engine_id: str,
+    # Clamp: the ring buffer holds _RECENT_LIMIT frames; an unbounded
+    # ?limit=1000000000 used to serialize and ship all of it.
+    limit: int = Query(100, ge=1, le=600),
+) -> Dict[str, Any]:
     """
     Get recent telemetry history for an engine.
 

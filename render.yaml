@@ -4,9 +4,15 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: AEROTWIN_SERVE_FRONTEND
         value: "1"
-      # Set this to your real URL after the first deploy:
+      # Render injects PORT; the image defaults to 8081 when absent.
+      - key: PORT
+        value: "10000"
+      # Same-origin dashboard (served by the backend itself) needs no CORS,
+      # but keep the exact public origin here so any future cross-origin
+      # client works.  Comma-separate extra origins; "*" allows all.
       - key: CORS_ORIGINS
         value: https://aerotwin.onrender.com

@@ -22,6 +22,7 @@ from typing import Any, Dict
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -126,13 +127,26 @@ app = FastAPI(
 settings = get_settings()
 origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if "*" in origins:
+    # Wildcard + allow_credentials is rejected by browsers — drop credentials.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+# Telemetry frames + health timelines are JSON-heavy; compress on the wire.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -142,11 +156,12 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    # Full detail goes to the logs only — leaking str(exc) to clients can
+    # expose filesystem paths, SQL fragments and library internals.
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal server error",
-            "detail": str(exc),
             "status_code": 500,
         },
     )
@@ -225,6 +240,16 @@ async def health_check() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Check database (real connectivity probe, not just "it's sqlite")
+    db_status = "unknown"
+    try:
+        import backend.database as _db
+        conn = _db.get_db()
+        await conn.execute("SELECT 1")
+        db_status = "ok"
+    except Exception:
+        db_status = "error"
+
     return {
         "status": "ok",
         "version": settings.APP_VERSION,
@@ -233,7 +258,7 @@ async def health_check() -> Dict[str, Any]:
             "ml_models": ml_status,
             "simulator": "running" if sim_running else "idle",
             "websocket_clients": ws_count,
-            "database": "sqlite",
+            "database": db_status,
         },
     }
 

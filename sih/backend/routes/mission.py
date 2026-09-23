@@ -92,14 +92,17 @@ async def start_mission(body: MissionCreate) -> Dict[str, Any]:
         except Exception:
             pass
 
-    sim.on_frame(process_and_store)
-
+    # Start the simulator FIRST — sim.start() clears stale callbacks from the
+    # previous mission, so registering our frame callback must happen AFTER
+    # it (registering before used to wipe the pipeline: no telemetry stored,
+    # no ML processing, no WebSocket frames at all).
     await sim.start(
         mission_id=mission_id,
         duration_s=body.duration_s,
         ambient_offset_c=body.ambient_offset_c,
         profile=body.profile,
     )
+    sim.on_frame(process_and_store)
 
     return {
         "mission_id": mission_id,
@@ -109,7 +112,6 @@ async def start_mission(body: MissionCreate) -> Dict[str, Any]:
         "profile": body.profile,
         "started_at": mission["started_at"],
     }
-
 
 @router.post("/{mission_id}/stop")
 async def stop_mission(mission_id: str) -> Dict[str, Any]:
@@ -133,6 +135,9 @@ async def stop_mission(mission_id: str) -> Dict[str, Any]:
     if mission is None:
         raise HTTPException(status_code=404, detail=f"Mission {mission_id} not found")
 
+    # Report actual status — this endpoint used to always claim COMPLETED
+    # even when it only read a mission that was already COMPLETED, RUNNING
+    # or missing from the simulator entirely.
     return {"mission_id": mission_id, "status": mission["status"]}
 
 
@@ -140,6 +145,7 @@ async def stop_mission(mission_id: str) -> Dict[str, Any]:
 async def list_missions(limit: int = 50) -> Dict[str, Any]:
     """List all missions, newest first."""
     import backend.database as db
+    limit = max(1, min(limit, 500))  # sanity clamp
     missions = await db.list_missions(limit=limit)
     return {"missions": missions, "count": len(missions)}
 

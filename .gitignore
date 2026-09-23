@@ -20,6 +20,7 @@ sih/.env
 sih/logs/
 sih/data/*.db
 sih/data/*.db-*
+sih/backend/data/
 *.log
 
 # ── editor / tooling ──

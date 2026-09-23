@@ -1,3 +1,4 @@
+# local backups / workspace junk
 backup_full_2026-09-20
 backup_2026-09-21
 brag-output*
@@ -7,3 +8,14 @@ node_modules
 venv
 .git
 sih/frontend/node_modules
+
+# runtime data must never ship in an image (size + stale-data + leak risk)
+sih/data
+sih/backend/data
+sih/logs
+**/__pycache__
+**/.pytest_cache
+**/._*
+**/.DS_Store
+jscheck_*
+.serve.log

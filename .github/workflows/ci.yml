@@ -25,7 +25,7 @@ jobs:
           cache: pip
 
       - name: Install backend deps
-        run: pip install -r sih/backend/requirements.txt pytest pytest-asyncio
+        run: pip install -r sih/backend/requirements.txt pytest pytest-asyncio httpx
 
       - name: Run test suite
         run: python -m pytest sih/backend/tests sih/ml/tests sih/simulator/telemetry_gen/tests -q
@@ -52,7 +52,7 @@ jobs:
       - name: Smoke test endpoints
         run: |
           set -e
-          curl -sf http://127.0.0.1:8081/health | grep -q '"status":"ok"'
+          curl -sf http://127.0.0.1:8081/health | jq -e '.status == "ok"' > /dev/null
           curl -sf -o /dev/null http://127.0.0.1:8081/index.html
           curl -sf -o /dev/null http://127.0.0.1:8081/docs
 
@@ -62,14 +62,9 @@ jobs:
             -d '{"profile":"manual","duration_s":4,"name":"ci"}' \
             | python3 -c "import json,sys; print(json.load(sys.stdin)['mission_id'])")
           sleep 6
-          curl -sf "http://127.0.0.1:8081/api/missions/$MID" \
-            | python3 -c "
-import json, sys
-d = json.load(sys.stdin)
-assert d['status'] == 'COMPLETED', d['status']
-assert d['stats']['frame_count'] > 0, 'no telemetry stored'
-print('mission lifecycle OK:', d['stats']['frame_count'], 'frames')
-"
+          curl -sf "http://127.0.0.1:8081/api/missions/$MID" > /tmp/mission.json
+          jq -e '.status == "COMPLETED" and .stats.frame_count > 0' /tmp/mission.json > /dev/null
+          jq -r '"mission lifecycle OK: \(.stats.frame_count) frames"' /tmp/mission.json
 
       - name: Dump container logs on failure
         if: failure()

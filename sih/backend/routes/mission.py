@@ -115,7 +115,7 @@ async def start_mission(body: MissionCreate) -> Dict[str, Any]:
 async def stop_mission(mission_id: str) -> Dict[str, Any]:
     """Stop a running mission."""
     import backend.database as db
-    from datetime import datetime
+    from datetime import datetime, timezone
     from backend.services.simulator import get_simulator
     from backend.database import flush_telemetry
 
@@ -126,7 +126,7 @@ async def stop_mission(mission_id: str) -> Dict[str, Any]:
         await db.update_mission(
             mission_id,
             status="COMPLETED",
-            ended_at=datetime.utcnow().isoformat() + "Z",
+            ended_at=datetime.now(timezone.utc).isoformat() + "Z",
         )
 
     mission = await db.get_mission(mission_id)

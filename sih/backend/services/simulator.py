@@ -17,7 +17,7 @@ import collections
 import math
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Deque, Dict, List, Optional
 
 import numpy as np
@@ -317,7 +317,7 @@ class SimulatorService:
 
         return {
             "frame_id": self._frame_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "engine_id": self.settings.ENGINE_ID,
             "mission_id": self._mission_id,
             "sim_time_s": self._sim_time,

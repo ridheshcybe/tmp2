@@ -313,10 +313,13 @@ class FaultInjector:
         # ── Modify frame ──
         frame["rpm"] = round(frame["rpm"] * (1.0 - rpm_loss), 1)
 
-        # Vibration increases significantly (+40% at full severity)
-        vib_factor = 1.0 + 0.40 * progress * fs.severity
+        # Vibration increases significantly from blow-by / uneven combustion.
+        # Additive in g so the boost is NOT damped by the RPM derate that
+        # accompanies compression loss (multiplicative factor was cancelled
+        # out by the RPM² baseline term as the engine slows).
+        vib_boost_g = 0.72 * progress * fs.severity
         frame["vibration_rms_g"] = round(
-            frame["vibration_rms_g"] * vib_factor, 4
+            frame["vibration_rms_g"] + vib_boost_g, 4
         )
 
         # Oil temp elevated
@@ -379,7 +382,7 @@ class FaultInjector:
         """
         cyl_idx = fs.frozen_cyl
         if cyl_idx < len(frame["cht_c"]):
-            frame["cht_c"][cyl_idx] = round(fs.frozen_value, 2)
+            frame["cht_c"][cyl_idx] = fs.frozen_value  # exact lock: no rounding drift
 
         # Also flag the corresponding EGT as potentially stale
         # (some sensor boards share wiring — minor cross-talk)

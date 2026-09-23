@@ -10,7 +10,7 @@ and produces the complete EngineState that the dashboard consumes.
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from backend.config import get_settings
@@ -79,7 +79,7 @@ class DigitalTwinService:
         state = {
             "engine_id": frame.get("engine_id", get_settings().ENGINE_ID),
             "mission_id": frame.get("mission_id"),
-            "timestamp": frame.get("timestamp", datetime.utcnow().isoformat() + "Z"),
+            "timestamp": frame.get("timestamp", datetime.now(timezone.utc).isoformat() + "Z"),
             "frame_id": frame.get("frame_id", self._frame_count),
 
             # Observed telemetry

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Set
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -52,7 +52,7 @@ class ConnectionManager:
         await self._send(ws, {
             "type": "WELCOME",
             "payload": {
-                "server_time": datetime.utcnow().isoformat() + "Z",
+                "server_time": datetime.now(timezone.utc).isoformat() + "Z",
                 "connected_clients": self.count,
             },
         })
@@ -101,7 +101,7 @@ async def broadcast_frame(state: Dict[str, Any]) -> None:
     await _manager.broadcast({
         "type": "TELEMETRY",
         "payload": state,
-        "timestamp": state.get("timestamp", datetime.utcnow().isoformat() + "Z"),
+        "timestamp": state.get("timestamp", datetime.now(timezone.utc).isoformat() + "Z"),
     })
 
 
@@ -177,7 +177,7 @@ async def _handle_command(data: Dict[str, Any]) -> None:
     elif action == "PING":
         await _manager.broadcast({
             "type": "PONG",
-            "payload": {"server_time": datetime.utcnow().isoformat() + "Z"},
+            "payload": {"server_time": datetime.now(timezone.utc).isoformat() + "Z"},
         })
 
     elif action == "GET_STATS":

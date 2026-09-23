@@ -137,7 +137,7 @@ async def start_simulation(body: SimulationStartRequest) -> Dict[str, Any]:
 @router.post("/stop")
 async def stop_simulation() -> Dict[str, Any]:
     """Stop the running simulation and mark its mission COMPLETED."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     import backend.database as db
     from backend.database import flush_telemetry
@@ -153,7 +153,7 @@ async def stop_simulation() -> Dict[str, Any]:
     await db.update_mission(
         mission_id,
         status="COMPLETED",
-        ended_at=datetime.utcnow().isoformat() + "Z",
+        ended_at=datetime.now(timezone.utc).isoformat() + "Z",
     )
     return {"mission_id": mission_id, "status": "COMPLETED"}
 

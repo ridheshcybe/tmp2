@@ -18,6 +18,22 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
+# ASGITransport does not run the app's lifespan, so tests that touch mission
+# routes need the database initialized explicitly (mirrors run_all() below).
+import pytest
+
+
+@pytest.fixture(autouse=True)
+async def _init_db():
+    import backend.database as db
+    await db.init_db()
+    yield
+    try:
+        await db.close_db()
+    except Exception:
+        pass
+
+
 async def test_health_endpoint():
     """Test GET /health returns 200 with expected fields."""
     from httpx import AsyncClient, ASGITransport

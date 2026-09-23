@@ -27,5 +27,9 @@ sih/data/*.db-*
 .vscode/
 .idea/
 
+# ── macOS metadata junk (AppleDouble forks on external drives) ──
+._*
+.DS_Store
+
 
 *.db

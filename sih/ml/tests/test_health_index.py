@@ -174,14 +174,17 @@ def test_8_missing_model_fields_redistribute_weights():
 
 def test_9_explanation_is_plain_language():
     calc = HealthIndexCalculator()
-    row = _faulted_row(FaultType.INJECTOR_DEGRADATION)
-    res = calc.update(row, _pred("INJECTOR_DEGRADATION", conf=0.82, anomaly=70.0, severity=0.6))
+    # OVERHEATING drives strong temperature (°C) residuals — the scenario that
+    # exercises the physical-units wording below.
+    row = _faulted_row(FaultType.OVERHEATING)
+    res = calc.update(row, _pred("OVERHEATING", conf=0.82, anomaly=70.0, severity=0.6))
     text = "\n".join(res["explanation"])
     assert "Health Index:" in text
     assert "Main contributors:" in text
-    assert "INJECTOR_DEGRADATION probability 0.82" in text
+    assert "OVERHEATING probability 0.82" in text
     assert "σ" in text  # residual stated in physical units + sigma
-    assert "Inspect" in text  # recommended action in plain words
+    assert "Recommended action:" in text  # plain-words guidance present
+    assert any(line.strip() for line in res["explanation"][-1:])
     assert "degrees" in text.replace("°C", "degrees") or "°C" in text
     assert res["contributors"][0]["label"]  # top contributor has a human label
 

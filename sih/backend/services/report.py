@@ -9,7 +9,7 @@ anomaly events, fault predictions, and maintenance advisories.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import backend.database as db
@@ -64,7 +64,7 @@ class ReportService:
                 "mission_duration_s": mission.get("duration_s", 0),
                 "ambient_offset_c": mission.get("ambient_offset_c", 0),
             },
-            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "generated_at": datetime.now(timezone.utc).isoformat() + "Z",
         }
 
     def _build_summary(

@@ -52,7 +52,14 @@ def test_faulted_residuals_point_the_right_way():
 
 def test_feature_count_and_names():
     names = feature_names()
-    assert len(names) == 41
+    # 4 conditions + one-hot per mission phase (MissionPhase grew to 8 with the
+    # interactive MANUAL phase) + 5 secondary sensors + 2 spreads + 10 residuals
+    # + 9 rolling/trend + 4 correlations = 42. Assert structurally, not hardcoded:
+    from simulator.telemetry_gen.telemetry_schema import PHASE_ORDER
+    expected = 4 + len(PHASE_ORDER) + 5 + 2 + 10 + 9 + 4  # 42 today
+    assert len(names) == expected
+    assert sum(n.startswith("phase_") for n in names) == len(PHASE_ORDER)
+    assert len(set(names)) == len(names)  # no duplicates
     ext = FeatureExtractor()
     rows, _ = generate_run(None, 0.0, seed=SEED, run_id="h")
     for r in rows:

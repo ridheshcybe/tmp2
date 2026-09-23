@@ -9,7 +9,7 @@ via the OpenAPI spec at /docs.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -87,7 +87,7 @@ class TelemetryFrame(BaseModel):
     """One tick of engine telemetry — the fundamental data unit."""
 
     frame_id: int
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
     engine_id: str = "TAPAS-BH-201-001"
     mission_id: Optional[str] = None
 
@@ -291,7 +291,7 @@ class MissionReport(BaseModel):
     maintenance_advisories: List[Dict[str, Any]] = Field(default_factory=list)
     sensor_summary: Dict[str, Any] = Field(default_factory=dict)
     environmental_summary: Dict[str, Any] = Field(default_factory=dict)
-    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -304,7 +304,7 @@ class WSMessage(BaseModel):
 
     type: str
     payload: Any
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
 
 
 class WSCommand(BaseModel):

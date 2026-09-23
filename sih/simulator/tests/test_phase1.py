@@ -351,7 +351,7 @@ class TestFaultInjection:
         inj.trigger_fault(
             FaultType.PISTON_RING_WEAR, severity=0.8, rate_per_sec=0.02
         )
-        for _ in range(200):  # 20 s
+        for _ in range(600):  # 60 s: full ramp to severity like the injector demo
             f_faulty = inj.step(0.7)
 
         vib_final = f_faulty["vibration_rms_g"]
@@ -503,9 +503,10 @@ class TestGeneratedDatasets:
 
         assert len(anomalous) > 0, "No anomalous rows with valid RUL"
 
-        # Check RUL is positive
-        assert (anomalous["remaining_useful_life_sec"] > 0).all(), (
-            "Some RUL values are ≤ 0 for anomalous rows"
+        # Check RUL is non-negative (0 is legitimate on the final
+        # mission-end row, where the sequence is consumed exactly at cutoff)
+        assert (anomalous["remaining_useful_life_sec"] >= 0).all(), (
+            "Some RUL values are negative for anomalous rows"
         )
 
         # Check monotonic decrease within each run (if run_id column exists)

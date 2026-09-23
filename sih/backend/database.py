@@ -21,7 +21,7 @@ import aiosqlite
 import json
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
@@ -169,7 +169,7 @@ async def create_mission(
     ambient_offset_c: float,
 ) -> Dict[str, Any]:
     db = get_db()
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(timezone.utc).isoformat() + "Z"
     await db.execute(
         """INSERT INTO missions
            (mission_id, engine_id, name, status, started_at, duration_s, ambient_offset_c)
@@ -307,7 +307,7 @@ async def log_fault_injection(
     target_sensor: Optional[str] = None,
 ) -> None:
     db = get_db()
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(timezone.utc).isoformat() + "Z"
     await db.execute(
         "INSERT INTO fault_injections (mission_id, fault_type, severity, target_sensor, injected_at) VALUES (?,?,?,?,?)",
         (mission_id, fault_type, severity, target_sensor, now),

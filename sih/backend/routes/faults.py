@@ -28,7 +28,7 @@ async def inject_fault(body: FaultInjectionRequest) -> Dict[str, Any]:
     """
     import backend.database as db
     from backend.services.simulator import get_simulator
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     sim = get_simulator()
     if not sim.is_running:
@@ -65,7 +65,7 @@ async def inject_fault(body: FaultInjectionRequest) -> Dict[str, Any]:
     return {
         "fault_type": body.fault_type.value,
         "severity": body.severity,
-        "injected_at": datetime.utcnow().isoformat() + "Z",
+        "injected_at": datetime.now(timezone.utc).isoformat() + "Z",
         "mission_id": sim.mission_id,
     }
 

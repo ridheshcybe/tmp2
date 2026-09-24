@@ -332,6 +332,12 @@
 
         #handClose:hover { color: #fff; }
 
+        /*  Inside the dashboard iframe the host owns engine speed (its
+            throttle bar and presets).  The local Speed slider would be a
+            second knob for the same thing, so it hides itself there and
+            stays visible when the page runs standalone.  */
+        #speedGroup.embedded { display: none; }
+
         #handState {
             font-size: 11px;
             color: #7fd4ff;
@@ -345,7 +351,7 @@
 
 <div id="ui">
 
-    <div class="sg">
+    <div class="sg" id="speedGroup">
         <label data-tip="Crankshaft speed. Every cycle in the model scales
                from this one number, and the camshafts turn at exactly half
                crank speed, as they must on a four stroke.">Speed</label>
@@ -359,13 +365,6 @@
                plane cutaway is retired and parked clear of the engine.">System Cut</label>
         <input type="range" id="cutSystems"
                min="0" max="100" step="1" value="0">
-    </div>
-
-    <div class="sg">
-        <label data-tip="The System Cut slider is continuous but the stages
-               are not, so these snap it to the next whole stage.">Peel</label>
-        <button id="peelBack" type="button" data-tip="Put the last system back on.">&#9664; Peel</button>
-        <button id="peelNext" type="button" data-tip="Take the next system off the engine.">Peel &#9654;</button>
     </div>
 
     <div class="sg">
@@ -1355,33 +1354,6 @@ document.getElementById("cutSystems").addEventListener("input", e => {
 });
 
 applySystemCut(document.getElementById("cutSystems").value);
-
-/*
-    Peel one part at a time.  The slider is continuous but the stages are
-    not, so the buttons snap it to the next whole stage rather than nudging
-    it by a fixed number the reader has to work out.
-*/
-function peel(direction) {
-
-    const slider = document.getElementById("cutSystems");
-    const stages = SYSTEM_ORDER.length;
-    const step = 100 / stages;
-
-    const index = Math.max(
-        0,
-        Math.min(stages, Math.round(Number(slider.value) / step) + direction)
-    );
-
-    slider.value = Math.round(index * step);
-
-    applySystemCut(slider.value);
-}
-
-document.getElementById("peelNext")
-    .addEventListener("click", () => peel(1));
-
-document.getElementById("peelBack")
-    .addEventListener("click", () => peel(-1));
 
 /*
     Block See-thru: 100 is opaque metal (depth-writing and selectable),
@@ -3466,25 +3438,11 @@ for (const host of TIP_HOSTS) {
 /* ---- what each system has to say, and what it can do -------------------- */
 
 /*
-    A tiny control library.  `read`/`write` point the panel at state that
-    already exists rather than a second copy of it - the RPM control drives
-    the same slider the main panel uses, so the two can never disagree.
+    A tiny control library for the part panels.  Engine speed is
+    deliberately absent: the main panel's Speed slider owns it, so the
+    panels only carry the controls that exist nowhere else.
 */
 const TUNE_CONTROLS = {
-
-    rpm: {
-        label: "Throttle",
-        tip: "Throttle position. Wired to the same Speed slider the main panel " +
-             "uses, so the two can never disagree about how fast the engine is " +
-             "turning.",
-        min: 0, max: 0.15, step: 0.001,
-        read: () => Number(document.getElementById("speed").value),
-        write: v => {
-            const s = document.getElementById("speed");
-            s.value = v;
-            s.dispatchEvent(new Event("input"));
-        }
-    },
 
     air: {
         label: "Air inflow",
@@ -3544,8 +3502,9 @@ const HOTSPOTS = {
         title: "Propeller",
         desc: "Three lofted blades on a lathe-turned spinner, bolted to the " +
               "front of the crankshaft. Pitch unwinds 34 to 12 degrees from " +
-              "root to tip, which is what makes it a propeller and not a fan.",
-        controls: ["rpm"]
+              "root to tip, which is what makes it a propeller and not a fan. " +
+              "Its speed is the Speed slider in the main panel.",
+        controls: []
     },
 
     leads: {
@@ -3562,8 +3521,8 @@ const HOTSPOTS = {
         controls: ["advance", "fuel"]
     },
 
-    camsA: { title: "Camshafts, bank A", desc: CAM_DESC, controls: ["lift", "rpm"] },
-    camsB: { title: "Camshafts, bank B", desc: CAM_DESC, controls: ["lift", "rpm"] },
+    camsA: { title: "Camshafts, bank A", desc: CAM_DESC, controls: ["lift"] },
+    camsB: { title: "Camshafts, bank B", desc: CAM_DESC, controls: ["lift"] },
 
     valvesA: { title: "Valves and springs, bank A", desc: VALVE_DESC, controls: ["lift", "air"] },
     valvesB: { title: "Valves and springs, bank B", desc: VALVE_DESC, controls: ["lift", "air"] },
@@ -3589,8 +3548,9 @@ const HOTSPOTS = {
         title: "Crankshaft",
         desc: "Cross-plane crank: pins at 0, 90, 270 and 180 degrees, each " +
               "shared by two cylinders, with a counterweight per throw and " +
-              "the main bearing bulkheads it spins in.",
-        controls: ["rpm"]
+              "the main bearing bulkheads it spins in. Its speed is the Speed " +
+              "slider in the main panel.",
+        controls: []
     },
 
     piston: {
@@ -3598,7 +3558,7 @@ const HOTSPOTS = {
         desc: "Travel comes from the slider-crank equation, so the rod stays " +
               "exactly one rod length at every crank angle. Click the button " +
               "to cut this cylinder.",
-        controls: ["rpm"]
+        controls: []
     }
 };
 
@@ -3781,9 +3741,8 @@ function buildPanel(hit) {
             def.write(Number(e.target.value));
         });
 
-        /*  Two controls can drive the same state - the throttle is on both
-            the engine panel and the propeller panel - so re-sync on show
-            and keep the readout honest.  */
+        /*  Re-sync on show so the slider always starts from the live
+            value and the panel readout stays honest.  */
         input.addEventListener("pointerdown", () => { input.value = def.read(); });
 
         row.appendChild(input);
@@ -5342,6 +5301,18 @@ const HOST_RPM_PER_UNIT = 3600;
     phone controller both speak 0..1 throttle.                     */
 const HOST_IDLE_RPM = 1200;
 const HOST_MAX_RPM = 5800;
+
+/*
+    One knob per job.  Inside the dashboard, the host's throttle bar and
+    presets own engine speed - they arrive as CUTAWAY_SET_* messages and
+    drive everything through applyHostRpm below - so this page's own
+    Speed slider hides itself rather than becoming a second throttle.
+    Standalone, the slider is the only speed control and stays put.
+*/
+if (window.self !== window.top) {
+    const speedGroup = document.getElementById("speedGroup");
+    if (speedGroup) speedGroup.classList.add("embedded");
+}
 
 /*
     Speed changes from the host no longer snap: they land on the speed

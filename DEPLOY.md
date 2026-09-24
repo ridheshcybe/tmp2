@@ -203,7 +203,7 @@ Free-tier behavior to expect:
 it via `AEROTWIN_SERVE_FRONTEND=1` (patch already in `sih/backend/main.py`), so
 pages, REST, and the WebSocket all share one origin. The dashboard's WebSocket
 auto-upgrades to same-origin `wss://` on https (patch in
-`src/frontend/aerotwin-api.js`). Phone-pairing stays local-only by design.
+`src/frontend/aerotwin-api.js`). Phone-pairing no longer needs serve.py: the backend hosts the same relay, so it works on any deploy.
 
 ---
 
@@ -318,13 +318,14 @@ On a VM, the SQLite database is persistent — history survives reboots.
 | Dashboard up, no live data | WebSocket blocked / old cache | Hard-refresh (Ctrl+Shift+R); confirm Patch 2 (`wss`) present |
 | CORS console errors | Origin mismatch | `CORS_ORIGINS` = exact public origin |
 | Render wakes slowly | Free tier spin-down | Expected ~50 s; add an UptimeRobot ping |
-| Phone QR silent on the public URL | Pairing relay is LAN-only (`serve.py`) | Expected on cloud deploys; for world-pairing use the ngrok path (Part 2) |
+| Phone QR silent on the public URL | *(was LAN-only)* | **Fixed:** the FastAPI backend now hosts the pairing relay (`/__pair`, `/__lanip`, `/__ctl`, `/__ice`), so the deployed "Pair phone" QR works from any phone |
 | `/health` shows `ml_models: "fallback"` | Models never trained on this disk | Expected; demo-safe. `train.bat` locally to produce real models |
 
 ## What stays local-only (by design)
 
-- `serve.py` phone pairing + HTTPS camera relay (ngrok tunnel brings it
-  world-reachable — that's Part 2's magic)
+- `serve.py` phone pairing + HTTPS camera relay — the *cloud* pairing path
+  now runs inside the backend (`sih/backend/pairing_relay.py`), so the
+  deployed site pairs phones directly; serve.py remains the LAN/tunnel path
 - `run.bat` two-process layout (backend + proxy frontend) — replaced in the
   cloud by the single mounted container
 - Node gateway (`sih/backend/src/server.ts`) and React cockpit

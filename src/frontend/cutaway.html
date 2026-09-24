@@ -4760,7 +4760,10 @@ async function acceptPhoneReply(rawJson) {
 
         await PHONE.pc.setRemoteDescription({ type: "answer", sdp: reply.s });
 
-        setPairStatus("connecting to phone...");
+        /*  ontrack may have fired during setRemoteDescription - the video
+            can already be live and announced.  Only say "connecting" when
+            that has not happened, so the live status is not stomped.  */
+        if (!PHONE.connected) setPairStatus("connecting to phone...");
 
     } catch (err) {
 

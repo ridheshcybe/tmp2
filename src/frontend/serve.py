@@ -212,6 +212,12 @@ class Handler(SimpleHTTPRequestHandler):
 
     def _is_local(self):
         """True when the request comes from this machine (the desktop)."""
+        # A tunnel (ngrok) forwards internet traffic through a local agent,
+        # so every tunneled request arrives from 127.0.0.1.  Proxies mark
+        # such requests with X-Forwarded-For - treat them as non-local so
+        # the access key stays enforced behind the tunnel.
+        if self.headers.get("x-forwarded-for"):
+            return False
         try:
             return str(self.client_address[0]) in ("127.0.0.1", "::1")
         except Exception:
@@ -281,6 +287,10 @@ class Handler(SimpleHTTPRequestHandler):
             offer = ""
         if not offer:
             return self._respond({"detail": "offer required"}, 400)
+        # Parking offers is the desktop's job; from the internet (tunnel up)
+        # only a caller presenting the access key may park one.
+        if not (self._is_local() or self._key_ok()):
+            return self._respond({"detail": "invalid pairing key"}, 403)
         token = uuid.uuid4().hex[:16]
         with PAIR_LOCK:
             pair_housekeeping()

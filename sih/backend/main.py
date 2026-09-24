@@ -193,6 +193,12 @@ app.include_router(replay_router)
 app.include_router(reports_router)
 app.include_router(simulation_router)
 
+# Phone-pairing relay — the same /__* routes serve.py hosts on the LAN.
+# Mounted before the StaticFiles catch-all below so its routes win; on
+# cloud deploys (Render) this is what makes the "Pair phone" QR work.
+from backend.pairing_relay import router as _pairing_router
+app.include_router(_pairing_router)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  Root & Health Endpoints

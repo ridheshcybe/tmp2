@@ -249,7 +249,18 @@ async function inflateFromB64(b64) {
 */
 async function decodeCode(text) {
 
-    const obj = JSON.parse(decodeURIComponent(escape(atob(text.trim()))));
+    /*  The relay carries the JSON envelope directly.  Legacy invite codes
+        (the paste-an-era fallback) were base64 of that JSON - try the
+        plain form first, then base64, so both still decode. */
+    text = text.trim();
+
+    let obj;
+
+    try {
+        obj = JSON.parse(text);
+    } catch (notPlainJson) {
+        obj = JSON.parse(decodeURIComponent(escape(atob(text))));
+    }
 
     if (obj.c === "deflate") obj.s = await inflateFromB64(obj.s);
 

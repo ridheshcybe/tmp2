@@ -430,20 +430,9 @@
       </div>
     </div>
     <div class="flex items-center gap-2.5">
-      <div
-        class="hidden lg:flex items-center gap-1.5 text-xs font-mono text-on-surface-variant bg-surface-subtle px-2.5 py-1 rounded border border-outline">
-        <span class="text-[10px] uppercase font-bold text-on-surface">AIRFRAME:</span>
-        <span>INLINE V-4 TURBO-PROP</span>
-      </div>
-      <button
-        class="bg-primary-container hover:brightness-105 active:scale-[0.98] text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm"
-        onclick="dispatchWebhook()">
-        <span class="material-symbols-outlined text-[16px]">sync</span>
-        Force Sync
-      </button>
-      <div
-        class="w-8 h-8 rounded-full bg-surface-muted border border-outline flex items-center justify-center font-bold text-xs">
-        <span class="material-symbols-outlined text-[18px]">person</span>
+      <div class="hidden lg:flex items-center gap-1.5 text-xs font-mono text-on-surface-variant bg-surface-subtle px-2.5 py-1 rounded border border-outline">
+        <span class="text-[10px] uppercase font-bold text-on-surface">ENGINE:</span>
+        <span>V8 CROSS-PLANE TURBO-PROP</span>
       </div>
     </div>
   </header>
@@ -478,79 +467,15 @@
             </a>
           </nav>
         </div>
-
-        <div class="p-3">
-          <div class="flex items-center justify-between px-2 mb-2">
-            <span
-              class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant">Kinematic
-              Hierarchy</span>
-            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 bg-surface-muted text-on-surface rounded">60°
-              V4</span>
-          </div>
-          <div class="space-y-1 text-xs">
-            <div class="p-2 rounded-md bg-surface-subtle border border-outline">
-              <div class="flex items-center justify-between font-headline font-semibold text-xs text-on-surface">
-                <span class="flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[15px] text-slate-700">view_in_ar</span>
-                  Billet Silver Crankcase
-                </span>
-                <span
-                  class="text-[9px] font-mono text-on-surface-variant bg-surface px-1 py-0.5 rounded border border-outline">Root</span>
-              </div>
-            </div>
-            <div class="ml-2 pl-2 border-l border-outline space-y-1">
-              <div
-                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
-                <span class="flex items-center gap-1.5"><span
-                    class="material-symbols-outlined text-[14px]">rotate_right</span> Forged Crankshaft
-                  (Crossplane)</span>
-                <span class="text-[9px] font-bold text-tertiary">720°</span>
-              </div>
-              <div
-                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
-                <span class="flex items-center gap-1.5"><span
-                    class="material-symbols-outlined text-[14px]">grid_goldenratio</span> Dual 60° V-Banks (L /
-                  R)</span>
-                <span class="text-[9px]">2×2</span>
-              </div>
-              <div
-                class="p-1.5 rounded bg-primary-container/20 border border-primary-container/40 flex items-center justify-between text-on-surface font-mono text-[11px]">
-                <span class="flex items-center gap-1.5 font-semibold"><span
-                    class="material-symbols-outlined text-[14px]">swap_vert</span> Polished Chrome Pistons ×4</span>
-                <span class="text-[9px] font-bold text-primary">STAGGER</span>
-              </div>
-              <div
-                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
-                <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">sync</span>
-                  Dual DOHC Bank Heads</span>
-                <span class="text-[9px]">4-CAM</span>
-              </div>
-              <div
-                class="p-1.5 rounded hover:bg-surface-subtle transition-colors flex items-center justify-between text-on-surface-variant font-mono text-[11px]">
-                <span class="flex items-center gap-1.5"><span
-                    class="material-symbols-outlined text-[14px]">alt_route</span> Silver Exhaust Headers &amp;
-                  Plenums</span>
-                <span class="text-[9px]">Twin</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="p-3 border-t border-outline bg-surface-subtle">
-        <div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant mb-1.5">
-          <span class="font-headline font-semibold uppercase text-[10px]">Session Bus</span>
-          <span class="text-emerald-700 font-bold flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            CONNECTED
+        <div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+          <span class="font-headline font-semibold uppercase text-[10px]">Link</span>
+          <span id="linkState" class="text-emerald-700 font-bold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            LIVE
           </span>
-        </div>
-        <div class="w-full bg-surface border border-outline h-1.5 rounded-full overflow-hidden">
-          <div class="bg-primary h-full w-[94%] rounded-full"></div>
-        </div>
-        <div class="text-[10px] font-mono text-on-surface-variant mt-1.5 flex justify-between">
-          <span>LATENCY: 4.2ms</span>
-          <span>LOSS: 0%</span>
         </div>
       </div>
     </aside>
@@ -699,21 +624,22 @@
               </div>
               <canvas id="spark-rpm" class="kpi-spark" height="28"></canvas>
             </div>
-            <div class="p-3.5 rounded-lg bg-rose-50/70 border border-rose-200 transition-shadow hover:shadow-sm">
+            <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
               <div
-                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-rose-700 mb-1">
-                <span>Peak Temp (Cyl 3)</span>
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-600 text-white">CRIT HIGH</span>
+                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                <span>Peak Temp (hot cyl)</span>
+                <span id="tempBadge"
+                  class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">NOMINAL</span>
               </div>
               <div class="flex items-end justify-between gap-2">
                 <div class="flex items-baseline gap-1.5">
-                  <span id="metric-temp" class="text-[44px] leading-none font-headline font-bold tracking-tight text-rose-600">--</span>
-                  <span class="text-xs font-mono text-rose-700">°C</span>
+                  <span id="metric-temp" class="text-[44px] leading-none font-headline font-bold tracking-tight">--</span>
+                  <span class="text-xs font-mono text-on-surface-variant">°C</span>
                 </div>
                 <span id="delta-temp" class="kpi-delta" data-sign="flat">—</span>
               </div>
               <canvas id="spark-temp" class="kpi-spark" height="28"></canvas>
-              <div class="text-[10px] font-mono text-rose-700 mt-1" id="metric-temp-sub">Threshold: 110°C</div>
+              <div class="text-[10px] font-mono text-on-surface-variant mt-1" id="metric-temp-sub">--</div>
             </div>
             <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
               <div
@@ -739,10 +665,7 @@
               </div>
               <div class="flex items-center justify-between">
                 <div class="text-lg font-headline font-bold" id="metric-misfire">0 Detected</div>
-                <svg class="w-16 h-5 text-emerald-600" fill="none" viewBox="0 0 64 20">
-                  <path d="M0 16 L12 16 L18 4 L24 16 L36 16 L42 4 L48 16 L64 16" stroke="currentColor"
-                    stroke-linejoin="round" stroke-width="1.8"></path>
-                </svg>
+                <span id="misfireDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
               </div>
             </div>
           </div>
@@ -935,9 +858,8 @@
       }
     }
 
-    function dispatchWebhook() {
-      alert("Telemetry snapshot synced with remote broker.");
-    }
+    /*  (the Force Sync button was decorative and is gone; the real
+        health probe below keeps the same function name available)  */
 
     /* =========================================================================
        CUTAWAY IFRAME (inline, not a pop-up)
@@ -1268,9 +1190,21 @@
 
       function renderFrame(f) {
         const hotCyl = (f.cht || []).indexOf(Math.max(...(f.cht || [0])));
+        const chtHot = f.cht?.[hotCyl] ?? 0;
         document.getElementById('metric-rpm').textContent = fmt(f.rpm, 0);
-        document.getElementById('metric-temp').textContent = fmt(f.cht?.[hotCyl], 1);
+        document.getElementById('metric-temp').textContent = fmt(chtHot, 1);
         document.getElementById('metric-temp-sub').textContent = "Cyl " + (hotCyl + 1) + " \u00B7 limit 240\u00B0C";
+        /*  The badge tells the truth about temperature: NOMINAL below the
+            warning band, WARN near the limit, CRIT at or past it.  */
+        const tempBadge = document.getElementById('tempBadge');
+        const tempCrit = chtHot >= 240, tempWarn = chtHot >= 215;
+        tempBadge.textContent = tempCrit ? "CRIT" : tempWarn ? "WARN" : "NOMINAL";
+        tempBadge.className = "px-1.5 py-0.5 rounded text-[9px] font-bold border " + (tempCrit
+          ? "bg-rose-600 text-white border-rose-600"
+          : tempWarn
+            ? "bg-amber-100 text-amber-800 border-amber-300"
+            : "bg-emerald-50 text-emerald-700 border-emerald-200");
+        document.getElementById('metric-temp').className = "text-[44px] leading-none font-headline font-bold tracking-tight " + (tempCrit ? "text-rose-600" : "");
         document.getElementById('metric-oil').textContent = fmt(f.oil_pressure_kpa * 0.145038, 1);
         setKpiDelta('delta-rpm', f.rpm, 0, '');
         setKpiDelta('delta-temp', f.cht?.[hotCyl], 1, '\u00B0');
@@ -1285,6 +1219,7 @@
 
         const isMisfire = f.injected_fault === 'MISFIRE' || /misfire/i.test(f.fault_class || '');
         document.getElementById('metric-misfire').textContent = isMisfire ? "Detected" : "0 Detected";
+        document.getElementById('misfireDot').className = "w-2 h-2 rounded-full " + (isMisfire ? "bg-rose-500 animate-pulse" : "bg-emerald-500");
 
         /*  Flight phase + manual-throttle readout follow the live frame.  */
         if (f.phase && activeProfile !== 'manual') setPhaseChip(f.phase);

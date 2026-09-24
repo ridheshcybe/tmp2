@@ -1,4 +1,4 @@
-\"\"\"Inference script to analyze a completed test run using a trained model.\"\"\"
+"""Inference script to analyze a completed test run using a trained model."""
 import os
 from ml.model import FallbackAnalyzer
 from ml.data_loader import load_historical_data

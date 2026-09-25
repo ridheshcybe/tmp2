@@ -599,11 +599,6 @@
                 <span class="material-symbols-outlined text-[15px]">qr_code_2</span>
                 <span>Pair phone</span>
               </button>
-              <button
-                class="bg-rose-600/90 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-headline font-bold flex items-center gap-1.5 transition-all shadow"
-                onclick="triggerRunaway()" title="Inject a full-severity overheating fault and spool the engine up">
-                <span class="material-symbols-outlined text-[15px]">warning</span> Test overheating fault
-              </button>
             </div>
           </div>
         </div>
@@ -632,11 +627,6 @@
               <div class="text-[11px] font-mono uppercase text-on-surface-variant">RUL</div>
               <div id="dashRul" class="text-2xl font-headline font-bold">--</div>
               <div class="text-[11px] font-mono text-on-surface-variant">minutes</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-mono uppercase text-on-surface-variant">RTB</div>
-              <div id="dashRtb" class="text-2xl font-headline font-bold">--</div>
-              <div id="dashRtbCat" class="text-[11px] font-mono font-bold">--</div>
             </div>
           </div>
           <div class="mt-2 text-[12px] font-mono text-on-surface-variant">
@@ -888,17 +878,6 @@
       if (cutFrame && cutFrame.contentWindow) {
         cutFrame.contentWindow.postMessage({ type: 'CUTAWAY_SET_RPM', rpm }, '*');
       }
-    }
-
-    /*  Stand-in used only before the API block installs the real handler.
-        It must NOT write a made-up temperature: the report found the number,
-        the limit caption and the warning badge could disagree, and a
-        hard-coded 188.4°C was one of the reasons.  The live frame owns
-        the value, so this only commands the fault and the throttle.  */
-    function triggerRunaway() {
-      setPreset('takeoff', 5800);
-      const sev = document.getElementById('sev-thermal');
-      if (sev) sev.innerText = "1.00";
     }
 
     function toggleJsonDrawer() {
@@ -1421,25 +1400,6 @@
           const rulEl = document.getElementById('dashRul');
           if (rulEl) rulEl.textContent = f.rul_minutes != null ? Math.round(f.rul_minutes) : '--';
 
-          /*  RTB (return to base) is a separate number from RUL: it is
-              derived from the same RUL estimate but carries its own
-              CRITICAL / ADVISORY / NONE state, so the two can never be
-              confused.  */
-          const rtbEl = document.getElementById('dashRtb');
-          const rtbCat = document.getElementById('dashRtbCat');
-          if (rtbEl && rtbCat) {
-            const rtb = (f.rtb_alert && f.rtb_alert !== "NONE") ? String(f.rtb_alert) : "NONE";
-            rtbEl.textContent = rtb === "NONE" ? "--" : rtb.replace("RTB_", "").replace("_", " ");
-            rtbCat.textContent = rtb === "NONE" ? "CLEAR" :
-              rtb === "RTB_CRITICAL" ? "CRITICAL" : "ADVISORY";
-            rtbEl.className = "text-2xl font-headline font-bold " +
-              (rtb === "RTB_CRITICAL" ? "text-rose-600" :
-                rtb === "RTB_ADVISORY" ? "text-amber-600" : "text-stone-500");
-            rtbCat.className = "text-[11px] font-mono font-bold " +
-              (rtb === "RTB_CRITICAL" ? "bg-rose-600 text-white border-rose-600" :
-                rtb === "RTB_ADVISORY" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-stone-100 text-stone-500");
-          }
-
           const faultEl = document.getElementById('dashFault');
           if (faultEl) {
             const cls = f.fault_class && f.fault_class !== 'HEALTHY' ? f.fault_class : null;
@@ -1522,20 +1482,7 @@
         API.setDemoFault(null);
         if (API.isOffline()) return;
         API.clearFaults()
-          .then(() => {
-            console.log('[fault] cleared');
-            /*  RTB comes from the RUL estimate, which a fault clear does
-                not reset - the backend keeps its own RUL/RTB values.  The
-                dashboard must re-derive RTB from the current frame on the
-                next sync, so a cleared fault no longer leaves a stale
-                "RTB CRITICAL" badge on the main page.  */
-            const rtbEl = document.getElementById('dashRtb');
-            const rtbCat = document.getElementById('dashRtbCat');
-            if (rtbEl) rtbEl.textContent = '--';
-            if (rtbCat) rtbCat.textContent = 'CLEAR';
-            if (rtbEl) rtbEl.className = 'text-2xl font-headline font-bold text-stone-500';
-            if (rtbCat) rtbCat.className = 'text-[11px] font-mono font-bold bg-stone-100 text-stone-500';
-          })
+          .then(() => console.log('[fault] cleared'))
           .catch(err => alert('Clear faults failed: ' + err.message));
       };
 
@@ -1543,15 +1490,6 @@
         API.health()
           .then(h => alert('Backend live \u00B7 v' + (h.version || '?') + ' \u00B7 uptime ' + h.uptime_s + 's \u00B7 sim: ' + (h.components.simulator)))
           .catch(() => alert('Backend unreachable - page is running on demo data.'));
-      };
-
-      window.triggerRunaway = function () {
-        const slider = document.querySelector('input[oninput*="OVERHEATING"]');
-        if (slider) { slider.value = 100; }
-        window.injectFault('OVERHEATING', 100);
-        setPreset('takeoff', 5800);
-        const sev = document.getElementById('sev-thermal');
-        if (sev) sev.textContent = "1.00";
       };
 
       /*  Forward one frame into the cutaway iframe so the engine

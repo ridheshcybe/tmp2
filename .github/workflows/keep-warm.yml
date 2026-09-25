@@ -1,0 +1,50 @@
+# Keep-warm: ping the deployed app so Render's free tier never sleeps.
+#
+# Render free instances spin down after ~15 minutes without inbound
+# traffic and take ~40-60 s to cold-start - an eternity if it happens
+# while a judge is watching. A /health hit every 10 minutes keeps the
+# instance resident (Render measures idle time on inbound requests).
+#
+# Notes:
+#   - cron is UTC. 10-min cadence = 6 pings/hour = 144 jobs/month,
+#     each ~1 s of a GitHub-hosted runner: comfortably inside the free
+#     tier's 2 000 minutes/month.
+#   - /health is served before rate limiting (exempted path) and is also
+#     what Render's own health check uses, so a 200 here means "truly up".
+#   - scheduled workflows on the default branch are the only ones that
+#     run on a schedule; keep this file on main.
+#   - GitHub disables cron workflows after 60 days of repo inactivity -
+#     normal commit activity keeps this alive during a demo period.
+name: Keep Render warm
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}        # manual trigger from the Actions tab
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping /health
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Warm the instance
+        run: |
+          URL="https://aerotwin-up6k.onrender.com/health"
+          code=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 90 "$URL")
+          cat /tmp/health.json
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::warning::health ping returned HTTP $code (cold start may still be in progress)"
+            # Not a hard failure: a 503 during a cold start is exactly the
+            # state this ping exists to shorten. The next tick finishes it.
+          else
+            echo "instance warm - HTTP 200"
+          fi

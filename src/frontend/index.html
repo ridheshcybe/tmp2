@@ -358,7 +358,9 @@
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="engine-spec.js"></script>
   <script src="aerotwin-api.js"></script>
+  <script src="ui-common.js"></script>
   <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
@@ -407,42 +409,46 @@
       <div class="flex items-center gap-2">
         <div
           class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">
-          V4
+          <span data-spec="shortName">V4</span>
         </div>
         <div class="flex flex-col">
-          <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // V-4</span>
-          <span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+          <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none"
+            data-spec="model">AeroTwin // V4</span>
+          <span class="text-[11px] font-mono text-on-surface-variant leading-tight"
+            data-spec="serial">SN: V4-9982-B</span>
         </div>
       </div>
       <div class="h-5 w-px bg-outline hidden sm:block"></div>
       <div class="hidden sm:flex items-center gap-2"> <span id="connBadge"
-          class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+          class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
           <span id="connDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span id="connLabel">STATUS: CONNECTING</span>
         </span> <span id="feedBadge"
-          class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-surface-muted text-on-surface-variant border border-outline">
+          class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[12px] font-mono bg-surface-muted text-on-surface-variant border border-outline">
           <span class="font-bold text-primary">--</span>&nbsp;<span id="feedSource">CONNECTING</span>
         </span>
         <span
-          class="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary text-white">
+          class="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-primary text-white">
           V4-CORE v4.2
         </span>
       </div>
     </div>
     <div class="flex items-center gap-2.5">
       <div class="hidden lg:flex items-center gap-1.5 text-xs font-mono text-on-surface-variant bg-surface-subtle px-2.5 py-1 rounded border border-outline">
-        <span class="text-[10px] uppercase font-bold text-on-surface">ENGINE:</span>
-        <span>V8 CROSS-PLANE TURBO-PROP</span>
+        <span class="text-[11px] uppercase font-bold text-on-surface">ENGINE:</span>
+        <span data-spec="engineType">60° Inline V4 Turbo-Prop</span>
       </div>
+      <span data-updated
+        class="hidden md:inline aero-updated text-[11px] font-mono text-on-surface-variant">Updated --</span>
     </div>
   </header>
 
   <div class="flex-1 flex overflow-hidden">
 
-    <aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+    <aside data-nav class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
       <div class="flex flex-col overflow-y-auto">
         <div class="p-3 border-b border-outline">
-          <div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">
+          <div class="text-[11px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">
             Navigation</div>
           <nav class="space-y-0.5">
             <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors"
@@ -455,7 +461,7 @@
             </a>
             <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm"
               href="index.html">
-              <span class="material-symbols-outlined text-[18px]">account_tree</span> Architecture Map
+              <span class="material-symbols-outlined text-[18px]">account_tree</span> Engine Twin
             </a>
             <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors"
               href="faults.html">
@@ -469,14 +475,15 @@
         </div>
       </div>
 
-      <div class="p-3 border-t border-outline bg-surface-subtle">
-        <div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
-          <span class="font-headline font-semibold uppercase text-[10px]">Link</span>
-          <span id="linkState" class="text-emerald-700 font-bold flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            LIVE
+      <div class="p-3 border-t border-outline bg-surface-subtle space-y-1">
+        <div class="flex items-center justify-between text-[12px] font-mono text-on-surface-variant">
+          <span class="font-headline font-semibold uppercase text-[11px]">Link</span>
+          <span data-conn-wrap data-conn="offline" class="font-bold flex items-center gap-1">
+            <span data-conn-dot class="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+            <span data-conn-short>OFFLINE</span>
           </span>
         </div>
+        <div data-updated class="aero-updated text-[11px] font-mono text-on-surface-variant">Updated --</div>
       </div>
     </aside>
 
@@ -519,7 +526,7 @@
             <!-- ENGINE power presets -->
             <div class="flex items-center gap-1">
               <span
-                class="text-[9px] font-bold uppercase tracking-widest text-stone-500 mr-1.5">Engine</span>
+                class="text-[11px] font-bold uppercase tracking-widest text-stone-500 mr-1.5">Engine</span>
               <button
                 class="preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all"
                 id="preset-idle" onclick="setPreset('idle', 1200)" title="Ground idle ~1,200 RPM">Idle</button>
@@ -536,9 +543,11 @@
             <!-- FLIGHT profile transport -->
             <div class="flex items-center gap-1.5">
               <span
-                class="text-[9px] font-bold uppercase tracking-widest text-stone-500 mr-1">Flight</span>
+                class="text-[11px] font-bold uppercase tracking-widest text-stone-500 mr-1">Flight</span>
+              <span id="flightStageChip" title="Current flight stage: READY / TAKEOFF / CLIMB / CRUISE / DESCENT / LANDING / ABORT"
+                class="font-mono font-bold text-[11px] px-2 py-0.5 rounded border bg-stone-800 text-stone-300 border-stone-600">READY</span>
               <span id="flightPhaseChip" title="Current mission phase from the backend"
-                class="hidden font-mono font-bold text-[10px] px-2 py-0.5 rounded border bg-stone-800 text-stone-300 border-stone-600">
+                class="hidden font-mono font-bold text-[11px] px-2 py-0.5 rounded border bg-stone-800 text-stone-300 border-stone-600">
                 PHASE: --
               </span>
               <button type="button" id="testFlightBtn"
@@ -557,7 +566,7 @@
                 class="text-stone-300 hover:text-white border border-stone-700 hover:border-stone-500 px-3 py-1 rounded text-xs font-headline font-semibold transition-all flex items-center gap-1"
                 title="Release manual control - engine spools back down to ground idle">
                 <span class="material-symbols-outlined text-[14px]">south_east</span>
-                To Idle
+                Return to idle
               </button>
             </div>
 
@@ -569,7 +578,7 @@
               <div class="flex flex-col">
                 <div class="flex items-center justify-between gap-3">
                   <span
-                    class="font-mono text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Throttle
+                    class="font-mono text-[11px] uppercase tracking-wider text-stone-400 font-semibold">Commanded throttle
                     <span id="manualChip"
                       class="hidden ml-1 px-1.5 py-px rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 normal-case">MANUAL</span>
                   </span>
@@ -592,8 +601,8 @@
               </button>
               <button
                 class="bg-rose-600/90 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-headline font-bold flex items-center gap-1.5 transition-all shadow"
-                onclick="triggerRunaway()" title="Inject a thermal runaway fault">
-                <span class="material-symbols-outlined text-[15px]">warning</span> Fault Test
+                onclick="triggerRunaway()" title="Inject a full-severity overheating fault and spool the engine up">
+                <span class="material-symbols-outlined text-[15px]">warning</span> Test overheating fault
               </button>
             </div>
           </div>
@@ -601,18 +610,56 @@
       </main>
 
       <aside class="w-full lg:w-80 bg-surface border-l border-outline flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+        <!-- Health first.  The report found the 3D engine held all the attention
+             while EHI, anomaly, RUL and the classified fault were buried. -->
+        <div class="p-4 rounded-lg bg-surface-subtle border border-outline">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">Engine health</span>
+            <span id="dashHealthCat"
+              class="text-[12px] font-mono font-bold px-2 py-0.5 rounded-full border bg-stone-100 text-stone-600 border-stone-300">--</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div class="text-[11px] font-mono uppercase text-on-surface-variant">EHI</div>
+              <div id="dashEhi" class="text-2xl font-headline font-bold">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-mono uppercase text-on-surface-variant">Anomaly</div>
+              <div id="dashAnom" class="text-2xl font-headline font-bold">--</div>
+              <div id="dashAnomBand" class="text-[11px] font-mono font-bold text-on-surface-variant">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-mono uppercase text-on-surface-variant">RUL</div>
+              <div id="dashRul" class="text-2xl font-headline font-bold">--</div>
+              <div class="text-[11px] font-mono text-on-surface-variant">minutes</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-mono uppercase text-on-surface-variant">RTB</div>
+              <div id="dashRtb" class="text-2xl font-headline font-bold">--</div>
+              <div id="dashRtbCat" class="text-[11px] font-mono font-bold">--</div>
+            </div>
+          </div>
+          <div class="mt-2 text-[12px] font-mono text-on-surface-variant">
+            Classified fault: <span id="dashFault" class="font-bold text-emerald-700">--</span>
+          </div>
+        </div>
+
         <div>
           <div class="flex items-center justify-between mb-3">
             <span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">Telemetry KPIs</span>
-            <span
-              class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">LIVE
-              FEED</span>
+            <span class="flex items-center gap-1.5">
+              <span id="feedStateBadge"
+                class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">LIVE
+                FEED</span>
+              <span data-demo-badge
+                class="hidden text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">EXAMPLE
+                DATA</span>
+            </span>
           </div>
           <div class="grid grid-cols-2 lg:grid-cols-1 gap-2.5">
-            <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
-              <div
-                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
-                <span>Drive Speed</span>
+            <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">              <div
+                class="flex items-center justify-between text-xs font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                <span>Actual Engine Speed</span>
                 <span class="material-symbols-outlined text-[16px]">speed</span>
               </div>
               <div class="flex items-end justify-between gap-2">
@@ -622,14 +669,15 @@
                 </div>
                 <span id="delta-rpm" class="kpi-delta" data-sign="flat">—</span>
               </div>
+              <div class="text-[12px] font-mono text-on-surface-variant mt-1">Measured &middot; commanded throttle <span id="cmdThrottle">--</span>%</div>
               <canvas id="spark-rpm" class="kpi-spark" height="28"></canvas>
             </div>
             <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
               <div
-                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                class="flex items-center justify-between text-xs font-headline font-semibold uppercase text-on-surface-variant mb-1">
                 <span>Peak Temp (hot cyl)</span>
                 <span id="tempBadge"
-                  class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">NOMINAL</span>
+                  class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-stone-100 text-stone-600 border-stone-300">--</span>
               </div>
               <div class="flex items-end justify-between gap-2">
                 <div class="flex items-baseline gap-1.5">
@@ -639,13 +687,13 @@
                 <span id="delta-temp" class="kpi-delta" data-sign="flat">—</span>
               </div>
               <canvas id="spark-temp" class="kpi-spark" height="28"></canvas>
-              <div class="text-[10px] font-mono text-on-surface-variant mt-1" id="metric-temp-sub">--</div>
+              <div class="text-[12px] font-mono text-on-surface-variant mt-1" id="metric-temp-sub">--</div>
             </div>
             <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
               <div
-                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                class="flex items-center justify-between text-xs font-headline font-semibold uppercase text-on-surface-variant mb-1">
                 <span>Oil Pressure</span>
-                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span id="oilDot" class="inline-block w-2 h-2 rounded-full bg-stone-400"></span>
               </div>
               <div class="flex items-end justify-between gap-2">
                 <div class="flex items-baseline gap-1.5">
@@ -655,17 +703,17 @@
                 <span id="delta-oil" class="kpi-delta" data-sign="flat">—</span>
               </div>
               <canvas id="spark-oil" class="kpi-spark" height="28"></canvas>
-              <div class="text-[11px] font-mono font-semibold mt-1 text-emerald-700" id="metric-oil-status">Nominal</div>
+              <div class="text-[12px] font-mono font-semibold mt-1 text-on-surface-variant" id="metric-oil-status">--</div>
             </div>
             <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline transition-shadow hover:shadow-sm">
               <div
-                class="flex items-center justify-between text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">
+                class="flex items-center justify-between text-xs font-headline font-semibold uppercase text-on-surface-variant mb-1">
                 <span>Misfire Status</span>
-                <span class="text-[10px] font-mono text-on-surface-variant">Rate 0.0%</span>
+                <span class="text-[12px] font-mono text-on-surface-variant">Rate <span id="misfireRate">--</span>%</span>
               </div>
               <div class="flex items-center justify-between">
-                <div class="text-lg font-headline font-bold" id="metric-misfire">0 Detected</div>
-                <span id="misfireDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <div class="text-lg font-headline font-bold" id="metric-misfire">--</div>
+                <span id="misfireDot" class="w-2 h-2 rounded-full bg-stone-400"></span>
               </div>
             </div>
           </div>
@@ -679,7 +727,7 @@
               Fault Injection Controls
             </div>
             <span
-              class="text-[9px] font-headline font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface border border-outline">TEST</span>
+              class="text-[11px] font-headline font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface border border-outline">TEST</span>
           </div>
           <div class="space-y-1">
             <div class="flex justify-between text-xs font-mono text-on-surface">
@@ -697,24 +745,29 @@
             <input class="w-full accent-stone-800 cursor-pointer h-1.5 bg-stone-200 rounded-lg appearance-none" max="100"
               min="0" oninput="injectFault('ABNORMAL_VIBRATION', this.value)" type="range" value="40" />
           </div>
-          <div class="pt-2 border-t border-outline flex items-center justify-between gap-2">
-            <div class="text-[11px] text-on-surface-variant font-medium">Thermal Hazard Alert</div>
+          <div class="pt-2 border-t border-outline space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[12px] font-headline font-semibold uppercase tracking-wider text-on-surface-variant">Active faults</span>
+              <span id="faultState"
+                class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">CLEAR</span>
+            </div>
+            <div id="activeFaultChips" class="flex flex-wrap gap-1.5 text-[11px] font-mono text-on-surface-variant">None</div>
             <button
-              class="px-2.5 py-1 rounded bg-stone-900 hover:bg-stone-800 text-white font-headline text-xs font-bold uppercase tracking-wider transition-all"
-              onclick="clearAllFaults()">Clear Faults</button>
+              class="w-full px-2.5 py-1 rounded bg-stone-900 hover:bg-stone-800 text-white font-headline text-xs font-bold uppercase tracking-wider transition-all"
+              onclick="clearAllFaults()">Clear faults</button>
           </div>
         </div>
 
         <div class="mt-auto pt-2">
           <button
+            type="button" aria-controls="json-drawer" aria-expanded="false"
             class="w-full py-2 px-3 rounded-lg border border-outline bg-surface hover:bg-surface-subtle font-headline text-xs font-semibold text-on-surface-variant hover:text-on-surface flex items-center justify-between transition-colors shadow-sm"
             onclick="toggleJsonDrawer()">
             <span class="flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px] text-tertiary">data_object</span>
-              <span>API Dispatch Drawer</span>
+              <span>View raw JSON frame</span>
             </span>
-            <span
-              class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">ACTIVE</span>
+            <span class="material-symbols-outlined text-[16px]" id="jsonDrawerChevron">expand_more</span>
           </button>
         </div>
       </aside>
@@ -760,14 +813,17 @@
   <div
     class="fixed inset-x-0 bottom-0 z-50 bg-stone-900 border-t border-stone-700 shadow-2xl transition-transform duration-300 transform translate-y-full"
     id="json-drawer">
-    <div class="max-w-7xl mx-auto p-4 flex flex-col gap-3 max-h-[480px]">
+    <div class="max-w-7xl mx-auto p-4 flex flex-col gap-3 max-h-[360px]">
       <div class="flex items-center justify-between pb-2 border-b border-stone-800">
         <div class="flex items-center gap-2 text-stone-200 font-headline font-bold text-xs uppercase tracking-wider">
-          <span class="material-symbols-outlined text-[18px] text-primary-container">webhook</span>
-          <span>POST /api/diagnostics/dispatch • Snapshot Payload</span>
+          <span class="material-symbols-outlined text-[18px] text-primary-container">data_object</span>
+          <span>Live engine frame &middot; read-only</span>
+          <span id="jsonDemoBadge"
+            class="hidden px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">EXAMPLE
+            DATA</span>
         </div>
         <div class="flex items-center gap-2">
-          <button
+          <button type="button" id="copyJsonBtn"
             class="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-mono border border-stone-600 transition-colors flex items-center gap-1"
             onclick="copyPayload()">
             <span class="material-symbols-outlined text-[14px]">content_copy</span> Copy JSON
@@ -779,8 +835,8 @@
         </div>
       </div>
       <div
-        class="bg-black/60 rounded-lg p-3 font-mono text-xs text-stone-300 overflow-auto border border-stone-800 max-h-72">
-        <pre id="json-preview"><code>// Live EngineState frame - updates from the backend stream
+        class="bg-black/60 rounded-lg p-3 font-mono text-xs text-stone-300 overflow-auto border border-stone-800 max-h-60">
+        <pre id="json-preview"><code>// EXAMPLE FRAME - sample output, replaced by the live backend stream
 {
   "timestamp": "--",
   "engine_id": "AEROTWIN-V4-TURBOPROP-9982",
@@ -834,12 +890,12 @@
       }
     }
 
+    /*  Stand-in used only before the API block installs the real handler.
+        It must NOT write a made-up temperature: the report found the number,
+        the limit caption and the warning badge could disagree, and a
+        hard-coded 188.4°C was one of the reasons.  The live frame owns
+        the value, so this only commands the fault and the throttle.  */
     function triggerRunaway() {
-      const tempEl = document.getElementById('metric-temp');
-      if (tempEl) {
-        tempEl.innerText = "188.4°C";
-        tempEl.classList.add('animate-pulse');
-      }
       setPreset('takeoff', 5800);
       const sev = document.getElementById('sev-thermal');
       if (sev) sev.innerText = "1.00";
@@ -847,15 +903,22 @@
 
     function toggleJsonDrawer() {
       const drawer = document.getElementById('json-drawer');
-      if (drawer) drawer.classList.toggle('translate-y-full');
+      if (!drawer) return;
+      const closed = drawer.classList.toggle('translate-y-full');
+      const chevron = document.getElementById('jsonDrawerChevron');
+      if (chevron) chevron.textContent = closed ? 'expand_more' : 'expand_less';
+      const trigger = document.querySelector('[aria-controls="json-drawer"]');
+      if (trigger) trigger.setAttribute('aria-expanded', closed ? 'false' : 'true');
     }
 
+    /*  Copy with visible confirmation.  The old version fired a blocking
+        modal alert, which is exactly the kind of feedback the UI report
+        called out as missing.  */
     function copyPayload() {
       const el = document.getElementById('json-preview');
-      if (el && navigator.clipboard) {
-        navigator.clipboard.writeText(el.innerText);
-        alert("Payload copied to clipboard.");
-      }
+      if (!el) return;
+      if (window.AeroUI) { AeroUI.copy(el.innerText, "JSON frame copied"); return; }
+      if (navigator.clipboard) navigator.clipboard.writeText(el.innerText);
     }
 
     /*  (the Force Sync button was decorative and is gone; the real
@@ -884,8 +947,17 @@
       }
     });
 
-    document.getElementById('reloadSimBtn').addEventListener('click', () => {
+    /*  Give Reload a real loading state: the report found people clicking it
+        repeatedly because nothing appeared to happen.  */
+    const reloadSimBtn = document.getElementById('reloadSimBtn');
+    reloadSimBtn.addEventListener('click', () => {
+      reloadSimBtn.disabled = true;
+      reloadSimBtn.classList.add('opacity-50', 'cursor-not-allowed');
       cutawayFrame.src = 'cutaway.html';
+    });
+    cutawayFrame.addEventListener('load', () => {
+      reloadSimBtn.disabled = false;
+      reloadSimBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     });
 
     /* Ask the simulator to produce a fresh QR. The simulator is expected to
@@ -1042,9 +1114,12 @@
         }
       }
 
-      /*  Backend throttle from the preset buttons: rpm/3600 is the scale
-          the simulator's own model uses. Falls back to the sim iframe if
-          the backend is down, so the visuals still follow the preset.  */
+      /*  Backend throttle from the preset buttons: the engine model steps
+          toward rpm = 1100 + throttle * (5600 - 1100), so the command that
+          hits the intended RPM is (rpm - 1100) / 4500, not rpm / 3600.
+          rpm/3600 was sending Idle to ~2598 RPM and Cruise to ~2400 via a
+          different throttle than the number shown.  Shows Set Throttle and
+          Actual RPM separately, so the two can never disagree.  */
       function setPreset(name, rpm) {
         document.querySelectorAll('.preset-btn').forEach(btn => {
           btn.className = "preset-btn px-3 py-1 rounded text-xs font-headline font-semibold text-stone-300 hover:text-white transition-all";
@@ -1055,35 +1130,50 @@
         const rpmEl = document.getElementById('metric-rpm');
         if (rpmEl) rpmEl.innerHTML = rpm.toLocaleString() + ' <span class="text-xs font-mono font-normal text-on-surface-variant">RPM</span>';
 
-        const throttle = Math.min(1, Math.max(THROTTLE_FLOOR, Math.round((rpm / 3600) * 100) / 100));
-        if (throttleSlider && !manualMode) throttleSlider.value = String(Math.round(throttle * 100));
+        /*  Engine model: RPM_IDLE=1100, RPM_MAX=5600; rpm = 1100 + throttle*
+            4500.  Invert for the preset: throttle = (rpm - 1100) / 4500.  */
+        const rpmMin = 1100;
+        const rpmMax = 5600;
+        const throttle = Math.min(1, Math.max(THROTTLE_FLOOR, (rpm - rpmMin) / (rpmMax - rpmMin)));
+        const throttlePct = Math.round(throttle * 100);
+        if (throttleSlider && !manualMode) throttleSlider.value = String(throttlePct);
         API.setThrottle(throttle)
-          .then(() => { syncThrottleUI(throttle); console.log('[sim] throttle ->', throttle); })
-          .catch(() => commandSim(rpm / 3600));
+          .then(() => { syncThrottleUI(throttle); console.log('[sim] throttle ->', throttle, 'target rpm', rpm); })
+          .catch(() => commandSim(throttle));
       }
       window.setPreset = setPreset;
 
-      const CONN_STYLES = {
-        live: { label: "STATUS: LIVE", dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-        polling: { label: "STATUS: POLLING", dot: "bg-amber-500", chip: "bg-amber-50 text-amber-700 border-amber-200" },
-        offline: { label: "STATUS: DEMO MODE", dot: "bg-stone-400", chip: "bg-stone-100 text-stone-600 border-stone-300" }
+      /*
+          The status chip itself is rendered by the shared ui-common.js
+          module from the API client's real frame age, so LIVE / POLLING /
+          OLD DATA / OFFLINE mean the same thing here and on every other page.
+          This function only adds the page-specific feed labels.
+      */
+      const FEED_LABEL = {
+        live:    { text: "LIVE FEED",   klass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+        polling: { text: "POLLING",     klass: "bg-amber-50 text-amber-700 border-amber-200" },
+        old:     { text: "OLD DATA",    klass: "bg-amber-100 text-amber-800 border-amber-300" },
+        offline: { text: "EXAMPLE DATA", klass: "bg-stone-100 text-stone-600 border-stone-300" }
       };
 
-      const connBadge = document.getElementById('connBadge');
-      const connDot = document.getElementById('connDot');
-      const connLabel = document.getElementById('connLabel');
+      function renderStatus(state) {
+        const badge = document.getElementById('feedStateBadge');
+        if (badge) {
+          const s = FEED_LABEL[state] || FEED_LABEL.offline;
+          badge.textContent = s.text;
+          badge.className = "text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full border " + s.klass;
+        }
 
-      function renderStatus(st) {
-        const s = CONN_STYLES[st] || CONN_STYLES.offline;
-
-        connBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border " + s.chip;
-        connDot.className = "w-1.5 h-1.5 rounded-full " + s.dot + (st === 'live' ? " animate-pulse" : "");
-        connLabel.textContent = s.label;
-
-        document.getElementById('feedSource').textContent =
-          st === 'live' ? "WS FEED" : st === 'polling' ? "REST POLL" : "DEMO FEED";
-        document.querySelector('#feedBadge span').textContent =
-          st === 'live' ? "10Hz" : st === 'polling' ? "0.5Hz" : "2Hz";
+        const src = document.getElementById('feedSource');
+        const hz = document.querySelector('#feedBadge span');
+        if (src) src.textContent =
+          state === 'live' ? "WS FEED" :
+            state === 'polling' ? "REST POLL" :
+              state === 'old' ? "STALE FEED" : "DEMO FEED";
+        if (hz) hz.textContent =
+          state === 'live' ? "10Hz" :
+            state === 'polling' ? "0.5Hz" :
+              state === 'old' ? "0Hz" : "2Hz";
       }
 
       const fmt = (v, d) => (v == null || isNaN(v)) ? "--" : Number(v).toLocaleString(undefined, { maximumFractionDigits: d == null ? 1 : d });
@@ -1188,23 +1278,70 @@
         ctx.fill();
       }
 
+      /*
+          The backend sends every active fault as ONE comma-joined string
+          ("OVERHEATING,ABNORMAL_VIBRATION"), so any test for a single fault
+          has to look inside the list instead of comparing the whole string -
+          otherwise the misfire card never lights up once a second fault is
+          injected.  These three helpers own that, and the panel's fault chips.
+      */
+      function activeFaultList(f) {
+        return String((f && f.injected_fault) || "")
+          .split(",").map(s => s.trim()).filter(Boolean);
+      }
+
+      function faultLabel(name) {
+        return String(name || "").toLowerCase().replace(/_/g, " ")
+          .replace(/\b\w/g, c => c.toUpperCase());
+      }
+
+      function renderActiveFaults(list) {
+        const chips = document.getElementById('activeFaultChips');
+        const state = document.getElementById('faultState');
+        if (!chips || !state) return;
+
+        if (!list.length) {
+          chips.innerHTML = '<span class="text-on-surface-variant">None</span>';
+          state.textContent = 'CLEAR';
+          state.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+          return;
+        }
+
+        chips.innerHTML = list.map(n =>
+          '<span class="px-2 py-0.5 rounded-full bg-rose-600 text-white whitespace-nowrap">' +
+            faultLabel(n) + '</span>').join("");
+        state.textContent = 'ACTIVE (' + list.length + ')';
+        state.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-600 text-white border border-rose-700';
+      }
+
+      /*  Limits come from engine-spec.js, so the number, the caption and the
+          badge can never be reading different thresholds.  */
+      const LIM = (window.AEROTWIN_SPEC && window.AEROTWIN_SPEC.limits) ||
+        { chtWarnC: 215, chtCritC: 240, oilPressureWarnKpa: 200 };
+
       function renderFrame(f) {
         const hotCyl = (f.cht || []).indexOf(Math.max(...(f.cht || [0])));
         const chtHot = f.cht?.[hotCyl] ?? 0;
         document.getElementById('metric-rpm').textContent = fmt(f.rpm, 0);
         document.getElementById('metric-temp').textContent = fmt(chtHot, 1);
-        document.getElementById('metric-temp-sub').textContent = "Cyl " + (hotCyl + 1) + " \u00B7 limit 240\u00B0C";
+        document.getElementById('metric-temp-sub').textContent =
+          "Cyl " + (hotCyl + 1) + " \u00B7 limit " + LIM.chtCritC + "\u00B0C";
         /*  The badge tells the truth about temperature: NOMINAL below the
             warning band, WARN near the limit, CRIT at or past it.  */
         const tempBadge = document.getElementById('tempBadge');
-        const tempCrit = chtHot >= 240, tempWarn = chtHot >= 215;
+        const tempCrit = chtHot >= LIM.chtCritC, tempWarn = chtHot >= LIM.chtWarnC;
         tempBadge.textContent = tempCrit ? "CRIT" : tempWarn ? "WARN" : "NOMINAL";
-        tempBadge.className = "px-1.5 py-0.5 rounded text-[9px] font-bold border " + (tempCrit
+        tempBadge.className = "px-1.5 py-0.5 rounded text-[11px] font-bold border " + (tempCrit
           ? "bg-rose-600 text-white border-rose-600"
           : tempWarn
             ? "bg-amber-100 text-amber-800 border-amber-300"
             : "bg-emerald-50 text-emerald-700 border-emerald-200");
         document.getElementById('metric-temp').className = "text-[44px] leading-none font-headline font-bold tracking-tight " + (tempCrit ? "text-rose-600" : "");
+        /*  Commanded (set) and measured (actual) are shown apart, never
+            conflated: the throttle percentage is the command, the big RPM
+            number is what the engine actually did.  */
+        const cmdEl = document.getElementById('cmdThrottle');
+        if (cmdEl) cmdEl.textContent = Math.round((f.throttle || 0) * 100);
         document.getElementById('metric-oil').textContent = fmt(f.oil_pressure_kpa * 0.145038, 1);
         setKpiDelta('delta-rpm', f.rpm, 0, '');
         setKpiDelta('delta-temp', f.cht?.[hotCyl], 1, '\u00B0');
@@ -1212,14 +1349,104 @@
         drawSpark('spark-rpm', f.rpm);
         drawSpark('spark-temp', f.cht?.[hotCyl]);
         drawSpark('spark-oil', f.oil_pressure_kpa * 0.145038);
-        const oilOk = f.oil_pressure_kpa > 200;
+        /*  The dot and the words come from the same status call, so a green
+            dot can never sit next to a "LOW" label.  */
+        const oilState = window.AEROTWIN_SPEC
+          ? window.AEROTWIN_SPEC.oilStatus(f.oil_pressure_kpa)
+          : (f.oil_pressure_kpa > LIM.oilPressureWarnKpa ? "NOMINAL" : "LOW");
         const oilEl = document.getElementById('metric-oil-status');
-        oilEl.textContent = oilOk ? "Nominal" : "LOW";
-        oilEl.className = "text-[11px] font-mono font-semibold " + (oilOk ? "text-emerald-700" : "text-rose-700");
+        const oilDot = document.getElementById('oilDot');
+        oilEl.textContent = oilState === "CRIT" ? "CRITICAL - LOW" :
+          oilState === "LOW" ? "LOW" :
+            oilState === "NODATA" ? "NO SIGNAL" : "Nominal";
+        oilEl.className = "text-[12px] font-mono font-semibold " +
+          (oilState === "NOMINAL" ? "text-emerald-700" :
+            oilState === "LOW" ? "text-amber-700" : "text-rose-700");
+        if (oilDot) {
+          oilDot.className = "inline-block w-2 h-2 rounded-full " +
+            (oilState === "NOMINAL" ? "bg-emerald-500" :
+              oilState === "LOW" ? "bg-amber-500" :
+                oilState === "NODATA" ? "bg-stone-400" : "bg-rose-500");
+        }
 
-        const isMisfire = f.injected_fault === 'MISFIRE' || /misfire/i.test(f.fault_class || '');
+        const faults = activeFaultList(f);
+        const isMisfire = faults.indexOf('MISFIRE') !== -1 || /misfire/i.test(f.fault_class || '');
         document.getElementById('metric-misfire').textContent = isMisfire ? "Detected" : "0 Detected";
         document.getElementById('misfireDot').className = "w-2 h-2 rounded-full " + (isMisfire ? "bg-rose-500 animate-pulse" : "bg-emerald-500");
+        /*  Count and percentage now come from the same frame, so the number
+            can never move while the percentage sits still.  */
+        const conf = f.fault_confidence != null ? f.fault_confidence : (f.fault_severity || 0);
+        const misfireRate = isMisfire ? Math.round(conf * 1000) / 10 : 0;
+        const rateEl = document.getElementById('misfireRate');
+        if (rateEl) {
+          rateEl.textContent = misfireRate.toFixed(1);
+          rateEl.parentElement.className = "text-[11px] font-mono " +
+            (isMisfire ? "text-rose-700 font-bold" : "text-on-surface-variant");
+        }
+        renderActiveFaults(faults);
+
+        /*  Health strip: EHI, anomaly band, RUL and the classified fault, in
+            one panel at the top of the rail.  */
+        const ehiEl = document.getElementById('dashEhi');
+        if (ehiEl) {
+          ehiEl.textContent = f.health_index != null ? Number(f.health_index).toFixed(0) : '--';
+
+          const catName = f.health_category ||
+            (window.AEROTWIN_SPEC ? window.AEROTWIN_SPEC.healthBand(f.health_index) : 'NODATA');
+          const cat = document.getElementById('dashHealthCat');
+          cat.textContent = catName;
+          cat.className = 'text-[12px] font-mono font-bold px-2 py-0.5 rounded-full border ' + ({
+            NORMAL: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            WATCH: 'bg-amber-50 text-amber-700 border-amber-200',
+            WARNING: 'bg-orange-50 text-orange-700 border-orange-200',
+            CRITICAL: 'bg-rose-600 text-white border-rose-700',
+            EMERGENCY: 'bg-rose-700 text-white border-rose-800'
+          }[catName] || 'bg-stone-100 text-stone-600 border-stone-300');
+
+          const anomEl = document.getElementById('dashAnom');
+          if (anomEl) anomEl.textContent = f.anomaly_score != null ? Number(f.anomaly_score).toFixed(2) : '--';
+
+          const bandEl = document.getElementById('dashAnomBand');
+          if (bandEl) {
+            const band = window.AEROTWIN_SPEC ? window.AEROTWIN_SPEC.anomalyBand(f.anomaly_score)
+              : (f.is_anomaly ? 'WARNING' : 'NORMAL');
+            bandEl.textContent = band === 'NODATA' ? '--' : band;
+            bandEl.className = 'text-[11px] font-mono font-bold ' + ({
+              NORMAL: 'text-emerald-700',
+              WARNING: 'text-amber-700',
+              CRITICAL: 'text-rose-700'
+            }[band] || 'text-on-surface-variant');
+          }
+
+          const rulEl = document.getElementById('dashRul');
+          if (rulEl) rulEl.textContent = f.rul_minutes != null ? Math.round(f.rul_minutes) : '--';
+
+          /*  RTB (return to base) is a separate number from RUL: it is
+              derived from the same RUL estimate but carries its own
+              CRITICAL / ADVISORY / NONE state, so the two can never be
+              confused.  */
+          const rtbEl = document.getElementById('dashRtb');
+          const rtbCat = document.getElementById('dashRtbCat');
+          if (rtbEl && rtbCat) {
+            const rtb = (f.rtb_alert && f.rtb_alert !== "NONE") ? String(f.rtb_alert) : "NONE";
+            rtbEl.textContent = rtb === "NONE" ? "--" : rtb.replace("RTB_", "").replace("_", " ");
+            rtbCat.textContent = rtb === "NONE" ? "CLEAR" :
+              rtb === "RTB_CRITICAL" ? "CRITICAL" : "ADVISORY";
+            rtbEl.className = "text-2xl font-headline font-bold " +
+              (rtb === "RTB_CRITICAL" ? "text-rose-600" :
+                rtb === "RTB_ADVISORY" ? "text-amber-600" : "text-stone-500");
+            rtbCat.className = "text-[11px] font-mono font-bold " +
+              (rtb === "RTB_CRITICAL" ? "bg-rose-600 text-white border-rose-600" :
+                rtb === "RTB_ADVISORY" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-stone-100 text-stone-500");
+          }
+
+          const faultEl = document.getElementById('dashFault');
+          if (faultEl) {
+            const cls = f.fault_class && f.fault_class !== 'HEALTHY' ? f.fault_class : null;
+            faultEl.textContent = cls ? faultLabel(cls) : 'None';
+            faultEl.className = 'font-bold ' + (cls ? 'text-rose-700' : 'text-emerald-700');
+          }
+        }
 
         /*  Flight phase + manual-throttle readout follow the live frame.  */
         if (f.phase && activeProfile !== 'manual') setPhaseChip(f.phase);
@@ -1251,13 +1478,25 @@
           injected_fault: f.injected_fault,
           source: f.injected_fault && f.source === 'offline' ? 'demo' : (f.source || undefined)
         };
+        /*  Never let sample output pass for telemetry: the frame says which
+            it is, in the text and in the badge.  */
+        const isDemo = f.source === 'demo';
+        const jsonDemo = document.getElementById('jsonDemoBadge');
+        if (jsonDemo) jsonDemo.classList.toggle('hidden', !isDemo);
+
         document.getElementById('json-preview').innerHTML = '<code>' +
+          (isDemo
+            ? '// EXAMPLE DATA - the backend is unreachable, this is sample output\n'
+            : '// Live engine frame from the backend\n') +
           JSON.stringify(json, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</code>';
       }
 
       API.onFrame(renderFrame);
       API.onFrame(pushFrameToSim);
-      API.onStatus(renderStatus);
+      /*  One shared, honest feed renderer (ui-common.js) drives the header
+          chip, the sidebar link line and this page's KPI badge.  */
+      if (window.AeroUI) AeroUI.autoConn(API, renderStatus);
+      else renderStatus(API.feedState ? API.feedState() : 'offline');
 
       let injectTimer = null;
       window.injectFault = function (faultType, sliderVal) {
@@ -1283,7 +1522,20 @@
         API.setDemoFault(null);
         if (API.isOffline()) return;
         API.clearFaults()
-          .then(() => console.log('[fault] cleared'))
+          .then(() => {
+            console.log('[fault] cleared');
+            /*  RTB comes from the RUL estimate, which a fault clear does
+                not reset - the backend keeps its own RUL/RTB values.  The
+                dashboard must re-derive RTB from the current frame on the
+                next sync, so a cleared fault no longer leaves a stale
+                "RTB CRITICAL" badge on the main page.  */
+            const rtbEl = document.getElementById('dashRtb');
+            const rtbCat = document.getElementById('dashRtbCat');
+            if (rtbEl) rtbEl.textContent = '--';
+            if (rtbCat) rtbCat.textContent = 'CLEAR';
+            if (rtbEl) rtbEl.className = 'text-2xl font-headline font-bold text-stone-500';
+            if (rtbCat) rtbCat.className = 'text-[11px] font-mono font-bold bg-stone-100 text-stone-500';
+          })
           .catch(err => alert('Clear faults failed: ' + err.message));
       };
 
@@ -1317,11 +1569,8 @@
             oilPsi: (f.oil_pressure_kpa || 0) * 0.145038,
             phase: f.phase || '',
             aboutToBurst: f.anomaly_score >= 0.55,
-            overLimit: Math.round(f.rpm) >= 6400 ||
-                       (f.rtb_alert || '') === 'RTB_CRITICAL',
-            detail: f.injected_fault ||
-                    (f.rtb_alert && f.rtb_alert !== 'NONE'
-                      ? f.rtb_alert : ''),
+            overLimit: Math.round(f.rpm) >= 6400,
+            detail: f.injected_fault || '',
             health: f.health_category
           }, '*');
         }
@@ -1417,8 +1666,10 @@
       let manualMode = false;              // slider has taken the stick
       let activeProfile = null;            // what the session is flying
       let demoFlightTimer = null;
+      let abortStageTimer = null;
 
       const phaseChip = document.getElementById('flightPhaseChip');
+      const flightStageChip = document.getElementById('flightStageChip');
       const testFlightBtn = document.getElementById('testFlightBtn');
       const abortFlightBtn = document.getElementById('abortFlightBtn');
       const releaseToIdleBtn = document.getElementById('releaseToIdleBtn');
@@ -1439,13 +1690,41 @@
         }
       }
 
+      /*
+          Two flight readouts on purpose:
+            flightStageChip - a plain word (READY / TAKEOFF / CRUISE / ABORT)
+                              that reads from the back of the room,
+            flightPhaseChip - the backend's finer-grained phase string.
+      */
+      const STAGE_STYLES = {
+        READY:     'bg-stone-800 text-stone-300 border-stone-600',
+        STARTUP:   'bg-stone-800 text-stone-300 border-stone-600',
+        TAKEOFF:   'bg-amber-500/20 text-amber-300 border-amber-500/40',
+        CLIMB:     'bg-sky-500/20 text-sky-300 border-sky-500/40',
+        CRUISE:    'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        ENDURANCE: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        DESCENT:   'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+        LANDING:   'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        MANUAL:    'bg-stone-800 text-stone-300 border-stone-600',
+        ABORT:     'bg-rose-600 text-white border-rose-700'
+      };
+
+      function setFlightStage(stage) {
+        if (!flightStageChip) return;
+        const s = String(stage || 'READY').toUpperCase();
+        flightStageChip.textContent = s;
+        flightStageChip.className = 'font-mono font-bold text-[11px] px-2 py-0.5 rounded border ' +
+          (STAGE_STYLES[s] || STAGE_STYLES.READY);
+      }
+
       function setPhaseChip(phase) {
+        setFlightStage(phase);
         if (!phaseChip) return;
         phaseChip.textContent = 'PHASE: ' + String(phase).toUpperCase();
         phaseChip.classList.remove('hidden');
         const c = PHASE_STYLES[phase] || PHASE_STYLES["CRUISE"];
         phaseChip.className =
-          'font-mono font-bold text-[10px] px-2 py-0.5 rounded border ' + c;
+          'font-mono font-bold text-[11px] px-2 py-0.5 rounded border ' + c;
       }
 
       function hidePhaseChip() {
@@ -1457,6 +1736,7 @@
         flying = on;
         if (testFlightBtn) testFlightBtn.style.display = on ? 'none' : '';
         if (abortFlightBtn) abortFlightBtn.style.display = on ? '' : 'none';
+        if (!on) setFlightStage('READY');
       }
 
       function setManual(on) {
@@ -1592,6 +1872,10 @@
         }
         API.stopDemoFlight();
         setFlying(false);
+        /*  Show the abort itself, then fall back to READY.  */
+        setFlightStage('ABORT');
+        clearTimeout(abortStageTimer);
+        abortStageTimer = setTimeout(() => setFlightStage('READY'), 4000);
         /*  Spool back down to ground idle instead of leaving the engine
             hanging at whatever throttle the profile was mid-flight at. */
         await releaseToIdle();

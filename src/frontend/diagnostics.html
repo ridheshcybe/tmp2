@@ -41,71 +41,106 @@
 <header class="h-14 bg-surface border-b border-outline px-5 flex items-center justify-between sticky top-0 z-40">
   <div class="flex items-center gap-4">
     <div class="flex items-center gap-2">
-      <div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">V4</div>
+      <div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10"><span data-spec="shortName">V4</span></div>
       <div class="flex flex-col">
         <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // Cylinders</span>
-        <span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+        <span class="text-[11px] font-mono text-on-surface-variant leading-tight" data-spec="serial">SN: V4-9982-B</span>
       </div>
     </div>
     <div class="h-5 w-px bg-outline hidden sm:block"></div>
-    <span id="connBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+    <span id="connBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
       <span id="connDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
       <span id="connLabel">STATUS: CONNECTING</span>
     </span>
   </div>
-  <button class="bg-primary-container hover:brightness-105 text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="location.href='index.html'">
-    <span class="material-symbols-outlined text-[16px]">account_tree</span> Architecture
+  <button class="bg-primary-container hover:brightness-105 text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="location.href='index.html'">      <span class="material-symbols-outlined text-[16px]">account_tree</span> Engine Twin
   </button>
 </header>
 
 <div class="flex-1 flex overflow-hidden">
-  <aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+  <aside data-nav class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
     <div class="p-3 border-b border-outline">
-      <div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
+      <div class="text-[11px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
       <nav class="space-y-0.5">
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="telemetry.html"><span class="material-symbols-outlined text-[18px]">speed</span> Telemetry Overview</a>
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm" href="diagnostics.html"><span class="material-symbols-outlined text-[18px]">tune</span> Cylinder Diagnostics</a>
-        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="index.html"><span class="material-symbols-outlined text-[18px]">account_tree</span> Architecture Map</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="index.html"><span class="material-symbols-outlined text-[18px]">account_tree</span> Engine Twin</a>
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="faults.html"><span class="material-symbols-outlined text-[18px]">emergency_home</span> Fault Injection Lab</a>
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="blackbox.html"><span class="material-symbols-outlined text-[18px]">data_table</span> Blackbox Logs</a>
       </nav>
     </div>
     <div class="p-3 border-t border-outline bg-surface-subtle">
-      <div class="text-[10px] font-mono text-on-surface-variant">Per-cylinder balance from the live CHT/EGT arrays. Spread &gt; 40°C between hottest and coldest cylinder flags a balance fault.</div>
+      <div class="text-[11px] font-mono text-on-surface-variant">Per-cylinder balance from the live CHT/EGT arrays. Spread &gt; 40°C between hottest and coldest cylinder flags a balance fault.</div>
     </div>
   </aside>
 
   <main class="flex-1 overflow-y-auto p-5 space-y-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="cylGrid"><!-- cards injected --></div>
+    <div class="flex items-center justify-between gap-2">
+      <div class="text-[12px] font-mono text-on-surface-variant">Every cylinder is read straight from the live frame.</div>
+      <span data-updated class="aero-updated text-[11px] font-mono text-on-surface-variant">Updated --</span>
+    </div>
 
-    <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+    <!-- Waiting state.  Without telemetry the page used to show four empty
+         cards, which read as "broken"; now it says exactly what it is waiting
+         for and what to do about it. -->
+    <div id="diagWaiting" class="p-6 rounded-lg bg-surface border border-dashed border-outline text-center">
+      <div id="diagWaitingTitle" class="font-headline text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+        WAITING FOR TELEMETRY</div>
+      <div id="diagWaitingNote" class="text-[12px] font-mono text-on-surface-variant mt-1">
+        No frames have arrived yet. Check that the backend is running, or start a mission from the Fault Lab.</div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 hidden" id="cylGrid"><!-- cards injected --></div>
+
+    <div id="spreadCard" class="hidden p-4 rounded-lg bg-surface border border-outline shadow-sm">
       <div class="flex items-center justify-between mb-3">
         <span class="font-headline text-xs font-bold uppercase tracking-wider">Thermal Balance (CHT spread)</span>
-        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-muted border border-outline" id="spreadVal">--</span>
+        <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-surface-muted border border-outline" id="spreadVal">--</span>
       </div>
       <svg id="spreadChart" viewBox="0 0 640 90" class="w-full h-24"></svg>
-      <div class="text-[10px] font-mono text-on-surface-variant mt-1">dashed = 40°C alert spread · solid = hottest-cylinder trace</div>
+      <div class="text-[11px] font-mono text-on-surface-variant mt-1">
+        y = °C spread between hottest and coldest cylinder · x = time (oldest left) ·
+        dashed red = 40°C balance-alert line
+      </div>
     </div>
   </main>
 </div>
 
+<script src="engine-spec.js"></script>
 <script src="aerotwin-api.js"></script>
+<script src="ui-common.js"></script>
 <script>
 (function () {
   const API = window.AEROTWIN_API;
+  const SPEC = window.AEROTWIN_SPEC;
   const $ = id => document.getElementById(id);
 
-  const CONN_STYLES = {
-    live:    { label: "STATUS: LIVE",      dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    polling: { label: "STATUS: POLLING",   dot: "bg-amber-500",   chip: "bg-amber-50 text-amber-700 border-amber-200" },
-    offline: { label: "STATUS: DEMO MODE", dot: "bg-stone-400",   chip: "bg-stone-100 text-stone-600 border-stone-300" }
-  };
-  function renderStatus(st) {
-    const s = CONN_STYLES[st] || CONN_STYLES.offline;
-    $("connBadge").className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border " + s.chip;
-    $("connDot").className = "w-1.5 h-1.5 rounded-full " + s.dot + (st === "live" ? " animate-pulse" : "");
-    $("connLabel").textContent = s.label;
+  /*  Waiting / no-data handling.  See the diagWaiting block in the markup.  */
+  let gotFrame = false;
+
+  function showData() {
+    const w = $("diagWaiting");
+    if (w) w.classList.add("hidden");
+    $("cylGrid").classList.remove("hidden");
+    $("spreadCard").classList.remove("hidden");
   }
+
+  function showWaiting(title, note) {
+    if (gotFrame) return;
+    $("cylGrid").classList.add("hidden");
+    $("spreadCard").classList.add("hidden");
+    const w = $("diagWaiting");
+    if (!w) return;
+    w.classList.remove("hidden");
+    if (title) $("diagWaitingTitle").textContent = title;
+    if (note) $("diagWaitingNote").textContent = note;
+  }
+
+  /*  Six seconds with nothing at all is NO DATA, not "still waiting".  */
+  setTimeout(() => {
+    if (!gotFrame) showWaiting("NO DATA",
+      "No telemetry has arrived. Start a mission from the Fault Lab, or check the backend on :8081.");
+  }, 6000);
 
   /*  one card per cylinder, built once  */
   const cards = [];
@@ -115,15 +150,15 @@
     el.innerHTML =
       '<div class="flex items-center justify-between mb-2">' +
         '<span class="font-headline text-sm font-bold">Cylinder ' + (c + 1) + '</span>' +
-        '<span class="text-[10px] font-mono px-1.5 py-0.5 rounded" id="cy-st-' + c + '">--</span>' +
+        '<span class="text-[11px] font-mono px-1.5 py-0.5 rounded" id="cy-st-' + c + '">--</span>' +
       '</div>' +
       '<div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono">' +
         '<div>CHT <b id="cy-cht-' + c + '">--</b>°C</div>' +
         '<div>EGT <b id="cy-egt-' + c + '">--</b>°C</div>' +
       '</div>' +
-      '<div class="mt-2 text-[10px] font-mono text-on-surface-variant">CHT</div>' +
+      '<div class="mt-2 text-[11px] font-mono text-on-surface-variant">CHT</div>' +
       '<div class="bar-wrap h-2 mt-0.5"><div id="cy-chtb-' + c + '" class="h-full bg-tertiary rounded-none" style="width:0%"></div></div>' +
-      '<div class="mt-1 text-[10px] font-mono text-on-surface-variant">EGT</div>' +
+      '<div class="mt-1 text-[11px] font-mono text-on-surface-variant">EGT</div>' +
       '<div class="bar-wrap h-2 mt-0.5"><div id="cy-egtb-' + c + '" class="h-full bg-secondary rounded-none" style="width:0%"></div></div>' +
       '<svg id="cy-sp-' + c + '" viewBox="0 0 280 30" class="w-full h-8 mt-2"></svg>';
     $("cylGrid").appendChild(el);
@@ -135,17 +170,22 @@
 
   const fmt = v => (v == null || isNaN(v)) ? "--" : Number(v).toFixed(1);
 
-  function cylPath(values, min, max, w, h) {
+  /*  left = optional gutter for y-axis labels; the per-cylinder sparklines
+      pass nothing and keep the full width.  */
+  function cylPath(values, min, max, w, h, left) {
     if (values.length < 2) return "";
     const span = (max - min) || 1;
+    const l = left || 0;
     return "M" + values.map((v, i) =>
-      (i / (values.length - 1) * w).toFixed(1) + "," +
+      (l + i / (values.length - 1) * (w - l)).toFixed(1) + "," +
       (h - 2 - (v - min) / span * (h - 4)).toFixed(1)).join(" L");
   }
 
   const spreadHist = [];
 
   function renderFrame(f) {
+    if (!gotFrame) { gotFrame = true; showData(); }
+
     const cht = f.cht || [], egt = f.egt || [];
     const chtMax = Math.max(260, ...cht), egtMax = Math.max(1000, ...egt);
 
@@ -159,11 +199,17 @@
       $("cy-chtb-" + c).style.width = Math.min(100, v / chtMax * 100) + "%";
       $("cy-egtb-" + c).style.width = Math.min(100, egt[c] / egtMax * 100) + "%";
 
-      const hot = v > 220, warm = v > 190;
+      /*  Thresholds come from engine-spec.js, so the card, the dashboard and
+          the telemetry page all call the same temperature "hot".  */
+      const chtState = SPEC ? SPEC.chtStatus(v)
+        : (v >= 240 ? "CRIT" : v >= 215 ? "WARN" : "NOMINAL");
       const st = $("cy-st-" + c);
-      st.textContent = hot ? "CRIT" : warm ? "HOT" : "NOMINAL";
-      st.className = "text-[10px] font-mono px-1.5 py-0.5 rounded " +
-        (hot ? "bg-rose-600 text-white" : warm ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-emerald-700");
+      st.textContent = chtState === "NODATA" ? "NO SIGNAL" : chtState;
+      st.className = "text-[11px] font-mono px-1.5 py-0.5 rounded " +
+        (chtState === "CRIT" ? "bg-rose-600 text-white"
+          : chtState === "WARN" ? "bg-amber-100 text-amber-800"
+            : chtState === "NODATA" ? "bg-stone-200 text-stone-600"
+              : "bg-emerald-50 text-emerald-700");
 
       $("cy-sp-" + c).innerHTML =
         '<path d="' + cylPath(h.cht, 0, chtMax, 280, 30) + '" fill="none" stroke="#0055ff" stroke-width="1.6"/>' +
@@ -174,22 +220,34 @@
     if (cht.length === 4) {
       const spread = Math.max(...cht) - Math.min(...cht);
       $("spreadVal").textContent = spread.toFixed(1) + "°C spread";
-      $("spreadVal").className = "text-[10px] font-mono px-1.5 py-0.5 rounded border " +
+      $("spreadVal").className = "text-[11px] font-mono px-1.5 py-0.5 rounded border " +
         (spread > 40 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-surface-muted border-outline");
       spreadHist.push(spread); if (spreadHist.length > 120) spreadHist.shift();
 
-      const w = 640, h = 90, span = Math.max(60, ...spreadHist) ;
+      const w = 640, h = 90, span = Math.max(60, ...spreadHist);
       const alertY = h - 2 - (40 / span) * (h - 4);
-      const line = cylPath(spreadHist, 0, span, w, h);
+      const line = cylPath(spreadHist, 0, span, w, h, 30);
       $("spreadChart").innerHTML =
-        '<line x1="0" y1="' + alertY.toFixed(1) + '" x2="' + w + '" y2="' + alertY.toFixed(1) + '" stroke="#e63b2e" stroke-dasharray="4 4" stroke-width="1"/>' +
+        '<line x1="30" y1="' + alertY.toFixed(1) + '" x2="' + w + '" y2="' + alertY.toFixed(1) + '" stroke="#e63b2e" stroke-dasharray="4 4" stroke-width="1"/>' +
+        '<text x="26" y="' + (alertY - 3).toFixed(1) + '" text-anchor="end" font-size="9" font-family="monospace" fill="#e63b2e">40</text>' +
+        '<text x="26" y="' + (h - 4) + '" text-anchor="end" font-size="9" font-family="monospace" fill="#6b6762">0</text>' +
+        '<text x="26" y="14" text-anchor="end" font-size="9" font-family="monospace" fill="#6b6762">' + Math.round(span) + '</text>' +
         '<path d="' + line + '" fill="none" stroke="#1a1a1a" stroke-width="1.6"/>';
     }
   }
 
   API.onFrame(renderFrame);
-  API.onStatus(renderStatus);
+  if (window.AeroUI) {
+    AeroUI.autoConn(API, state => {
+      if (!gotFrame && state === "offline") {
+        showWaiting("WAITING FOR TELEMETRY",
+          "Backend unreachable - the page will fill in as soon as a frame arrives.");
+      }
+    });
+  }
   API.start();
+
+  showWaiting();
 })();
 </script>
 </body>

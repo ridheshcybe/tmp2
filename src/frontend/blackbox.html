@@ -40,51 +40,62 @@
 <header class="h-14 bg-surface border-b border-outline px-5 flex items-center justify-between sticky top-0 z-40">
   <div class="flex items-center gap-4">
     <div class="flex items-center gap-2">
-      <div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">V4</div>
+      <div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10"><span data-spec="shortName">V4</span></div>
       <div class="flex flex-col">
         <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // Blackbox</span>
-        <span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+        <span class="text-[11px] font-mono text-on-surface-variant leading-tight" data-spec="serial">SN: V4-9982-B</span>
       </div>
     </div>
     <div class="h-5 w-px bg-outline hidden sm:block"></div>
-    <span id="connBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+    <span id="connBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
       <span id="connDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
       <span id="connLabel">STATUS: CONNECTING</span>
     </span>
   </div>
-  <button class="bg-primary-container hover:brightness-105 text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="location.href='index.html'">
-    <span class="material-symbols-outlined text-[16px]">account_tree</span> Architecture
+  <button class="bg-primary-container hover:brightness-105 text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="location.href='index.html'">      <span class="material-symbols-outlined text-[16px]">account_tree</span> Engine Twin
   </button>
 </header>
 
 <div class="flex-1 flex overflow-hidden">
-  <aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+  <aside data-nav class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
     <div class="p-3 border-b border-outline">
-      <div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
+      <div class="text-[11px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
       <nav class="space-y-0.5">
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="telemetry.html"><span class="material-symbols-outlined text-[18px]">speed</span> Telemetry Overview</a>
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="diagnostics.html"><span class="material-symbols-outlined text-[18px]">tune</span> Cylinder Diagnostics</a>
-        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="index.html"><span class="material-symbols-outlined text-[18px]">account_tree</span> Architecture Map</a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="index.html"><span class="material-symbols-outlined text-[18px]">account_tree</span> Engine Twin</a>
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="faults.html"><span class="material-symbols-outlined text-[18px]">emergency_home</span> Fault Injection Lab</a>
         <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm" href="blackbox.html"><span class="material-symbols-outlined text-[18px]">data_table</span> Blackbox Logs</a>
       </nav>
     </div>
     <div class="p-3 border-t border-outline bg-surface-subtle">
-      <div class="text-[10px] font-mono text-on-surface-variant">Every mission stores telemetry frames and health snapshots in the backend database. Pick a mission to inspect its recorded history.</div>
+      <div class="text-[11px] font-mono text-on-surface-variant">Every mission stores telemetry frames and health snapshots in the backend database. Pick a mission to inspect its recorded history.</div>
     </div>
   </aside>
 
   <main class="flex-1 overflow-y-auto p-5 space-y-4">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-2">
       <div class="font-headline text-xs font-bold uppercase tracking-wider">Mission Log</div>
-      <button id="btnReload" class="px-3 py-1.5 rounded border border-outline bg-surface hover:bg-surface-subtle font-headline text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-        <span class="material-symbols-outlined text-[15px]">refresh</span> Reload
-      </button>
+      <div class="flex items-center gap-2">
+        <!--  This page's "last update" is its own last successful database
+             read, not the telemetry feed's frame age, so it is NOT marked
+             data-updated (the shared ticker would otherwise report the
+             telemetry socket, which this page never opens).  -->
+        <span id="bbAuto" class="text-[11px] font-mono text-on-surface-variant">auto-refresh 5s</span>
+        <span id="bbUpdated" class="aero-updated text-[11px] font-mono text-on-surface-variant">Updated --</span>
+        <button id="btnReload" type="button"
+          class="px-3 py-1.5 rounded border border-outline bg-surface hover:bg-surface-subtle font-headline text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+          <span class="material-symbols-outlined text-[15px]">refresh</span> <span id="btnReloadLabel">Reload</span>
+        </button>
+      </div>
     </div>
 
     <div class="rounded-lg bg-surface border border-outline shadow-sm overflow-hidden">
-      <table class="w-full text-xs font-mono">
-        <thead class="bg-surface-subtle border-b border-outline text-[10px] uppercase tracking-wider text-on-surface-variant">
+      <!-- Horizontal scroll keeps the six columns readable on a laptop or a
+           narrow window instead of crushing them into slivers. -->
+      <div class="overflow-x-auto">
+      <table class="w-full min-w-[680px] text-xs font-mono">
+        <thead class="bg-surface-subtle border-b border-outline text-[11px] uppercase tracking-wider text-on-surface-variant">
           <tr>
             <th class="text-left px-3 py-2">Mission</th>
             <th class="text-left px-3 py-2">Engine</th>
@@ -94,94 +105,240 @@
             <th class="text-right px-3 py-2"></th>
           </tr>
         </thead>
-        <tbody id="missionRows"></tbody>
+        <tbody id="missionRows">        </tbody>
       </table>
-      <div id="blackboxEmpty" class="p-6 text-center text-[11px] font-mono text-on-surface-variant hidden">no missions recorded yet - start one from the Fault Lab</div>
+      </div>
+
+      <!-- Empty state that offers the next step instead of a dead end. -->
+      <div id="blackboxEmpty" class="p-8 text-center hidden">
+        <div id="bbEmptyTitle" class="font-headline text-sm font-bold uppercase tracking-wider text-on-surface-variant">NO MISSIONS RECORDED</div>
+        <div id="bbEmptyNote" class="text-[12px] font-mono text-on-surface-variant mt-1">Start a mission to record telemetry, health snapshots and fault events.</div>
+        <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+          <button id="bbStart" type="button"
+            class="px-3 py-1.5 rounded bg-primary text-white font-headline text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-[15px]">rocket_launch</span> Start mission
+          </button>
+          <button id="bbReload" type="button"
+            class="px-3 py-1.5 rounded border border-outline bg-surface hover:bg-surface-subtle font-headline text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-[15px]">refresh</span> Reload
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Detail: summary + timeline -->
     <div id="detailWrap" class="hidden space-y-3">
       <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
         <div class="flex items-center justify-between mb-2">
-          <span class="font-headline text-xs font-bold uppercase tracking-wider">Report Summary <span class="font-mono text-on-surface-variant normal-case" id="repId"></span></span>
+          <span class="font-headline text-xs font-bold uppercase tracking-wider">Report Summary <span class="font-mono text-on-surface-variant normal-case" id="repId"></span> <span id="repStatus" class="font-mono text-[11px] px-2 py-0.5 rounded-full border bg-stone-100 text-stone-600 border-stone-300">--</span></span>
           <button id="btnClose" class="text-on-surface-variant hover:text-on-surface">&times;</button>
-          <a id="repDl" class="text-[11px] font-mono text-tertiary hover:underline" href="#">download json</a>
-          <a id="repCsv" class="text-[11px] font-mono text-tertiary hover:underline" href="#">download csv</a>
+          <a id="repDl" class="text-[12px] font-mono text-tertiary hover:underline" href="#">download json</a>
+          <a id="repCsv" class="text-[12px] font-mono text-tertiary hover:underline" href="#">download csv</a>
         </div>
-        <pre class="bg-black/90 text-stone-200 rounded-lg p-3 text-[11px] font-mono overflow-auto max-h-72" id="repPre">loading…</pre>
+        <pre class="bg-black/90 text-stone-200 rounded-lg p-3 text-[12px] font-mono overflow-auto max-h-72" id="repPre">loading…</pre>
       </div>
 
       <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
         <div class="font-headline text-xs font-bold uppercase tracking-wider mb-2">Health Index Timeline</div>
         <svg id="timeline" viewBox="0 0 640 120" class="w-full h-32"></svg>
-        <div class="text-[10px] font-mono text-on-surface-variant mt-1">health snapshots recorded during the mission</div>
+        <div class="text-[11px] font-mono text-on-surface-variant mt-1">
+          y = Engine Health Index (0-100) &middot; x = mission time (oldest left) &middot;
+          dashed amber = 70 warning &middot; dashed red = 50 critical
+        </div>
       </div>
     </div>
   </main>
 </div>
 
+<script src="engine-spec.js"></script>
 <script src="aerotwin-api.js"></script>
+<script src="ui-common.js"></script>
 <script>
 (function () {
   const API = window.AEROTWIN_API;
   const $ = id => document.getElementById(id);
 
-  const CONN_STYLES = {
-    live:    { label: "STATUS: LIVE",      dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    polling: { label: "STATUS: POLLING",   dot: "bg-amber-500",   chip: "bg-amber-50 text-amber-700 border-amber-200" },
-    offline: { label: "STATUS: DEMO MODE", dot: "bg-stone-400",   chip: "bg-stone-100 text-stone-600 border-stone-300" }
-  };
-  function renderStatus(st) {
-    const s = CONN_STYLES[st] || CONN_STYLES.offline;
-    $("connBadge").className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border " + s.chip;
-    $("connDot").className = "w-1.5 h-1.5 rounded-full " + s.dot + (st === "live" ? " animate-pulse" : "");
-    $("connLabel").textContent = s.label;
-  }
+  /*  How often to re-read the mission list while the tab is visible.  */
+  const POLL_MS = 5000;
+
+  /*  State this page owns.  The mission list is a database read, so this
+      page has its own freshness and its own reachability - it must not
+      borrow the telemetry feed's, which it never opens.  */
+  let lastOkAt = 0;        // last successful database read
+  let pollTimer = null;
+  let busy = false;
+  let openId = null;       // mission currently being inspected
+  let openStatus = null;   // its status, so we know when to stop refreshing
 
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
 
-  function load() {
-    if (API.isOffline()) {
-      $("blackboxEmpty").classList.remove("hidden");
-      $("blackboxEmpty").textContent = "backend offline - no mission history available";
-      return;
+  /*  This page's own status chip.
+
+      It used to call AeroUI.autoConn(), which reports the TELEMETRY feed.
+      Blackbox never opens that feed, so the chip sat on "DEMO MODE" even
+      with the backend perfectly healthy and missions listed below it.  The
+      chip now says what this page can actually vouch for: whether the last
+      database read worked.  */
+  function setBackendState(ok) {
+    const badge = $("connBadge"), dot = $("connDot"), label = $("connLabel");
+    const look = ok
+      ? { chip: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          dot: "bg-emerald-500 animate-pulse", text: "STATUS: BACKEND OK" }
+      : { chip: "bg-stone-100 text-stone-600 border-stone-300",
+          dot: "bg-stone-400", text: "STATUS: BACKEND OFFLINE" };
+    if (badge) {
+      badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full " +
+        "text-[12px] font-mono font-medium border " + look.chip;
     }
-    API.missions(100).then(r => {
+    if (dot) dot.className = "w-1.5 h-1.5 rounded-full " + look.dot;
+    if (label) label.textContent = look.text;
+  }
+
+  /*  "Updated 3s ago" from our own reads, ticking every second so the age
+      keeps climbing even if a refresh is failing.  */
+  function renderUpdated() {
+    const el = $("bbUpdated");
+    if (!el) return;
+    if (!lastOkAt) { el.textContent = "Updated --"; return; }
+    const ms = Date.now() - lastOkAt;
+    el.textContent = "Updated " + (window.AeroUI ? AeroUI.ageText(ms) : Math.round(ms / 1000) + "s ago");
+  }
+  setInterval(renderUpdated, 1000);
+
+  /*  Empty-state helpers.  The old page swapped a line of grey text with no
+      obvious next step; the report asked for a Start / Load action.  */
+  function setEmpty(title, note) {
+    const box = $("blackboxEmpty");
+    if (!box) return;
+    box.classList.remove("hidden");
+    $("bbEmptyTitle").textContent = title;
+    $("bbEmptyNote").textContent = note;
+  }
+
+  function clearEmpty() {
+    const box = $("blackboxEmpty");
+    if (box) box.classList.add("hidden");
+  }
+
+  /*  showSpinner is for a user-initiated reload only.  The automatic 5 s
+      refresh runs silently, otherwise the button would flicker to
+      "Loading..." every few seconds for no reason.  */
+  async function load(showSpinner) {
+    const btn = $("btnReload");
+    const label = $("btnReloadLabel");
+
+    /*  Disable while loading, with a visible label change, so the button can
+        not be clicked repeatedly with no apparent effect.  */
+    if (showSpinner) {
+      btn.disabled = true;
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+      if (label) label.textContent = "Loading...";
+    }
+
+    try {
+      /*  Do not gate on API.isOffline(): that flag describes the telemetry
+          socket, and this page only ever makes REST calls.  Blackbox used
+          to check it, so with the socket never started the flag was stuck
+          on "offline" and the page refused to fetch anything - it showed
+          BACKEND OFFLINE forever even with a healthy backend.  Just make
+          the call and let a real failure be a real failure.  */
+      const r = await API.missions(100);
       const rows = r.missions || [];
-      $("blackboxEmpty").classList.toggle("hidden", rows.length > 0);
+
+      lastOkAt = Date.now();
+      setBackendState(true);
+
+      if (rows.length) clearEmpty();
+      else setEmpty("NO MISSIONS RECORDED",
+        "Start a mission to record telemetry, health snapshots and fault events.");
+
       $("missionRows").innerHTML = rows.map(m =>
         '<tr class="border-b border-outline/60 hover:bg-surface-subtle transition-colors">' +
-        '<td class="px-3 py-2 font-headline">' + esc(m.name || m.mission_id.slice(0, 8)) + '</td>' +
-        '<td class="px-3 py-2">' + esc(m.engine_id) + '</td>' +
-        '<td class="px-3 py-2">' + esc(m.status) + '</td>' +
-        '<td class="px-3 py-2">' + esc((m.started_at || "").replace("T", " ").slice(0, 19)) + '</td>' +
-        '<td class="px-3 py-2 text-right">' + esc(m.duration_s != null ? m.duration_s + "s" : "--") + '</td>' +
-        '<td class="px-3 py-2 text-right"><button class="px-2 py-1 rounded bg-primary text-white font-headline text-[10px] font-bold uppercase" data-open="' + m.mission_id + '">inspect</button></td>' +
+        '<td class="px-3 py-2 font-headline whitespace-nowrap">' + esc(m.name || m.mission_id.slice(0, 8)) + '</td>' +
+        '<td class="px-3 py-2 whitespace-nowrap">' + esc(m.engine_id) + '</td>' +
+        '<td class="px-3 py-2 whitespace-nowrap">' + esc(m.status) + '</td>' +
+        '<td class="px-3 py-2 whitespace-nowrap">' + esc((m.started_at || "").replace("T", " ").slice(0, 19)) + '</td>' +
+        '<td class="px-3 py-2 text-right whitespace-nowrap">' + esc(m.duration_s != null ? m.duration_s + "s" : "--") + '</td>' +
+        '<td class="px-3 py-2 text-right whitespace-nowrap"><button class="px-2 py-1 rounded bg-primary text-white font-headline text-[11px] font-bold uppercase" data-open="' + m.mission_id + '">inspect</button></td>' +
         '</tr>').join("");
+
       $("missionRows").querySelectorAll("button[data-open]").forEach(b => {
         b.addEventListener("click", () => openMission(b.dataset.open));
       });
-    }).catch(e => {
-      $("blackboxEmpty").classList.remove("hidden");
-      $("blackboxEmpty").textContent = "failed to load missions: " + e.message;
-    });
+    } catch (e) {
+      setBackendState(false);
+      if (!$("missionRows").children.length) {
+        setEmpty("BACKEND OFFLINE",
+          "No mission history is available while the backend is unreachable. Start it, then press Reload.");
+      }
+      const note = $("bbEmptyNote");
+      if (note && !$("blackboxEmpty").classList.contains("hidden")) {
+        note.textContent = String(e && e.message ? e.message : e);
+      }
+    } finally {
+      if (showSpinner) {
+        btn.disabled = false;
+        btn.classList.remove("opacity-50", "cursor-not-allowed");
+        if (label) label.textContent = "Reload";
+      }
+    }
   }
 
   function openMission(id) {
+    openId = id;
+    openStatus = null;
     $("detailWrap").classList.remove("hidden");
     $("repId").textContent = id.slice(0, 8);
     $("repPre").textContent = "loading…";
     $("repDl").href = "/api/reports/" + id;
-    $("repCsv").href = "/api/reports/" + id + "/download";
+    /*  The CSV button must hand back CSV, not JSON - the report caught the old
+        link pointing at the JSON download endpoint.  */
+    $("repCsv").href = "/api/reports/" + id + "/download/csv";
+    refreshOpen(id);
+  }
 
-    API.missionSummary(id).then(rep => {
+  /*  Small status pill beside the report id, so a running mission reads as
+      running instead of looking like a finished one.  */
+  function setRepStatus(status) {
+    const el = $("repStatus");
+    if (!el) return;
+    const s = String(status || "--").toUpperCase();
+    el.textContent = s;
+    el.className = "font-mono text-[11px] px-2 py-0.5 rounded-full border " +
+      (s === "RUNNING" || s === "ACTIVE"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : s === "COMPLETED" ? "bg-stone-100 text-stone-600 border-stone-300"
+          : s === "ABORTED" || s === "FAILED"
+            ? "bg-rose-50 text-rose-700 border-rose-200"
+            : "bg-stone-100 text-stone-600 border-stone-300");
+  }
+
+  /*  Re-read one mission's summary and health timeline.  While a mission is
+      still RUNNING this is called on every tick, so the numbers and the
+      chart actually move instead of freezing at whatever they were when the
+      panel was opened.  */
+  async function refreshOpen(id) {
+    const id2 = id || openId;
+    if (!id2) return;
+
+    try {
+      const rep = await API.missionSummary(id2);
       $("repPre").textContent = JSON.stringify(rep, null, 2);
-    }).catch(e => { $("repPre").textContent = "report unavailable: " + e.message; });
+      const st = rep.status || (rep.mission && rep.mission.status);
+      if (st) { openStatus = String(st).toUpperCase(); setRepStatus(openStatus); }
+    } catch (e) {
+      $("repPre").textContent = "report unavailable: " + e.message;
+    }
 
-    API.healthTimeline(id).then(t => {
-      const pts = t.snapshots || t.points || t.timeline || [];
+    try {
+      const t = await API.healthTimeline(id2);
+      /*  The endpoint answers { mission_id, count, data }.  The old code looked
+          for snapshots / points / timeline and so always drew an empty chart.  */
+      const pts = t.data || t.snapshots || t.points || t.timeline || [];
       drawTimeline(pts);
-    }).catch(() => drawTimeline([]));
+    } catch (e) {
+      drawTimeline([]);
+    }
   }
 
   function drawTimeline(snaps) {
@@ -202,12 +359,76 @@
       '<path d="' + path + '" fill="none" stroke="#1a1a1a" stroke-width="1.6"/>';
   }
 
-  $("btnReload").addEventListener("click", load);
-  $("btnClose").addEventListener("click", () => $("detailWrap").classList.add("hidden"));
+  /*  One refresh pass: the list always, the open mission only while it is
+      still running (a finished mission will not change again).  */
+  async function tick() {
+    if (document.hidden || busy) return;
+    busy = true;
+    try {
+      await load(false);
+      if (openId && (openStatus === null || openStatus === "RUNNING" || openStatus === "ACTIVE")) {
+        await refreshOpen(openId);
+      }
+    } finally {
+      busy = false;
+    }
+  }
 
-  renderStatus(API.status);
-  API.onStatus(renderStatus);
-  load();
+  async function reload() {
+    if (busy) return;
+    busy = true;
+    try { await load(true); } finally { busy = false; }
+  }
+
+  function startAuto() {
+    if (pollTimer) return;
+    $("bbAuto").textContent = "auto-refresh 5s";
+    pollTimer = setInterval(tick, POLL_MS);
+  }
+  function stopAuto(reason) {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    const el = $("bbAuto");
+    if (el) el.textContent = reason || "auto-refresh off";
+  }
+
+  /*  No point polling a background tab; refresh the moment it comes back.  */
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { stopAuto("paused (tab hidden)"); return; }
+    startAuto();
+    tick();
+  });
+
+  $("btnReload").addEventListener("click", reload);
+  $("btnClose").addEventListener("click", () => {
+    $("detailWrap").classList.add("hidden");
+    openId = null;
+    openStatus = null;
+  });
+
+  /*  The empty state offers the two real next steps.  */
+  $("bbReload").addEventListener("click", reload);
+  $("bbStart").addEventListener("click", async () => {
+    const btn = $("bbStart");
+    btn.disabled = true;
+    btn.classList.add("opacity-50", "cursor-not-allowed");
+    setEmpty("STARTING A MISSION...", "Talking to the backend.");
+    try {
+      await API.startMission("Blackbox session", 1800, "manual");
+      await reload();
+      if (window.AeroUI) AeroUI.toast("Mission started - it will appear below");
+    } catch (e) {
+      setEmpty("COULD NOT START A MISSION", String(e && e.message ? e.message : e));
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+  });
+
+  /*  Deliberately NOT AeroUI.autoConn() - see setBackendState().  */
+  renderUpdated();
+  tick();
+  startAuto();
+  window.addEventListener("beforeunload", () => stopAuto());
 })();
 </script>
 </body>

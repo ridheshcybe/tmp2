@@ -154,14 +154,25 @@ def start_service(svc):
 
     env = os.environ.copy()
     env.update(svc.get("env", {}))
-    creationflags = 0
-    if hasattr(subprocess, "CREATE_NEW_PROCESS_GROUP"):
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
-    detached = 0x00000008 if os.name == "nt" else 0
+    if os.name == "nt":
+        # Windows: detach from the console so the service keeps
+        # running after the launching shell (run.bat) is closed.
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000008
+        detached = creationflags
+    else:
+        # POSIX (macOS/Linux): put the service in its own session so it
+        # is detached from the controlling terminal and keeps running
+        # after the launcher exits.  Double-fork is not needed here because
+        # the service manager only launches during a user session; start_new
+        # session + close-on-exec + log redirection is enough to survive
+        # the launching shell closing.
+        creationflags = 0
+        detached = 0
     proc = subprocess.Popen(
         svc["cmd"], cwd=str(svc["cwd"]), env=env,
         stdout=_log_path(svc["name"]), stderr=subprocess.STDOUT,
-        creationflags=creationflags | detached,
+        creationflags=detached,
+        start_new_session=(os.name != "nt"),
     )
     print("  [+] " + svc["name"] + ": started (PID " + str(proc.pid)
           + ", port " + str(svc["port"]) + ")")

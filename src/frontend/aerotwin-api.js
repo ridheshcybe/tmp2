@@ -13,11 +13,16 @@
     and sih/frontend/src/lib/adapters.ts).  flatten() maps that onto the flat
     frame the pages want.
 
-    Connection states reported to pages:  live | polling | offline
-      live     - websocket open, frames streaming
+    Connection states reported to pages:  live | polling | old | offline
+      live     - websocket open, fresh frames streaming
       polling  - WS refused, REST works (poll every 2 s)
+      old      - the link is up but no frame has arrived for a few seconds
+                 (feedState() reports this; the UI shows OLD DATA)
       offline  - nothing reachable; demo generator feeds clearly-labelled
                  placeholder frames so the pages stay alive in a pitch
+
+    frame.source is "live" for real telemetry and "demo" for the offline
+    generator, so a page can never present sample data as real.
 */
 (function () {
     "use strict";
@@ -40,9 +45,10 @@
     /*  flatten: EngineState -> flat frame                                 */
     /* ------------------------------------------------------------------ */
 
-    function flatten(state) {
+    function flatten(state, source) {
         const obs = state.observed || {};
         return {
+            source: source || state.source || "live",
             timestamp: state.timestamp || obs.timestamp || new Date().toISOString(),
             frame_id: state.frame_id != null ? state.frame_id : (obs.frame_id || 0),
             sim_time_s: obs.sim_time_s || 0,
@@ -61,6 +67,8 @@
             injected_fault: obs.injected_fault || null,
             health_index: state.health_index,
             health_category: state.health_category || "NORMAL",
+            rtb_alert: state.rtb_alert || "NONE",
+            rtb_window_active: state.rtb_window_active || false,
             anomaly_score: state.anomaly_score || 0,
             is_anomaly: !!state.is_anomaly,
             anomaly_contributors: state.anomaly_contributors || [],
@@ -68,7 +76,6 @@
             fault_confidence: state.fault_confidence,
             fault_severity: state.fault_severity,
             rul_minutes: state.rul_minutes,
-            rtb_alert: state.rtb_alert || "NONE",
             isolated_sensors: state.isolated_sensors || [],
             sensor_status: state.sensor_status || {},
             residuals: state.residuals || null,
@@ -167,10 +174,8 @@
                 hot + vib + oil > 0.25 ? "WARNING" : "NORMAL",
             anomaly_score: +Math.min(1, hot * 0.9 + vib * 0.7 + oil * 0.8).toFixed(3),
             is_anomaly: (hot + vib + oil) > 0.2,
-            rul_minutes: Math.max(15, Math.round(180 - (hot + vib + oil) * 140)),
-            rtb_alert: hot + vib + oil > 0.55 ? "RTB_CRITICAL" :
-                hot + vib + oil > 0.2 ? "RTB_ADVISORY" : "NONE"
-        });
+            rul_minutes: Math.max(15, Math.round(180 - (hot + vib + oil) * 140))
+        }, "demo");
     }
 
     /* ------------------------------------------------------------------ */
@@ -184,6 +189,7 @@
     let status = "offline";
     let ws = null, pollTimer = null, demoTimer = null, reconnectTimer = null;
     let wsAlive = false;
+    let lastFrameAt = 0;                         // when the last frame landed
     let demoRpm = 2400;                          // demo-mode rpm state
 
     function setStatus(next) {
@@ -193,6 +199,7 @@
     }
 
     function emit(frame) {
+        lastFrameAt = Date.now();
         currentFrame = frame;
         history.push(frame);
         if (history.length > HISTORY_MAX) history.shift();
@@ -229,7 +236,7 @@
                 const msg = JSON.parse(ev.data);
                 const state = msg.payload || msg;
                 if (state && (state.observed || state.health_index !== undefined)) {
-                    emit(flatten(state));
+                    emit(flatten(state, "live"));
                 }
             } catch (e) { /* keep-alives etc. */ }
         };
@@ -251,7 +258,7 @@
             const r = await fetch(withKey(BACKEND_HTTP + "/api/engine/" + ENGINE_ID + "/state"),
                 { cache: "no-store" });
             if (!r.ok) return false;
-            emit(flatten(await r.json()));
+            emit(flatten(await r.json(), "live"));
             return true;
         } catch (e) {
             return false;
@@ -313,6 +320,29 @@
         history,
         get frame() { return currentFrame; },
         get status() { return status; },
+
+        /*  Milliseconds since the last frame arrived (Infinity before the
+            first one).  Lets a page show "OLD DATA" the moment the feed
+            goes quiet, instead of a badge that lies.  */
+        get ageMs() { return lastFrameAt ? Date.now() - lastFrameAt : Infinity; },
+
+        /*  "demo" while the offline generator is feeding the page.  */
+        get source() { return currentFrame ? currentFrame.source : null; },
+
+        /*  True when nothing has arrived recently enough to be trusted.  */
+        isStale(maxMs) {
+            const limit = maxMs ||
+                (window.AEROTWIN_SPEC && window.AEROTWIN_SPEC.bands.staleMs) || 4000;
+            return !lastFrameAt || (Date.now() - lastFrameAt) > limit;
+        },
+
+        /*  The single honest answer to "what is the feed doing?"  */
+        feedState() {
+            if (status === "offline") return "offline";
+            if (status === "live") return this.isStale() ? "old" : "live";
+            if (status === "polling") return this.isStale(6000) ? "old" : "polling";
+            return "offline";
+        },
 
         onFrame(fn)  { listeners.frame.push(fn);  if (currentFrame) fn(currentFrame); },
         onStatus(fn) { listeners.status.push(fn); fn(status); },

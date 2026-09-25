@@ -46,6 +46,17 @@ Loaded by `InferencePipeline` from `MODEL_DIR` (see §5). All scikit-learn, all 
 
 Tree-variance trick (models 3 & 4): per-tree spread doubles as a confidence estimate — no extra model needed.
 
+**RUL calibration.** Model 4 is fit on a *compressed* training mission
+(`ml.training_data.TRAIN_DURATIONS` totals 1035 s = 17.25 min), so its raw
+output means "minutes left in that training run" — a healthy engine reads
+2–10 min, which trips every RUL-keyed alert on the first frame. `InferencePipeline`
+therefore scales `rul_min`/`rul_lo`/`rul_hi` by `RUL_SCALE =
+NOMINAL_ENDURANCE_MIN / TRAIN_HORIZON_MIN` (120 / 17.25 ≈ 6.96) so the value
+leaving the pipeline is an engine-life figure: ~30–40 min healthy, falling
+below the 10 min RTB_CRITICAL bar as a fault develops. Retraining on a longer
+mission is the honest fix; until then this is a documented projection, not a
+measurement.
+
 ## 4. `health_index.py` — the explainable Engine Health Index (EHI)
 
 Not a black box: a weighted sum of five penalties, every point traceable to a physical observation.
@@ -97,7 +108,7 @@ python -m ml.train --runs-per-fault 2 --healthy-runs 4 --model-dir ml/models
 
 - `class` — first fault in `faults_active` (single-fault runs are the training default); `HEALTHY` otherwise.
 - `severity` — max active fault severity ∈ [0, 1].
-- `rul_min` — time until the primary fault is fully developed (`onset_s + ramp_s`) or mission end, whichever is smaller ÷ 60. Failure = severity ≥ 0.9.
+- `rul_min` — time until the primary fault is fully developed (`onset_s + ramp_s`) or mission end, whichever is smaller ÷ 60. Failure = severity ≥ 0.9. This is the **training-run** clock, so the live readout is rescaled before it is shown (see §3).
 - `RunMeta` (per run: fault type, severity, onset, ramp, t_fail, mission end) is kept out of the features.
 - Leakage prevention: run-level splits · causal features · scalers/thresholds fit on train/val only · stratified by fault type.
 

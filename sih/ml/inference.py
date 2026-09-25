@@ -51,6 +51,18 @@ RUL_CRITICAL_MIN = 5.0
 RUL_ADVISORY_MIN = 15.0
 LOW_CONFIDENCE = 0.6
 
+#: RUL calibration.
+#:
+#: The RUL regressor is fit on a *compressed* training mission
+#: (``ml.training_data.TRAIN_DURATIONS`` totals 1035 s), so its raw output
+#: means "minutes left in that training run", not engine life: a healthy
+#: engine reads 2-10 min, which trips every RUL-keyed alert on the first
+#: frame. Project the training horizon onto a nominal endurance so the
+#: number that leaves this pipeline is an engine-life figure.
+TRAIN_HORIZON_MIN = 1035.0 / 60.0            # 17.25 min
+NOMINAL_ENDURANCE_MIN = 120.0                # nominal life the readout shows
+RUL_SCALE = NOMINAL_ENDURANCE_MIN / TRAIN_HORIZON_MIN
+
 
 def _load_bundle(model_dir: str) -> Dict[str, object]:
     with open(f"{model_dir}/bundle.json", encoding="utf-8") as fh:
@@ -119,6 +131,12 @@ class InferencePipeline:
         rul_lo = max(0.0, float(np.expm1(np.mean(rul_logs) - rul_std)))
         rul_hi = float(np.expm1(np.mean(rul_logs) + rul_std))
         rul_conf = float(np.clip(1.0 - rul_std / 1.5, 0.0, 1.0))
+
+        # Rescale out of "training-run minutes" before anything downstream
+        # reads it — the alert ladder and the RTB ladder both key on this.
+        rul_mean *= RUL_SCALE
+        rul_lo *= RUL_SCALE
+        rul_hi *= RUL_SCALE
 
         alert = _alert_level(
             is_anomaly, cls, severity, rul_mean, confidence

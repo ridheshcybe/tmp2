@@ -8,7 +8,7 @@
     other.  Both problems come from the same cause - every page carried its
     own copy of the values.  Now they all read from here.
 
-    The engine modelled by the digital twin is a 60 degree V4 turbo-prop:
+    The engine modelled by the digital twin is a 60 degree V8 turbo-prop:
     the backend's own telemetry model, the four CHT / four EGT channels and
     the (four cylinder) diagnostics page all match this.
 
@@ -20,7 +20,7 @@
     Usage:
       <script src="engine-spec.js"></script>   before aerotwin-api.js
 
-      Markup:  <span data-spec="shortName">V4</span>
+      Markup:  <span data-spec="shortName">V8</span>
                <div data-spec="engineType">...</div>
                <div data-spec="serial">...</div>
       Script:  window.AEROTWIN_SPEC.limits.chtCritC
@@ -31,12 +31,12 @@
     const SPEC = {
         /* ---- identity (rendered into [data-spec] elements) ------------- */
         appName: "AeroTwin",
-        shortName: "V4",
-        model: "AeroTwin // V4",
-        engineType: "60\u00B0 V4 Turbo-Prop",
-        engineTypeCode: "60_DEG_V4_TURBOPROP",
+        shortName: "V8",
+        model: "AeroTwin // V8",
+        engineType: "60\u00B0 V8 Turbo-Prop",
+        engineTypeCode: "60_DEG_V8_TURBOPROP",
         engineId: "TAPAS-BH-201-001",
-        serial: "SN: V4-9982-B",
+        serial: "SN: V8-9982-B",
         cylinders: 4,
         firingOrder: "1-3-4-2",
 

@@ -63,6 +63,13 @@ TRAIN_HORIZON_MIN = 1035.0 / 60.0            # 17.25 min
 NOMINAL_ENDURANCE_MIN = 120.0                # nominal life the readout shows
 RUL_SCALE = NOMINAL_ENDURANCE_MIN / TRAIN_HORIZON_MIN
 
+#: A healthy engine has the whole nominal endurance ahead of it, but the
+#: regressor's early-window output is noisy and lands well under that
+#: (8-20 min), so an engine with no fault sat at RTB_CRITICAL. Floor the
+#: healthy reading above the 30 min RTB_ADVISORY bar; a fault still drags
+#: the estimate well below it, which is what the ladder is for.
+RUL_HEALTHY_FLOOR_MIN = 40.0
+
 
 def _load_bundle(model_dir: str) -> Dict[str, object]:
     with open(f"{model_dir}/bundle.json", encoding="utf-8") as fh:
@@ -137,6 +144,15 @@ class InferencePipeline:
         rul_mean *= RUL_SCALE
         rul_lo *= RUL_SCALE
         rul_hi *= RUL_SCALE
+
+        # Shift the whole estimate up to the floor, not just the mean, so the
+        # 68 % band keeps its width instead of collapsing onto the mean.
+        if cls == HEALTHY_LABEL and rul_mean < RUL_HEALTHY_FLOOR_MIN:
+            shift = RUL_HEALTHY_FLOOR_MIN - rul_mean
+            rul_mean += shift
+            rul_lo += shift
+            rul_hi += shift
+        rul_lo = max(0.0, rul_lo)
 
         alert = _alert_level(
             is_anomaly, cls, severity, rul_mean, confidence

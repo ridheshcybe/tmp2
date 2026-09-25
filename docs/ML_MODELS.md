@@ -57,6 +57,13 @@ below the 10 min RTB_CRITICAL bar as a fault develops. Retraining on a longer
 mission is the honest fix; until then this is a documented projection, not a
 measurement.
 
+On top of that, a healthy classification (`HEALTHY` and not an anomaly) has its
+estimate shifted up to `RUL_HEALTHY_FLOOR_MIN` (40 min) if it lands lower —
+the regressor's early-window output is noisy enough to read 8–20 min, which
+parked a fault-free engine at RTB_CRITICAL. The whole 68 % band is shifted, not
+just the mean, so it keeps its width. Values above the floor pass through
+untouched, so a fault still drives the estimate down normally.
+
 ## 4. `health_index.py` — the explainable Engine Health Index (EHI)
 
 Not a black box: a weighted sum of five penalties, every point traceable to a physical observation.

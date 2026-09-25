@@ -201,17 +201,8 @@ app.include_router(_pairing_router)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Root & Health Endpoints
+#  Health Endpoint
 # ══════════════════════════════════════════════════════════════════════════════
-
-@app.get("/")
-async def root() -> Dict[str, Any]:
-    return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "docs": "/docs",
-        "health": "/health",
-    }
 
 
 @app.get("/health")
@@ -328,6 +319,8 @@ _install_rate_limit(app)    # outermost: /api 120 req/min per IP, rest 600
 
 import os as _os
 
+from fastapi.responses import RedirectResponse as _RedirectResponse
+
 _serve_frontend = _os.environ.get("AEROTWIN_SERVE_FRONTEND", "").strip()
 
 if _serve_frontend != "0":
@@ -340,12 +333,37 @@ if _serve_frontend != "0":
         )
     )
     if _frontend_dir.is_dir():
+
+        #  "/" must land on the cockpit. StaticFiles(html=True) serves
+        #  index.html at "/" by itself, but only for paths no API route
+        #  claimed - and this app used to have an explicit JSON "/"
+        #  handler that shadowed it, so the root answered with API
+        #  metadata instead of the dashboard. The redirect keeps a
+        #  single source of truth (index.html) and preserves the API
+        #  metadata for machines that want it under /api.
+        @app.get("/", include_in_schema=False)
+        async def root() -> _RedirectResponse:
+            return _RedirectResponse(url="/index.html", status_code=307)
+
         app.mount(
             "/",
             StaticFiles(directory=str(_frontend_dir), html=True),
             name="dashboard",
         )
         logger.info(f"Serving dashboard from {_frontend_dir}")
+
+else:
+
+    #  API-only mode (AEROTWIN_SERVE_FRONTEND=0): no dashboard to show,
+    #  so ""/"" stays a tiny JSON handshake for machines.
+    @app.get("/")
+    async def root() -> Dict[str, Any]:
+        return {
+            "name": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "docs": "/docs",
+            "health": "/health",
+        }
 
 
 if __name__ == "__main__":

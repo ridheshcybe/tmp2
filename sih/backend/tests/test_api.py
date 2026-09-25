@@ -52,17 +52,23 @@ async def test_health_endpoint():
 
 
 async def test_root_endpoint():
-    """Test GET / returns API info."""
+    """Test GET / redirects to the dashboard (frontend-serving mode)."""
     from httpx import AsyncClient, ASGITransport
     from backend.main import app
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get("/")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "AeroTwin" in data["name"]
-        assert data["docs"] == "/docs"
+        resp = await client.get("/", follow_redirects=False)
+        #  Dashboard mounted (the default and the cloud config): "/" must
+        #  send a browser to the cockpit, not answer with API metadata.
+        #  In API-only mode (AEROTWIN_SERVE_FRONTEND=0) the JSON handshake
+        #  answers 200 instead - both are acceptable root behaviour.
+        if resp.status_code == 307:
+            assert resp.headers["location"] == "/index.html"
+        else:
+            data = resp.json()
+            assert "AeroTwin" in data["name"]
+            assert data["docs"] == "/docs"
         print("  ✓ test_root_endpoint")
 
 

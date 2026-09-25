@@ -34,11 +34,16 @@ async def inject_fault(body: FaultInjectionRequest) -> Dict[str, Any]:
     if not sim.is_running:
         raise HTTPException(status_code=400, detail="No mission running — start a mission first")
 
-    sim.inject_fault(
-        fault_type=body.fault_type.value,
-        severity=body.severity,
-        target_sensor=body.target_sensor,
-    )
+    try:
+        sim.inject_fault(
+            fault_type=body.fault_type.value,
+            severity=body.severity,
+            target_sensor=body.target_sensor,
+        )
+    except ValueError as e:
+        # Unknown fault type / unusable target sensor - a client mistake,
+        # not a server fault, so answer 400 with the reason.
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Log to DB
     await db.log_fault_injection(

@@ -42,6 +42,11 @@ from simulator.telemetry_gen.telemetry_schema import FaultType, MissionPhase
 # Ring-buffer size for recent frames (used by GET /api/engine/.../telemetry)
 _RECENT_LIMIT = 600  # 60 s at 10 Hz
 
+#: SENSOR_DRIFT / SENSOR_DROPOUT act on exactly one channel and the fault
+#: engine requires it. When a request does not name a target sensor, this
+#: demo channel takes the fault instead of the injection dying with a 500.
+DEFAULT_DRIFT_CHANNEL = "egt_c2"
+
 
 class SimulatorService:
     """
@@ -228,20 +233,38 @@ class SimulatorService:
         target_sensor: Optional[str] = None,
         ramp_s: float = 60.0,
     ) -> None:
-        """Inject a fault into the running simulation."""
+        """Inject a fault into the running simulation.
+
+        Raises ValueError with a client-safe message for an unknown fault
+        type or an unusable target sensor - the routes translate that into
+        a 400 instead of an opaque 500.
+        """
         try:
             ft = FaultType(fault_type)
         except ValueError:
-            print(f"[Simulator] Unknown fault type: {fault_type}")
-            return
+            raise ValueError(f"unknown fault type: {fault_type}")
 
-        spec = FaultSpec(
-            fault_type=ft,
-            severity=severity,
-            onset_s=self._sim_time,
-            ramp_s=ramp_s,
-            channel=target_sensor,
-        )
+        # SENSOR_DRIFT / SENSOR_DROPOUT hit exactly one channel and the
+        # FaultSpec refuses to build without one. An injection that does
+        # not name a sensor gets the demo default rather than a crash.
+        channel = (target_sensor or "").strip() or None
+        if ft in (FaultType.SENSOR_DRIFT, FaultType.SENSOR_DROPOUT):
+            if channel is None:
+                channel = DEFAULT_DRIFT_CHANNEL
+        else:
+            channel = None  # only the sensor faults take a channel
+
+        try:
+            spec = FaultSpec(
+                fault_type=ft,
+                severity=severity,
+                onset_s=self._sim_time,
+                ramp_s=ramp_s,
+                channel=channel,
+            )
+        except ValueError as e:
+            raise ValueError(f"bad target sensor: {e}")
+
         # FaultInjector takes a list; append and recreate runtime state
         self._fault_injector.specs.append(spec)
         from simulator.telemetry_gen.fault_injection import _FaultRuntime

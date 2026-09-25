@@ -210,18 +210,27 @@ async def _handle_command(data: Dict[str, Any], ws: WebSocket) -> None:
         from backend.services.simulator import get_simulator
         sim = get_simulator()
         if sim.is_running:
-            sim.inject_fault(
-                fault_type=data.get("fault", "MISFIRE"),
-                severity=data.get("severity", 0.7),
-                target_sensor=data.get("sensor"),
-            )
-            await broadcast_message({
-                "type": "FAULT_INJECTED",
-                "payload": {
-                    "fault_type": data.get("fault"),
-                    "severity": data.get("severity", 0.7),
-                },
-            })
+            try:
+                sim.inject_fault(
+                    fault_type=data.get("fault", "MISFIRE"),
+                    severity=data.get("severity", 0.7),
+                    target_sensor=data.get("sensor"),
+                )
+            except ValueError as e:
+                # Client-safe message (unknown fault / bad sensor); say so
+                # instead of failing silently on the sender's side.
+                await broadcast_message({
+                    "type": "FAULT_REJECTED",
+                    "payload": {"fault": data.get("fault"), "detail": str(e)},
+                })
+            else:
+                await broadcast_message({
+                    "type": "FAULT_INJECTED",
+                    "payload": {
+                        "fault_type": data.get("fault"),
+                        "severity": data.get("severity", 0.7),
+                    },
+                })
 
     elif action == "CLEAR_FAULTS":
         from backend.services.simulator import get_simulator

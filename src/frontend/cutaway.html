@@ -344,6 +344,11 @@
             margin-top: 7px;
             line-height: 1.45;
         }
+
+        /*  Inside the dashboard the QR lives in the host's own modal; this
+            page's private copy of the box would only duplicate it.  The
+            pairing state still reports through handState and postMessage.  */
+        #pairBox.embedded { display: none !important; }
     </style>
 </head>
 
@@ -352,9 +357,10 @@
 <div id="ui">
 
     <div class="sg" id="speedGroup">
-        <label data-tip="Crankshaft speed. Every cycle in the model scales
-               from this one number, and the camshafts turn at exactly half
-               crank speed, as they must on a four stroke.">Speed</label>
+        <label data-tip="Throttle. Drives the whole speed model - crank, cams,
+               pistons and the propeller all follow it. Every cycle in the
+               model scales from this one number, and the camshafts turn at
+               exactly half crank speed, as they must on a four stroke.">Throttle</label>
         <input type="range" id="speed"
                min="0" max="0.15" step="0.001" value="0.03">
     </div>
@@ -362,7 +368,8 @@
     <div class="sg">
         <label data-tip="Takes whole systems off the engine, outermost first.
                At 0 nothing is removed and nothing is sliced - the previous
-               plane cutaway is retired and parked clear of the engine.">System Cut</label>
+               plane cutaway is retired and parked clear of the engine.
+               The hand control counts fingers onto this same control.">Peel systems</label>
         <input type="range" id="cutSystems"
                min="0" max="100" step="1" value="0">
     </div>
@@ -372,18 +379,9 @@
                is opaque metal; lower values make it ghostly so the pistons,
                valves and pipes inside stay visible. A translucent case also
                stops blocking the pointer, so you can click straight through
-               it to the parts inside.">Block See-thru</label>
+               it to the parts inside.">Case opacity</label>
         <input type="range" id="seeThru"
                min="0" max="100" step="1" value="100">
-    </div>
-
-    <div class="sg">
-        <label data-tip="Blades are lofted from scratch at this diameter, and
-               the studio floor drops to clear the lowest tip. At true scale
-               a real propeller would swallow the frame, so this is a
-               framing choice, not a physical one.">Prop Diameter</label>
-        <input type="range" id="propDia"
-               min="40" max="180" step="2" value="96">
     </div>
 
     <hr>
@@ -3078,6 +3076,21 @@ function createBladeGeometry(radius) {
 const propellerBlades = new THREE.Group();
 propellerGroup.add(propellerBlades);
 
+/*
+    Blades are lofted from scratch at this diameter, and the studio floor
+    drops to clear the lowest tip. At true scale a real propeller would
+    swallow the frame, so this is a framing choice, not a physical one.
+    The control lives in the propeller's own part panel (click the prop),
+    not in the main panel - it tunes one part, the other five tune the
+    whole engine.
+*/
+const PROP_DIAMETER = { min: 40, max: 180, step: 2, value: 96 };
+
+const PROP_DIAMETER_TIP = "Blades are lofted from scratch at this diameter, and " +
+    "the studio floor drops to clear the lowest tip. At true scale a real " +
+    "propeller would swallow the frame, so this is a framing choice, not a " +
+    "physical one.";
+
 /*  (Re)build the blades at a diameter - the slider can change it.  */
 function buildBlades(diameter) {
 
@@ -3189,19 +3202,26 @@ for (let i = 0; i < 8; i++) {
 
 
 /*
-    Diameter slider.  Wired here, not up with the other sliders, because
-    buildBlades touches things declared in this block.
+    Diameter control.  Wired here, not up with the other sliders, because
+    buildBlades touches things declared in this block.  buildPanel() picks
+    it up through PROP_DIAMETER when the propeller is clicked.
 */
-document.getElementById("propDia").addEventListener("input", e => {
+function setPropDiameter(diameter) {
 
-    buildBlades(Number(e.target.value));
+    PROP_DIAMETER.value = THREE.MathUtils.clamp(
+        Number(diameter) || PROP_DIAMETER.value,
+        PROP_DIAMETER.min,
+        PROP_DIAMETER.max
+    );
+
+    buildBlades(PROP_DIAMETER.value);
 
     /*  Rebuilt blades arrive on layer 0, so re-apply the cut to them.  */
     parkCutPlane();
     applySystemCut(document.getElementById("cutSystems").value);
-});
+}
 
-buildBlades(Number(document.getElementById("propDia").value));
+buildBlades(PROP_DIAMETER.value);
 
 
 /* =========================================================================
@@ -3503,7 +3523,7 @@ const HOTSPOTS = {
         desc: "Three lofted blades on a lathe-turned spinner, bolted to the " +
               "front of the crankshaft. Pitch unwinds 34 to 12 degrees from " +
               "root to tip, which is what makes it a propeller and not a fan. " +
-              "Its speed is the Speed slider in the main panel.",
+              "Its speed is the Throttle slider in the main panel.",
         controls: []
     },
 
@@ -3548,8 +3568,8 @@ const HOTSPOTS = {
         title: "Crankshaft",
         desc: "Cross-plane crank: pins at 0, 90, 270 and 180 degrees, each " +
               "shared by two cylinders, with a counterweight per throw and " +
-              "the main bearing bulkheads it spins in. Its speed is the Speed " +
-              "slider in the main panel.",
+              "the main bearing bulkheads it spins in. Its speed is the " +
+              "Throttle slider in the main panel.",
         controls: []
     },
 
@@ -3749,6 +3769,38 @@ function buildPanel(hit) {
         host.appendChild(row);
     }
 
+    /*  The propeller's own diameter control lives here, not in the main
+        panel: it tunes one part, the main panel tunes the engine.  */
+    if (hit.system === "prop") {
+
+        const row = document.createElement("div");
+
+        row.className = "sg";
+
+        const label = document.createElement("label");
+
+        label.textContent = "Diameter";
+        label.dataset.tip = PROP_DIAMETER_TIP;
+
+        row.appendChild(label);
+
+        const input = document.createElement("input");
+
+        input.type = "range";
+        input.min = PROP_DIAMETER.min;
+        input.max = PROP_DIAMETER.max;
+        input.step = PROP_DIAMETER.step;
+        input.value = PROP_DIAMETER.value;
+        input.dataset.tip = PROP_DIAMETER_TIP;
+
+        input.addEventListener("input", e => {
+            setPropDiameter(Number(e.target.value));
+        });
+
+        row.appendChild(input);
+        host.appendChild(row);
+    }
+
     /*  Cylinder parts also get a cut switch for this one cylinder.  */
     if (hit.cyl) {
 
@@ -3923,6 +3975,7 @@ const PHONE = {
     phoneOrigin: null,
     publicOrigin: false,       /* true when phoneOrigin is a tunnel/public URL */
     accessKey: null,           /* relay access key from /__lanip, if any */
+    retryTimer: null,          /* one-shot retry after a transient failure */
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     channel: null              /* data channel: phone -> dashboard control */
 };
@@ -4148,6 +4201,12 @@ function stopHand() {
     PHONE.connected = false;
     PHONE.token = null;
     PHONE.inviteCode = null;
+
+    if (PHONE.retryTimer) {
+        clearTimeout(PHONE.retryTimer);
+        PHONE.retryTimer = null;
+    }
+
     pairBox.style.display = "none";
 
     handVideo.srcObject = null;
@@ -4496,9 +4555,20 @@ function drawQr(canvas, text) {
 */
 function refreshPairQr() {
 
+    pairQr.innerHTML = "";
+
+    /*  No token, no QR: a dead offer (server asleep, session expired)
+        must show an error, never a code that scans into a dead link. */
+    if (!PHONE.token) {
+
+        pairState.textContent =
+            "no pairing session - the server did not take the offer";
+        pairState.className = "bad";
+        return;
+    }
+
     const url = phoneUrl() + "#p=" + PHONE.token;
 
-    pairQr.innerHTML = "";
     pairState.className = "";
     pairState.textContent = "waiting for the phone to scan...";
 
@@ -4561,6 +4631,13 @@ async function startPhonePair() {
     stopHand();
 
     handBox.style.display = "block";
+
+    /*  Embedded in the dashboard, the QR is shown by the host's own modal;
+        this page's private copy stays hidden (the !important stylesheet
+        rule wins over the inline display below).  Standalone it shows.  */
+    if (window.self !== window.top) {
+        pairBox.classList.add("embedded");
+    }
     pairBox.style.display = "block";
     handToggle.textContent = "Enable camera";
     handState.textContent = "making invite code...";
@@ -4642,8 +4719,11 @@ async function startPhonePair() {
 
         if (!parked.ok) {
             throw new Error(
-                "pairing needs serve.py (the local server that serves " +
-                "this page) - it is not reachable"
+                parked.status === 429 || parked.status === 502 || parked.status === 503
+                    ? "the pairing server is waking up or busy (HTTP " +
+                      parked.status + ") - try again in a few seconds"
+                    : "the pairing relay refused the offer (HTTP " +
+                      parked.status + ")"
             );
         }
 
@@ -4657,8 +4737,27 @@ async function startPhonePair() {
 
     } catch (err) {
 
-        handState.textContent =
-            "pairing failed: " + (err && err.message ? err.message : String(err));
+        const why = err && err.message ? err.message : String(err);
+
+        setPairStatus("pairing failed: " + why, true);
+
+        /*  Free-tier hosts sleep and restart; the very first attempt after
+            a cold start can fail while the process is still coming up.
+            Transient failures (network hiccup, 5xx, 429) retry themselves
+            once after a short wait instead of leaving a dead modal.  A
+            hard failure (no server at all, refused) stops - that needs a
+            human, not a retry.  */
+        if (!PHONE.retryTimer && /waking|busy|unreachable|fetch/i.test(why)) {
+
+            PHONE.retryTimer = setTimeout(() => {
+
+                PHONE.retryTimer = null;
+
+                if (!PHONE.connected) startPhonePair();
+            }, 4000);
+
+            setPairStatus("pairing failed: " + why + " - retrying once...", true);
+        }
     }
 }
 
@@ -5315,6 +5414,25 @@ if (window.self !== window.top) {
 }
 
 /*
+    The Throttle slider IS a user input, not just a readout: the speed
+    model starts from the slider's initial value, so the slider has to
+    feed it.  Host commands land through applyHostRpm, which only moves
+    the slider position - this listener then carries the new value into
+    the model exactly like a hand-dragged one, so the prop spools up and
+    down with the control on this page, on the dashboard and on the phone.
+    (Without this listener the model ignored the slider entirely and the
+    propeller spun at one speed forever - the bug.)
+*/
+document.getElementById("speed").addEventListener("input", e => {
+
+    /*  While the host is driving (dashboard / paired phone), its command
+        holds the stick for hostHold seconds; a slider move inside that
+        window is usually the host echoing its own command back, so let
+        it through but let the next host command win the race. */
+    SPEED.setThrottle(Number(e.target.value) || 0);
+});
+
+/*
     Speed changes from the host no longer snap: they land on the speed
     model as a new commanded throttle, and the engine spools there over
     roughly half a second per 1000 rpm - which is what an engine with
@@ -5369,6 +5487,14 @@ async function buildDashboardQr() {
         }
 
         await ensureLanIp();
+
+        /*  startPhonePair can fail without throwing out of here (it
+            catches internally); if it left no token, say so instead of
+            drawing a code that scans into a dead #p=null link.  */
+        if (!PHONE.token) {
+            throw new Error(handState.textContent ||
+                "no pairing session - try again in a few seconds");
+        }
 
         const canvas = document.createElement("canvas");
         const url    = phoneUrl() + "#p=" + PHONE.token;

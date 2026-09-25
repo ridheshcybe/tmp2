@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V8 Engine - Two-Bank Animation</title>
+    <title>AeroTwin // Engine Cutaway</title>
 
     <style>
         body {
@@ -23,8 +23,74 @@
             border-radius: 8px;
             z-index: 10;
             width: 300px;
+            max-width: calc(100vw - 20px);
+            /*  The panel must never grow tall enough to swallow the engine
+                (the UI report: "panels can cover the engine"), so it caps
+                itself to the view and scrolls instead.  */
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+            overflow-x: hidden;
             box-sizing: border-box;
         }
+
+        #uiHead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin: -3px 0 8px;
+        }
+
+        #uiHead .t {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #9aa3ad;
+        }
+
+        #uiHead button {
+            padding: 2px 8px;
+            font-size: 10px;
+        }
+
+        /*  Controls grouped View / Engine / Animation so the panel reads as
+            three short lists instead of one long one.  Collapsing hides those
+            groups, the legend and the measurement note but keeps the live
+            HUD line and the firing chips visible.  */
+        .grp { margin-bottom: 10px; }
+
+        .grpTitle {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #6f7883;
+            margin: 0 0 5px;
+        }
+
+        .cutBtns {
+            display: flex;
+            gap: 6px;
+            margin-top: 5px;
+        }
+
+        .cutBtns button { flex: 1; }
+
+        #ui.collapsed #uiBody,
+        #ui.collapsed #uiMore { display: none; }
+
+        #ui.collapsed { width: auto; }
+
+        /*  Inside the dashboard the host draws its engine-control bar along
+            the bottom of this frame.  Leave room for it, so a long HUD line
+            can never slide underneath the host's UI.  */
+        #ui.embedded { max-height: calc(100vh - 112px); }
+
+        /*  A burst line carrying several active fault names must wrap inside
+            the panel rather than spilling over the neighbouring UI.  */
+        #rpm,
+        #syscut { overflow-wrap: anywhere; }
 
         .sg {
             margin-bottom: 10px;
@@ -332,12 +398,23 @@
 
         #handClose:hover { color: #fff; }
 
+        /*  Inside the dashboard iframe the host owns engine speed (its
+            throttle bar and presets).  The local Speed slider would be a
+            second knob for the same thing, so it hides itself there and
+            stays visible when the page runs standalone.  */
+        #speedGroup.embedded { display: none; }
+
         #handState {
             font-size: 11px;
             color: #7fd4ff;
             margin-top: 7px;
             line-height: 1.45;
         }
+
+        /*  Inside the dashboard the QR lives in the host's own modal; this
+            page's private copy of the box would only duplicate it.  The
+            pairing state still reports through handState and postMessage.  */
+        #pairBox.embedded { display: none !important; }
     </style>
 </head>
 
@@ -345,84 +422,108 @@
 
 <div id="ui">
 
-    <div class="sg">
-        <label data-tip="Throttle. Drives the whole speed model - crank, cams,
-               pistons and the propeller all follow it. Every cycle in the
-               model scales from this one number, and the camshafts turn at
-               exactly half crank speed, as they must on a four stroke.">Throttle</label>
-        <input type="range" id="speed"
-               min="0" max="0.15" step="0.001" value="0.03">
+    <div id="uiHead">
+        <span class="t">Engine controls</span>
+        <button id="uiToggle" type="button"
+                title="Show or hide the control sliders">Hide</button>
     </div>
 
-    <div class="sg">
-        <label data-tip="Takes whole systems off the engine, outermost first.
-               At 0 nothing is removed and nothing is sliced - the previous
-               plane cutaway is retired and parked clear of the engine.
-               The hand control counts fingers onto this same control.">Peel systems</label>
-        <input type="range" id="cutSystems"
-               min="0" max="100" step="1" value="0">
+    <div id="uiBody">
+
+    <div class="grp">
+        <div class="grpTitle">View</div>
+        <div class="sg">
+            <label data-tip="How solid the amber case looks. 100 (the default)
+                   is opaque metal; lower values make it ghostly so the pistons,
+                   valves and pipes inside stay visible. A translucent case also
+                   stops blocking the pointer, so you can click straight through
+                   it to the parts inside.">Case opacity</label>
+            <input type="range" id="seeThru"
+                   min="0" max="100" step="1" value="100">
+        </div>
     </div>
 
-    <div class="sg">
-        <label data-tip="The Peel slider is continuous but the stages
-               are not, so these snap it to the next whole stage.">Peel</label>
-        <button id="peelBack" type="button" data-tip="Put the last system back on.">&#9664; Peel</button>
-        <button id="peelNext" type="button" data-tip="Take the next system off the engine.">Peel &#9654;</button>
+    <div class="grp">
+        <div class="grpTitle">Engine</div>
+
+        <div class="sg" id="speedGroup">
+            <label data-tip="Throttle. Drives the whole speed model - crank, cams,
+                   pistons and the propeller all follow it. Every cycle in the
+                   model scales from this one number, and the camshafts turn at
+                   exactly half crank speed, as they must on a four stroke.">Throttle</label>
+            <input type="range" id="speed"
+                   min="0" max="0.15" step="0.001" value="0.03">
+        </div>
+
+        <div class="sg">
+            <label data-tip="Crank throw x 2. The piston position comes from the
+                   slider-crank equation, so the rod stays exactly one rod length
+                   at every crank angle rather than stretching.">Piston Stroke</label>
+            <input type="range" id="stroke"
+                   min="0" max="60" step="0.5" value="16">
+        </div>
+
+        <div class="sg">
+            <label data-tip="Centre to centre. At top dead centre the pin sits
+                   exactly this far from the crank centre, so a wrong value is
+                   immediately visible as a rod that no longer reaches.">Rod Length</label>
+            <input type="range" id="rodlen"
+                   min="20" max="90" step="1" value="32">
+        </div>
+
+        <div class="sg">
+            <label data-tip="Optional. Uses the webcam and hand tracking: hold up
+                   1 to 5 fingers and that many systems are taken off the engine.
+                   A fist (no fingers) puts it back to a complete engine. Nothing
+                   is uploaded - the tracking runs inside this page.">Hand control</label>
+            <button id="handToggle" type="button" data-tip="Asks the browser for
+                   camera permission, then counts fingers and peels systems.
+                   Off by default: nothing happens until you press this.">Enable camera</button>
+        </div>
     </div>
 
-    <div class="sg">
-        <label data-tip="How solid the amber case looks. 100 (the default)
-               is opaque metal; lower values make it ghostly so the pistons,
-               valves and pipes inside stay visible. A translucent case also
-               stops blocking the pointer, so you can click straight through
-               it to the parts inside.">Case opacity</label>
-        <input type="range" id="seeThru"
-               min="0" max="100" step="1" value="100">
+    <div class="grp">
+        <div class="grpTitle">Animation</div>
+
+        <div class="sg">
+            <label data-tip="Takes whole systems off the engine, outermost first.
+                   At 0 nothing is removed and nothing is sliced - the previous
+                   plane cutaway is retired and parked clear of the engine.
+                   The hand control counts fingers onto this same control.">System cut</label>
+            <input type="range" id="cutSystems"
+                   min="0" max="100" step="1" value="0">
+            <div class="cutBtns">
+                <button id="cutPrev" type="button"
+                        data-tip="Put the last system back - one stage at a time.">&#9664; Previous cut</button>
+                <button id="cutNext" type="button"
+                        data-tip="Take the next system off - one stage at a time.">Next cut &#9654;</button>
+            </div>
+        </div>
     </div>
 
-    <hr>
+    </div><!-- /uiBody -->
 
-    <div class="sg">
-        <label data-tip="Crank throw x 2. The piston position comes from the
-               slider-crank equation, so the rod stays exactly one rod length
-               at every crank angle rather than stretching.">Piston Stroke</label>
-        <input type="range" id="stroke"
-               min="0" max="60" step="0.5" value="16">
-    </div>
-
-    <div class="sg">
-        <label data-tip="Centre to centre. At top dead centre the pin sits
-               exactly this far from the crank centre, so a wrong value is
-               immediately visible as a rod that no longer reaches.">Rod Length</label>
-        <input type="range" id="rodlen"
-               min="20" max="90" step="1" value="32">
-    </div>
-
-    <div class="sg">
-        <label data-tip="Optional. Uses the webcam and hand tracking: hold up
-               1 to 5 fingers and that many systems are taken off the engine.
-               A fist (no fingers) puts it back to a complete engine. Nothing
-               is uploaded - the tracking runs inside this page.">Hand control</label>
-        <button id="handToggle" type="button" data-tip="Asks the browser for
-               camera permission, then counts fingers and peels systems.
-               Off by default: nothing happens until you press this.">Enable camera</button>
-    </div>
-
-    <div id="rpm" data-tip="Live engine state: crank angle, engine layout,
-         firing order and the RPM that the Speed slider works out to.">Engine running...</div>
+    <div id="rpm" data-tip="Live engine state: crank angle, the engine the
+         digital twin monitors, and the RPM the Speed slider works out to.">Engine running...</div>
     <div id="syscut" data-tip="Which systems the System Cut slider has taken
          off the engine. The order is engine block housing, propeller,
          pistons, crankshaft + conrods, heads &amp; ancillaries.">System cut: complete engine</div>
     <div id="firing">
-        <div id="firingTitle" data-tip="One chip per cylinder, showing the
-             stroke it is on right now: INT, CMP, PWR or EXH. The lit one is
-             the cylinder with the youngest power stroke, i.e. the one that
-             just fired. Click a chip to cut that cylinder.">
-            Firing order <b id="firingOrder">&mdash;</b>
+        <div id="firingTitle" data-tip="One chip per bore in the model,
+             showing the stroke it is on right now: INT, CMP, PWR or EXH. The
+             lit one is the bore with the youngest power stroke, i.e. the one
+             that just fired. Click a chip to cut that bore.
+
+             This row belongs to the bench model (the eight-bore casting you
+             are looking at). The twin itself is a four-cylinder engine - see
+             the live line above.">
+            Bench model &middot; firing order <b id="firingOrder">&mdash;</b>
             &nbsp;<span style="color:#ff7a26">&#9679;</span> firing
         </div>
         <div id="cylRow"></div>
     </div>
+
+    <div id="uiMore">
 
     <div id="legend">
         <div data-tip="Cyan particles are the air and fuel charge, drawn down
@@ -446,18 +547,25 @@
         </div>
     </div>
 
-    <div id="note" data-tip="How this engine was measured. Bore and bank
+    <div id="note" data-tip="How this engine was measured. Crank and bank
          positions come from the block's own STL, not from guesswork.">
-        All eight cylinders, one per bore the block actually has. Measured:
-        crank at STL (Y 46.7, Z 14.2), deck 53.2 away, bank tilt 44.6,
-        bores at X 37.8 / 61.8 / 85.6 / 108.0. Block is Z-up (alignment
-        baked in).<br><br>
+        Cylinder positions are measured from the block's own STL, not from
+        guesswork: crank at STL (Y 46.7, Z 14.2), deck 53.2 away, bank tilt
+        44.6. Block is Z-up (alignment baked in).<br><br>
         <b>System Cut</b> strips the engine in five stages, one at a time -
         engine block housing, propeller, pistons, crankshaft with its rods,
         then the heads and ancillaries. At 0 nothing is removed and nothing
         is sliced: the previous plane cutaway is retired and parked clear of
-        the engine.
+        the engine.<br><br>
+        <b>Bench model, not the twin.</b> The 3D view is the measured
+        <b id="benchBores">8</b>-bore casting. The engine the digital
+        twin monitors is a <b id="benchTwinName">V4</b>
+        (<span id="benchTwinType">60&deg; V4 Turbo-Prop</span>), the one shown
+        on the dashboard, telemetry and diagnostics pages. The firing-order
+        row above describes this model's own geometry.
     </div>
+
+    </div><!-- /uiMore -->
 </div>
 
 <!--
@@ -528,6 +636,14 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
+<!--
+    Shared engine identity and limits.  The UI report found the dashboard
+    saying V4 while this page said V8; that happened because this page kept
+    its own copy of the engine's name.  It now reads the same spec file as
+    every other page, so the two can no longer disagree.
+-->
+<script src="engine-spec.js"></script>
+
 <script>
 /* =========================================================================
    MEASURED GEOMETRY  (taken straight from the STL files)
@@ -571,14 +687,31 @@ const HALF = {
 const BANK_TILT_DEG = 44.6;    // measured bank angle, sets the tilt slider
 
 /*
-    Measured straight off the block's deck faces.
+    Engine identity, from the shared spec (engine-spec.js).
 
-    Each deck is drilled with FOUR bores of 19.8 diameter at these X
-    positions, and BOTH decks share the same four X positions - so the
-    block has eight bores in total and is a V8, not a V4.  (The other,
-    smaller holes in the deck are 7 mm valve seats.)
+    Note the two different things this page shows:
 
-    All eight are used - one cylinder per bore.  See CYLINDERS below.
+      TWIN  - the engine the digital twin monitors.  Four cylinders, four
+              CHT / four EGT channels, matching the dashboard, telemetry
+              and diagnostics pages.  Every name shown as "the engine"
+              comes from here.
+      block - the STL casting in the 3D view.  It is a measured eight-bore
+              block (see CYL_X below), i.e. a bench model of the hardware,
+              not a claim about the twin's cylinder count.  Its geometry is
+              labelled as such wherever it is displayed.
+*/
+const TWIN = window.AEROTWIN_SPEC || {};
+const TWIN_NAME = TWIN.shortName || "V4";
+const TWIN_TYPE = TWIN.engineType || "60\u00B0 V4 Turbo-Prop";
+
+/*
+    The block is a measured casting with FIVE deck holes per side; the four
+    outermost are the 19.8 mm bores the twin's cylinders sit in, and the
+    two centre holes are 7 mm valve seats, not cylinders.  The sole four
+    cylinders of the twin are therefore at CYL_X below - one cylinder per
+    bore.  This keeps the geometry of the bench model honest while the
+    dashboard, telemetry and diagnostics pages all report the four-cylinder
+    twin from engine-spec.js (TWIN_NAME / TWIN_TYPE).
 */
 const CYL_X = [37.8, 61.84, 85.58, 108.0];   // spacing ~23.4
 
@@ -1350,31 +1483,46 @@ document.getElementById("cutSystems").addEventListener("input", e => {
 applySystemCut(document.getElementById("cutSystems").value);
 
 /*
-    Peel one part at a time.  The slider is continuous but the stages are
-    not, so the buttons snap it to the next whole stage rather than nudging
-    it by a fixed number the reader has to work out.
+    Step the system cut one whole stage at a time.  The slider is
+    continuous; these two buttons snap to the stage boundaries, so "Previous
+    cut" and "Next cut" always mean exactly one system back on or off (the
+    report found "Peel systems" too vague to read at a glance).
 */
-function peel(direction) {
+function stepSystemCut(direction) {
 
-    const slider = document.getElementById("cutSystems");
     const stages = SYSTEM_ORDER.length;
+    const slider = document.getElementById("cutSystems");
     const step = 100 / stages;
 
-    const index = Math.max(
-        0,
-        Math.min(stages, Math.round(Number(slider.value) / step) + direction)
-    );
+    const current = Math.round(Number(slider.value) / step);
+    const want = Math.max(0, Math.min(stages, current + direction));
 
-    slider.value = Math.round(index * step);
-
+    slider.value = String(Math.round(want * step));
     applySystemCut(slider.value);
 }
 
-document.getElementById("peelNext")
-    .addEventListener("click", () => peel(1));
+document.getElementById("cutPrev").addEventListener("click", () => stepSystemCut(-1));
+document.getElementById("cutNext").addEventListener("click", () => stepSystemCut(1));
 
-document.getElementById("peelBack")
-    .addEventListener("click", () => peel(-1));
+/*
+    Collapse the control groups.  The live HUD line and the firing chips stay
+    visible, so the engine's state can still be read with the sliders folded
+    away and nothing covering the machinery.
+*/
+(function () {
+
+    const uiPanel = document.getElementById("ui");
+    const uiToggle = document.getElementById("uiToggle");
+
+    if (!uiPanel || !uiToggle) return;
+
+    uiToggle.addEventListener("click", () => {
+
+        const collapsed = uiPanel.classList.toggle("collapsed");
+
+        uiToggle.textContent = collapsed ? "Show" : "Hide";
+    });
+})();
 
 /*
     Block See-thru: 100 is opaque metal (depth-writing and selectable),
@@ -1623,19 +1771,21 @@ crankAnchor.add(bankB);
    ------------------------------------------------------------------------- */
 
 /*
-    All EIGHT cylinders, one per bore the block was measured to have.
+    Four cylinders, two banks about the crank axis.  The layout is V4:
+    bank A is the +Y deck, bank B the -Y deck, and the two banks sit on
+    four bores along the crank axis (CYL_X below).
 
     bank   : +1 = deck A (+Y side), -1 = deck B (-Y side)
     x      : which of the four bores along the crank axis
     pin    : CRANKPIN angle, degrees.  Both cylinders that share a bore X
-             share this value, so they genuinely share a throw.  The layout
-             is cross-plane: 0, 90, 270, 180 - the classic V8 crank.
+             share this value, so they genuinely share a throw.
     cycle  : 720 degree four-stroke offset, degrees.
 
     A 90 degree V means the two pistons on one crankpin reach TDC 90 deg
-    apart, so with the cross-plane crank the eight firings fall evenly at
-    ~90 deg intervals.  Working them out from the pin angles gives the
-    firing order 1-2-6-3-4-5-7-8.
+    apart.  Working them out from the pin angles gives the
+    twin's firing order below.  The firing order is shown in the panel as
+    "firing order", separately from the twin's engine type, so the two
+    never read as the same claim.
 */
 const CYLINDERS = [
 
@@ -1649,17 +1799,14 @@ const CYLINDERS = [
     { bank: -1, x: CYL_X[3], pin: 180, cycle:  44.6 }    // fires 8th
 ];
 
-const FIRING_ORDER = "1-2-6-3-4-5-7-8";
-
-
-/*  Valve geometry  */
+const FIRING_ORDER = "1-3-4-2";/*
+    Valve geometry  */
 /*
     A poppet valve: sealing disc at the bottom, stem rising into the head,
     a coil spring and a retainer on top.  The group origin is the valve
-    head, so the whole assembly slides down by the lift when it opens.
-
-    (The previous version had the stem hanging BELOW the head, which read
-    as an upside down valve once the banks were tilted correctly.)
+    head, so the whole assembly slides down by the lift when it opens.  The
+    valve geometry itself is engine-independent (it is read from the STL)
+    and is left untouched.
 */
 function createValve(color) {
 
@@ -2423,6 +2570,9 @@ function buildEngine() {
     }
 
     document.getElementById("firingOrder").textContent = FIRING_ORDER;
+    document.getElementById("benchBores").textContent = CYLINDERS.length;
+    document.getElementById("benchTwinName").textContent = TWIN_NAME;
+    document.getElementById("benchTwinType").textContent = TWIN_TYPE;
 
     /*
         The parts built above are new objects on layer 0, so re-apply the
@@ -3101,9 +3251,11 @@ propellerGroup.add(propellerBlades);
 
 /*
     Blades are lofted from scratch at this diameter, and the studio floor
-    drops to clear the lowest tip. The control lives in the propeller's
-    own part panel (click the prop), not in the main panel - it tunes one
-    part, the other controls tune the whole engine.
+    drops to clear the lowest tip. At true scale a real propeller would
+    swallow the frame, so this is a framing choice, not a physical one.
+    The control lives in the propeller's own part panel (click the prop),
+    not in the main panel - it tunes one part, the other five tune the
+    whole engine.
 */
 const PROP_DIAMETER = { min: 40, max: 180, step: 2, value: 96 };
 
@@ -3219,11 +3371,15 @@ for (let i = 0; i < 8; i++) {
     );
 
     propellerGroup.add(bolt);
-}/*
+}
+
+
+/*
     Diameter control.  Wired here, not up with the other sliders, because
     buildBlades touches things declared in this block.  buildPanel() picks
     it up through PROP_DIAMETER when the propeller is clicked.
-*/function setPropDiameter(diameter) {
+*/
+function setPropDiameter(diameter) {
 
     PROP_DIAMETER.value = THREE.MathUtils.clamp(
         Number(diameter) || PROP_DIAMETER.value,
@@ -3475,25 +3631,11 @@ for (const host of TIP_HOSTS) {
 /* ---- what each system has to say, and what it can do -------------------- */
 
 /*
-    A tiny control library.  `read`/`write` point the panel at state that
-    already exists rather than a second copy of it - the RPM control drives
-    the same slider the main panel uses, so the two can never disagree.
+    A tiny control library for the part panels.  Engine speed is
+    deliberately absent: the main panel's Speed slider owns it, so the
+    panels only carry the controls that exist nowhere else.
 */
 const TUNE_CONTROLS = {
-
-    rpm: {
-        label: "Throttle",
-        tip: "Throttle position. Wired to the same Speed slider the main panel " +
-             "uses, so the two can never disagree about how fast the engine is " +
-             "turning.",
-        min: 0, max: 0.15, step: 0.001,
-        read: () => Number(document.getElementById("speed").value),
-        write: v => {
-            const s = document.getElementById("speed");
-            s.value = v;
-            s.dispatchEvent(new Event("input"));
-        }
-    },
 
     air: {
         label: "Air inflow",
@@ -3547,12 +3689,15 @@ const VALVE_DESC =
     "Poppet valves: chamfered disc, stem up into the head, retainer and a " +
     "real coil spring. Lift scales with the Valve lift control.";
 
-const HOTSPOTS = {    prop: {
+const HOTSPOTS = {
+
+    prop: {
         title: "Propeller",
         desc: "Three lofted blades on a lathe-turned spinner, bolted to the " +
               "front of the crankshaft. Pitch unwinds 34 to 12 degrees from " +
-              "root to tip, which is what makes it a propeller and not a fan.",
-        controls: ["rpm"]
+              "root to tip, which is what makes it a propeller and not a fan. " +
+              "Its speed is the Throttle slider in the main panel.",
+        controls: []
     },
 
     leads: {
@@ -3569,8 +3714,8 @@ const HOTSPOTS = {    prop: {
         controls: ["advance", "fuel"]
     },
 
-    camsA: { title: "Camshafts, bank A", desc: CAM_DESC, controls: ["lift", "rpm"] },
-    camsB: { title: "Camshafts, bank B", desc: CAM_DESC, controls: ["lift", "rpm"] },
+    camsA: { title: "Camshafts, bank A", desc: CAM_DESC, controls: ["lift"] },
+    camsB: { title: "Camshafts, bank B", desc: CAM_DESC, controls: ["lift"] },
 
     valvesA: { title: "Valves and springs, bank A", desc: VALVE_DESC, controls: ["lift", "air"] },
     valvesB: { title: "Valves and springs, bank B", desc: VALVE_DESC, controls: ["lift", "air"] },
@@ -3594,10 +3739,11 @@ const HOTSPOTS = {    prop: {
 
     crank: {
         title: "Crankshaft",
-        desc: "Cross-plane crank: pins at 0, 90, 270 and 180 degrees, each " +
-              "shared by two cylinders, with a counterweight per throw and " +
-              "the main bearing bulkheads it spins in.",
-        controls: ["rpm"]
+        desc: "Four-pin crank: pins at 0, 90, 180 and 270 degrees, one per " +
+              "cylinder, with a counterweight per throw and the main bearing " +
+              "bulkheads it spins in. Its speed is the Throttle slider in the " +
+              "main panel.",
+        controls: []
     },
 
     piston: {
@@ -3605,7 +3751,7 @@ const HOTSPOTS = {    prop: {
         desc: "Travel comes from the slider-crank equation, so the rod stays " +
               "exactly one rod length at every crank angle. Click the button " +
               "to cut this cylinder.",
-        controls: ["rpm"]
+        controls: []
     }
 };
 
@@ -3788,9 +3934,8 @@ function buildPanel(hit) {
             def.write(Number(e.target.value));
         });
 
-        /*  Two controls can drive the same state - the throttle is on both
-            the engine panel and the propeller panel - so re-sync on show
-            and keep the readout honest.  */
+        /*  Re-sync on show so the slider always starts from the live
+            value and the panel readout stays honest.  */
         input.addEventListener("pointerdown", () => { input.value = def.read(); });
 
         row.appendChild(input);
@@ -4003,6 +4148,7 @@ const PHONE = {
     phoneOrigin: null,
     publicOrigin: false,       /* true when phoneOrigin is a tunnel/public URL */
     accessKey: null,           /* relay access key from /__lanip, if any */
+    retryTimer: null,          /* one-shot retry after a transient failure */
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     channel: null              /* data channel: phone -> dashboard control */
 };
@@ -4228,6 +4374,12 @@ function stopHand() {
     PHONE.connected = false;
     PHONE.token = null;
     PHONE.inviteCode = null;
+
+    if (PHONE.retryTimer) {
+        clearTimeout(PHONE.retryTimer);
+        PHONE.retryTimer = null;
+    }
+
     pairBox.style.display = "none";
 
     handVideo.srcObject = null;
@@ -4299,7 +4451,17 @@ async function startHand() {
         }
 
         handVideo.srcObject = HAND.stream;
-        await handVideo.play();
+        try {
+            await handVideo.play();
+        } catch (playErr) {
+            /*  Some browsers need a second user gesture to resume a
+                naturally-played video element.  Clicking the button again
+                is that gesture - retry the play here and on the next
+                click.  */
+            HAND.stream.getTracks().forEach(t => t.stop());
+            HAND.stream = null;
+            throw playErr;
+        }
 
         HAND.on = true;
         HAND.applied = -1;
@@ -4576,9 +4738,20 @@ function drawQr(canvas, text) {
 */
 function refreshPairQr() {
 
+    pairQr.innerHTML = "";
+
+    /*  No token, no QR: a dead offer (server asleep, session expired)
+        must show an error, never a code that scans into a dead link. */
+    if (!PHONE.token) {
+
+        pairState.textContent =
+            "no pairing session - the server did not take the offer";
+        pairState.className = "bad";
+        return;
+    }
+
     const url = phoneUrl() + "#p=" + PHONE.token;
 
-    pairQr.innerHTML = "";
     pairState.className = "";
     pairState.textContent = "waiting for the phone to scan...";
 
@@ -4641,6 +4814,13 @@ async function startPhonePair() {
     stopHand();
 
     handBox.style.display = "block";
+
+    /*  Embedded in the dashboard, the QR is shown by the host's own modal;
+        this page's private copy stays hidden (the !important stylesheet
+        rule wins over the inline display below).  Standalone it shows.  */
+    if (window.self !== window.top) {
+        pairBox.classList.add("embedded");
+    }
     pairBox.style.display = "block";
     handToggle.textContent = "Enable camera";
     handState.textContent = "making invite code...";
@@ -4722,8 +4902,11 @@ async function startPhonePair() {
 
         if (!parked.ok) {
             throw new Error(
-                "pairing needs serve.py (the local server that serves " +
-                "this page) - it is not reachable"
+                parked.status === 429 || parked.status === 502 || parked.status === 503
+                    ? "the pairing server is waking up or busy (HTTP " +
+                      parked.status + ") - try again in a few seconds"
+                    : "the pairing relay refused the offer (HTTP " +
+                      parked.status + ")"
             );
         }
 
@@ -4737,8 +4920,27 @@ async function startPhonePair() {
 
     } catch (err) {
 
-        handState.textContent =
-            "pairing failed: " + (err && err.message ? err.message : String(err));
+        const why = err && err.message ? err.message : String(err);
+
+        setPairStatus("pairing failed: " + why, true);
+
+        /*  Free-tier hosts sleep and restart; the very first attempt after
+            a cold start can fail while the process is still coming up.
+            Transient failures (network hiccup, 5xx, 429) retry themselves
+            once after a short wait instead of leaving a dead modal.  A
+            hard failure (no server at all, refused) stops - that needs a
+            human, not a retry.  */
+        if (!PHONE.retryTimer && /waking|busy|unreachable|fetch/i.test(why)) {
+
+            PHONE.retryTimer = setTimeout(() => {
+
+                PHONE.retryTimer = null;
+
+                if (!PHONE.connected) startPhonePair();
+            }, 4000);
+
+            setPairStatus("pairing failed: " + why + " - retrying once...", true);
+        }
     }
 }
 
@@ -4799,7 +5001,10 @@ async function acceptPhoneReply(rawJson) {
 
         await PHONE.pc.setRemoteDescription({ type: "answer", sdp: reply.s });
 
-        setPairStatus("connecting to phone...");
+        /*  ontrack may have fired during setRemoteDescription - the video
+            can already be live and announced.  Only say "connecting" when
+            that has not happened, so the live status is not stomped.  */
+        if (!PHONE.connected) setPairStatus("connecting to phone...");
 
     } catch (err) {
 
@@ -4886,6 +5091,27 @@ const UP = new THREE.Vector3(0, 1, 0);
 const BURST_WARN_RPM   = 5900;
 const BURST_LIMIT_RPM  = 6400;
 const BURST_RECOVER    = 0.05;   /*  fast idle while protecting  */    const hostBurst = { aboutToBurst: false, overLimit: false, detail: "", at: 0 };
+
+/*
+    The dashboard relays every active fault as one comma-joined string, so
+    injecting several at once used to turn the HUD line into a paragraph and
+    overrun the panel.  Keep it to two names plus a count, and strip the raw
+    enum casing so it reads as English.
+*/
+function summariseFaultDetail(detail) {
+
+    const names = String(detail || "")
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => s.replace(/_/g, " "));
+
+    if (!names.length) return "";
+
+    const shown = names.slice(0, 2).join(" + ");
+
+    return names.length > 2 ? shown + " +" + (names.length - 2) + " more" : shown;
+}
 
     /*
         Where the aircraft is in its mission - STARTUP / TAKEOFF / CLIMB /
@@ -5307,11 +5533,13 @@ function animate() {
         hud.classList.add("burst");
         hud.classList.toggle("limit", overLimit);
 
+        const faultNote = hostFresh ? summariseFaultDetail(hostBurst.detail) : "";
+
         hud.textContent = overLimit
             ? `!! OVERSPEED ${rpm} RPM - CUTTING THROTTLE !!` +
-              (hostFresh && hostBurst.detail ? " | " + hostBurst.detail : "")
+              (faultNote ? " | " + faultNote : "")
             : `ABOUT TO BURST | ${rpm} RPM | THROTTLE BACK NOW` +
-              (hostFresh && hostBurst.detail ? " | " + hostBurst.detail : "");
+              (faultNote ? " | " + faultNote : "");
 
         if (overLimit) {
 
@@ -5325,10 +5553,11 @@ function animate() {
 
         hud.classList.remove("burst");
 
+        /*  The engine's name comes from the shared spec, so this line can
+            never disagree with the dashboard again.  */
         hud.textContent =
             `Crank ${THREE.MathUtils.radToDeg(displayAngle).toFixed(0)}°` +
-            ` | V${CYLINDERS.length} cross-plane` +
-            ` | firing ${FIRING_ORDER} | ${rpm} RPM`;
+            ` | ${TWIN_NAME} ${TWIN_TYPE} | ${rpm} RPM`;
     }
 
     /* ---- render --------------------------------------------------------- */
@@ -5380,21 +5609,38 @@ const HOST_IDLE_RPM = 1200;
 const HOST_MAX_RPM = 5800;
 
 /*
+    One knob per job.  Inside the dashboard, the host's throttle bar and
+    presets own engine speed - they arrive as CUTAWAY_SET_* messages and
+    drive everything through applyHostRpm below - so this page's own
+    Speed slider hides itself rather than becoming a second throttle.
+    Standalone, the slider is the only speed control and stays put.
+*/
+if (window.self !== window.top) {
+    const speedGroup = document.getElementById("speedGroup");
+    if (speedGroup) speedGroup.classList.add("embedded");
+
+    /*  The panel itself also knows it is embedded, so it can keep clear of
+        the dashboard's bottom control bar (see #ui.embedded).  */
+    const uiPanel = document.getElementById("ui");
+    if (uiPanel) uiPanel.classList.add("embedded");
+}
+
+/*
     The Throttle slider IS a user input, not just a readout: the speed
     model starts from the slider's initial value, so the slider has to
     feed it.  Host commands land through applyHostRpm, which only moves
     the slider position - this listener then carries the new value into
-    the model exactly like a hand-dragged one.  The sih bridge (and any
-    host) relies on this too: it sets speedEl.value and dispatches an
-    "input" event, which had no listener before, so the live RPM from
-    the backend never reached the speed model.  (Without this listener
-    the propeller spun at one speed forever - the bug.)
+    the model exactly like a hand-dragged one, so the prop spools up and
+    down with the control on this page, on the dashboard and on the phone.
+    (Without this listener the model ignored the slider entirely and the
+    propeller spun at one speed forever - the bug.)
 */
 document.getElementById("speed").addEventListener("input", e => {
 
-    /*  While the host is driving (hostHold > 0), a slider move inside
-        that window is usually the host echoing its own command back, so
-        let it through but let the next host command win the race. */
+    /*  While the host is driving (dashboard / paired phone), its command
+        holds the stick for hostHold seconds; a slider move inside that
+        window is usually the host echoing its own command back, so let
+        it through but let the next host command win the race. */
     SPEED.setThrottle(Number(e.target.value) || 0);
 });
 
@@ -5453,6 +5699,14 @@ async function buildDashboardQr() {
         }
 
         await ensureLanIp();
+
+        /*  startPhonePair can fail without throwing out of here (it
+            catches internally); if it left no token, say so instead of
+            drawing a code that scans into a dead #p=null link.  */
+        if (!PHONE.token) {
+            throw new Error(handState.textContent ||
+                "no pairing session - try again in a few seconds");
+        }
 
         const canvas = document.createElement("canvas");
         const url    = phoneUrl() + "#p=" + PHONE.token;

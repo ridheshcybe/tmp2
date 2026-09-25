@@ -4451,7 +4451,17 @@ async function startHand() {
         }
 
         handVideo.srcObject = HAND.stream;
-        await handVideo.play();
+        try {
+            await handVideo.play();
+        } catch (playErr) {
+            /*  Some browsers need a second user gesture to resume a
+                naturally-played video element.  Clicking the button again
+                is that gesture - retry the play here and on the next
+                click.  */
+            HAND.stream.getTracks().forEach(t => t.stop());
+            HAND.stream = null;
+            throw playErr;
+        }
 
         HAND.on = true;
         HAND.applied = -1;

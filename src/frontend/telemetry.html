@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AeroTwin // Telemetry Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "background": "#f5f0e8", "surface": "#ffffff", "surface-subtle": "#f9f7f2",
+          "surface-muted": "#ede8df", "outline": "#e2ded6", "outline-strong": "#1a1a1a",
+          "primary": "#1a1a1a", "primary-container": "#ffcc00", "on-primary-container": "#1a1a1a",
+          "secondary": "#e63b2e", "secondary-container": "#fee2e2", "tertiary": "#0055ff",
+          "tertiary-container": "#e0edff", "on-surface": "#1a1a1a", "on-surface-variant": "#6b6762"
+        },
+        borderRadius: { "DEFAULT": "0.25rem", "md": "0.375rem", "lg": "0.5rem", "xl": "0.75rem" },
+        fontFamily: {
+          headline: ["Space Grotesk", "sans-serif"], display: ["Space Grotesk", "sans-serif"],
+          body: ["Inter", "sans-serif"],
+          mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  @layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: #d0cbc3; border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .spark { stroke-width: 1.6; fill: none; stroke-linejoin: round; }
+</style>
+</head>
+<body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-primary">
+
+<header class="h-14 bg-surface border-b border-outline px-5 flex items-center justify-between sticky top-0 z-40">
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 bg-primary-container text-on-primary-container flex items-center justify-center font-headline font-bold text-xs rounded-md shadow-sm border border-outline-strong/10">V4</div>
+      <div class="flex flex-col">
+        <span class="font-headline font-bold text-sm tracking-wider uppercase leading-none">AeroTwin // Telemetry</span>
+        <span class="text-[10px] font-mono text-on-surface-variant leading-tight">SN: V4-9982-B</span>
+      </div>
+    </div>
+    <div class="h-5 w-px bg-outline hidden sm:block"></div>
+    <span id="connBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span id="connDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span id="connLabel">STATUS: CONNECTING</span>
+    </span>
+  </div>
+  <div class="flex items-center gap-2.5">
+    <div class="hidden lg:flex items-center gap-1.5 text-xs font-mono text-on-surface-variant bg-surface-subtle px-2.5 py-1 rounded border border-outline">
+      <span class="text-[10px] uppercase font-bold text-on-surface">ENGINE:</span>
+      <span id="engineId">TAPAS-BH-201-001</span>
+    </div>
+    <button class="bg-primary-container hover:brightness-105 active:scale-[0.98] text-on-primary-container font-headline text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-outline-strong/20 transition-all flex items-center gap-1.5 shadow-sm" onclick="location.href='index.html'">
+      <span class="material-symbols-outlined text-[16px]">account_tree</span> Architecture
+    </button>
+  </div>
+</header>
+
+<div class="flex-1 flex overflow-hidden">
+  <aside class="w-64 bg-surface border-r border-outline flex flex-col shrink-0 justify-between">
+    <div class="p-3 border-b border-outline">
+      <div class="text-[10px] font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2 px-2">Navigation</div>
+      <nav class="space-y-0.5">
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-bold bg-primary-container text-on-primary-container shadow-sm" href="telemetry.html">
+          <span class="material-symbols-outlined text-[18px]">speed</span> Telemetry Overview
+        </a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="diagnostics.html">
+          <span class="material-symbols-outlined text-[18px]">tune</span> Cylinder Diagnostics
+        </a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="index.html">
+          <span class="material-symbols-outlined text-[18px]">account_tree</span> Architecture Map
+        </a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="faults.html">
+          <span class="material-symbols-outlined text-[18px]">emergency_home</span> Fault Injection Lab
+        </a>
+        <a class="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-headline font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-subtle transition-colors" href="blackbox.html">
+          <span class="material-symbols-outlined text-[18px]">data_table</span> Blackbox Logs
+        </a>
+      </nav>
+    </div>
+    <div class="p-3 border-t border-outline bg-surface-subtle">
+      <div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant mb-1.5">
+        <span class="font-headline font-semibold uppercase text-[10px]">Session Bus</span>
+        <span class="text-emerald-700 font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> CONNECTED</span>
+      </div>
+      <div class="w-full bg-surface border border-outline h-1.5 rounded-full overflow-hidden"><div class="bg-primary h-full w-[94%] rounded-full"></div></div>
+      <div class="text-[10px] font-mono text-on-surface-variant mt-1.5 flex justify-between"><span id="busFrames">frames: --</span><span id="busHz">-- Hz</span></div>
+    </div>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto p-5 space-y-4">
+    <!-- Top strip: primary channels -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">Drive Speed</div>
+        <div class="text-2xl font-headline font-bold"><span id="v-rpm">--</span> <span class="text-xs font-mono font-normal text-on-surface-variant">RPM</span></div>
+        <svg id="s-rpm" viewBox="0 0 120 28" class="w-full h-7 mt-2 text-tertiary"><path class="spark" stroke="currentColor" d=""/></svg>
+      </div>
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">Manifold Pressure</div>
+        <div class="text-2xl font-headline font-bold"><span id="v-map">--</span> <span class="text-xs font-mono font-normal text-on-surface-variant">kPa</span></div>
+        <svg id="s-map" viewBox="0 0 120 28" class="w-full h-7 mt-2 text-emerald-600"><path class="spark" stroke="currentColor" d=""/></svg>
+      </div>
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">Fuel Flow</div>
+        <div class="text-2xl font-headline font-bold"><span id="v-ff">--</span> <span class="text-xs font-mono font-normal text-on-surface-variant">L/h</span></div>
+        <svg id="s-ff" viewBox="0 0 120 28" class="w-full h-7 mt-2 text-primary"><path class="spark" stroke="currentColor" d=""/></svg>
+      </div>
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-1">Oil Pressure</div>
+        <div class="text-2xl font-headline font-bold"><span id="v-oil">--</span> <span class="text-xs font-mono font-normal text-on-surface-variant">kPa</span></div>
+        <svg id="s-oil" viewBox="0 0 120 28" class="w-full h-7 mt-2 text-rose-600"><path class="spark" stroke="currentColor" d=""/></svg>
+      </div>
+    </div>
+
+    <!-- Environment row -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline">
+        <div class="text-[10px] font-headline font-semibold uppercase text-on-surface-variant">Altitude</div>
+        <div class="text-xl font-headline font-bold"><span id="v-alt">--</span> <span class="text-[10px] font-mono text-on-surface-variant">ft</span></div>
+      </div>
+      <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline">
+        <div class="text-[10px] font-headline font-semibold uppercase text-on-surface-variant">Throttle</div>
+        <div class="text-xl font-headline font-bold"><span id="v-thr">--</span><span class="text-[10px] font-mono text-on-surface-variant">%</span></div>
+      </div>
+      <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline">
+        <div class="text-[10px] font-headline font-semibold uppercase text-on-surface-variant">Oil Temp</div>
+        <div class="text-xl font-headline font-bold"><span id="v-ot">--</span> <span class="text-[10px] font-mono text-on-surface-variant">°C</span></div>
+      </div>
+      <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline">
+        <div class="text-[10px] font-headline font-semibold uppercase text-on-surface-variant">Vibration</div>
+        <div class="text-xl font-headline font-bold"><span id="v-vib">--</span> <span class="text-[10px] font-mono text-on-surface-variant">g RMS</span></div>
+      </div>
+      <div class="p-3.5 rounded-lg bg-surface-subtle border border-outline">
+        <div class="text-[10px] font-headline font-semibold uppercase text-on-surface-variant">Ambient</div>
+        <div class="text-xl font-headline font-bold"><span id="v-amb">--</span> <span class="text-[10px] font-mono text-on-surface-variant">°C</span></div>
+      </div>
+    </div>
+
+    <!-- Big charts: CHT & EGT per cylinder -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-headline text-xs font-bold uppercase tracking-wider">Cylinder Head Temp °C</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-muted border border-outline">live ring</span>
+        </div>
+        <svg id="c-cht" viewBox="0 0 320 110" class="w-full h-40"></svg>
+        <div class="flex gap-3 mt-1 text-[10px] font-mono text-on-surface-variant" id="l-cht"></div>
+      </div>
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-headline text-xs font-bold uppercase tracking-wider">Exhaust Gas Temp °C</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-muted border border-outline">live ring</span>
+        </div>
+        <svg id="c-egt" viewBox="0 0 320 110" class="w-full h-40"></svg>
+        <div class="flex gap-3 mt-1 text-[10px] font-mono text-on-surface-variant" id="l-egt"></div>
+      </div>
+    </div>
+
+    <!-- Health strip -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-2">Health Index</div>
+        <div class="flex items-end gap-2">
+          <div class="text-3xl font-headline font-bold" id="v-ehi">--</div>
+          <div class="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded mb-1" id="v-ehi-cat">--</div>
+        </div>
+        <div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden mt-2">
+          <div id="v-ehi-bar" class="h-full bg-emerald-600 rounded-full transition-all" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-2">Anomaly Score</div>
+        <div class="text-3xl font-headline font-bold" id="v-anom">--</div>
+        <div class="text-[11px] font-mono text-on-surface-variant mt-1" id="v-anom-note">pipeline: --</div>
+      </div>
+      <div class="p-4 rounded-lg bg-surface border border-outline shadow-sm">
+        <div class="text-[11px] font-headline font-semibold uppercase text-on-surface-variant mb-2">RUL / RTB</div>
+        <div class="text-3xl font-headline font-bold"><span id="v-rul">--</span> <span class="text-xs font-mono font-normal text-on-surface-variant">min</span></div>
+        <div class="text-[11px] font-mono font-bold mt-1" id="v-rtb">--</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="aerotwin-api.js"></script>
+<script>
+(function () {
+  const API = window.AEROTWIN_API;
+  const $ = id => document.getElementById(id);
+
+  const CONN_STYLES = {
+    live:    { label: "STATUS: LIVE",      dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    polling: { label: "STATUS: POLLING",   dot: "bg-amber-500",   chip: "bg-amber-50 text-amber-700 border-amber-200" },
+    offline: { label: "STATUS: DEMO MODE", dot: "bg-stone-400",   chip: "bg-stone-100 text-stone-600 border-stone-300" }
+  };
+
+  function renderStatus(st) {
+    const s = CONN_STYLES[st] || CONN_STYLES.offline;
+    $("connBadge").className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border " + s.chip;
+    $("connDot").className = "w-1.5 h-1.5 rounded-full " + s.dot + (st === "live" ? " animate-pulse" : "");
+    $("connLabel").textContent = s.label;
+  }
+
+  /*  sparkline helper: last N values -> svg path  */
+  function spark(id, values, min, max) {
+    const el = $(id);
+    if (!el || values.length < 2) return;
+    const w = 120, h = 28;
+    const lo = min, hi = max, span = (hi - lo) || 1;
+    const pts = values.map((v, i) =>
+      (i / (values.length - 1) * w).toFixed(1) + "," + (h - 2 - (v - lo) / span * (h - 4)).toFixed(1));
+    el.querySelector("path").setAttribute("d", "M" + pts.join(" L"));
+  }
+
+  /*  multi-line chart for 4 cylinders  */
+  const COLORS = ["#0055ff", "#e63b2e", "#ffcc00", "#10b981"];
+  const series = { cht: [[], [], [], []], egt: [[], [], [], []] };
+
+  function multiline(svgId, rows, min, max, legendId, unit) {
+    const svg = $(svgId);
+    if (!svg) return;
+    const w = 320, h = 110, pad = 4;
+    const span = (max - min) || 1;
+    let out = "";
+    rows.forEach((vals, c) => {
+      if (vals.length < 2) return;
+      const pts = vals.map((v, i) =>
+        (pad + i / (vals.length - 1) * (w - 2 * pad)).toFixed(1) + "," +
+        (h - pad - (v - min) / span * (h - 2 * pad)).toFixed(1)).join(" L");
+      out += '<path class="spark" stroke="' + COLORS[c] + '" d="M' + pts + '"/>';
+    });
+    /*  limit line  */
+    const ly = (h - pad - (max - max) / span * 0 + 0); /* keep simple: draw at max */
+    svg.innerHTML = out;
+    const leg = $(legendId);
+    if (leg) leg.innerHTML = rows.map((_, c) =>
+      '<span style="color:' + COLORS[c] + '">■</span> cyl ' + (c + 1) +
+      ' <span class="text-on-surface-variant">' + (rows[c].length ? rows[c][rows[c].length - 1].toFixed(0) + unit : "--") + '</span>'
+    ).join("");
+  }
+
+  const fmt = (v, d) => (v == null || isNaN(v)) ? "--" : Number(v).toLocaleString(undefined, { maximumFractionDigits: d == null ? 1 : d });
+  let frameCount = 0, lastT = Date.now(), hzWindow = 0;
+
+  function renderFrame(f) {
+    frameCount++; hzWindow++;
+    const now = Date.now();
+    if (now - lastT >= 1000) { $("busHz").textContent = hzWindow + " Hz"; hzWindow = 0; lastT = now; }
+    $("busFrames").textContent = "frames: " + f.frame_id;
+
+    $("v-rpm").textContent = fmt(f.rpm, 0);
+    $("v-map").textContent = fmt(f.map_kpa);
+    $("v-ff").textContent  = fmt(f.fuel_flow_lph);
+    $("v-oil").textContent = fmt(f.oil_pressure_kpa, 0);
+    $("v-alt").textContent = fmt(f.altitude_ft, 0);
+    $("v-thr").textContent = fmt(f.throttle * 100, 0);
+    $("v-ot").textContent  = fmt(f.oil_temp_c);
+    $("v-vib").textContent = fmt(f.vibration_rms, 2);
+    $("v-amb").textContent = fmt(f.ambient_temp_c);
+
+    (f.cht || []).forEach((v, i) => { if (series.cht[i]) { series.cht[i].push(v); if (series.cht[i].length > 120) series.cht[i].shift(); } });
+    (f.egt || []).forEach((v, i) => { if (series.egt[i]) { series.egt[i].push(v); if (series.egt[i].length > 120) series.egt[i].shift(); } });
+
+    spark("s-rpm", API.history.slice(-60).map(x => x.rpm), 0, 6500);
+    spark("s-map", API.history.slice(-60).map(x => x.map_kpa), 0, 110);
+    spark("s-ff",  API.history.slice(-60).map(x => x.fuel_flow_lph), 0, 80);
+    spark("s-oil", API.history.slice(-60).map(x => x.oil_pressure_kpa), 0, 450);
+
+    const chtMax = Math.max(260, ...series.cht.flat());
+    const egtMax = Math.max(1000, ...series.egt.flat());
+    multiline("c-cht", series.cht, 0, chtMax, "l-cht", "°C");
+    multiline("c-egt", series.egt, 0, egtMax, "l-egt", "°C");
+
+    $("v-ehi").textContent = fmt(f.health_index, 1);
+    const cat = $("v-ehi-cat");
+    cat.textContent = f.health_category;
+    cat.className = "text-[11px] font-mono font-bold px-1.5 py-0.5 rounded mb-1 " + ({
+      NORMAL: "bg-emerald-100 text-emerald-800", WATCH: "bg-amber-100 text-amber-800",
+      WARNING: "bg-orange-100 text-orange-800", CRITICAL: "bg-rose-100 text-rose-800",
+      EMERGENCY: "bg-rose-600 text-white"
+    }[f.health_category] || "bg-stone-100 text-stone-700");
+    const bar = $("v-ehi-bar");
+    bar.style.width = Math.max(0, Math.min(100, f.health_index || 0)) + "%";
+    bar.className = "h-full rounded-full transition-all " + ({
+      NORMAL: "bg-emerald-600", WATCH: "bg-amber-500", WARNING: "bg-orange-500",
+      CRITICAL: "bg-rose-500", EMERGENCY: "bg-rose-600"
+    }[f.health_category] || "bg-stone-400");
+
+    $("v-anom").textContent = fmt(f.anomaly_score, 3);
+    $("v-anom-note").textContent = f.is_anomaly ? "ANOMALY DETECTED" : "pipeline: nominal";
+    $("v-anom-note").className = "text-[11px] font-mono mt-1 " + (f.is_anomaly ? "text-rose-600 font-bold" : "text-on-surface-variant");
+
+    $("v-rul").textContent = f.rul_minutes != null ? fmt(f.rul_minutes, 0) : "--";
+    const rtb = $("v-rtb");
+    rtb.textContent = f.rtb_alert;
+    rtb.className = "text-[11px] font-mono font-bold mt-1 " +
+      (f.rtb_alert === "RTB_CRITICAL" ? "text-rose-600" :
+       f.rtb_alert === "RTB_ADVISORY" ? "text-amber-600" : "text-emerald-700");
+  }
+
+  API.onFrame(renderFrame);
+  API.onStatus(renderStatus);
+  API.start();
+})();
+</script>
+</body>
+</html>

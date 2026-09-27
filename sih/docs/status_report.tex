@@ -1,0 +1,446 @@
+\documentclass[11pt]{article}
+
+% ── Packages ─────────────────────────────────────────────────────────────
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[T1]{fontenc}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
+
+% A friendly "explain it simply" box used all over the document.
+\newenvironment{simplebox}
+  {\par\medskip\noindent\begin{quote}\color{blue!55!black}\small
+   \textbf{\textsf{In simple words:}}\space\space}
+  {\end{quote}\medskip}
+
+% Shorthand for code/file names (underscores must be escaped by hand).
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textbf{AeroTwin -- Project Status Report}\\[4pt]
+\large What we finished, what we fixed, and what is still left to do\\[2pt]
+\normalsize (Written in plain language for someone brand-new to AI)}
+\author{Team AeroTwin}
+\date{September 12, 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════════════════════════════════
+\section{What Is This Project?}
+% ════════════════════════════════════════════════════════════════════════
+
+Big drones (the kind used by DRDO for long surveillance missions) use piston
+engines -- the same basic idea as a car engine, but built to run for 18--24
+hours straight in the sky. If that engine quietly starts to fail mid-mission,
+a human watching screens might notice too late.
+
+Our project, \textbf{AeroTwin}, is a computer program that:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Fakes a drone engine} using physics equations (we cannot
+        borrow a real engine, so we simulate one), sending out ``engine
+        vitals'' like RPM, temperatures, oil pressure and vibration many
+        times every second.
+  \item \textbf{Watches those vitals} with AI programs that learned from
+        examples what a healthy engine looks like and what different kinds
+        of ``sickness'' (faults) look like.
+  \item \textbf{Warns the human early} -- ideally about 30 minutes before a
+        small problem becomes a dead engine -- and says \emph{why} it is
+        worried, in plain language.
+\end{enumerate}
+
+\begin{simplebox}
+Think of it like a doctor's smartwatch for a drone engine. The watch (our
+software) constantly measures the heartbeat (RPM), temperature, and pulse.
+It has studied thousands of days of health data, so when the pattern looks
+``off'', it does not just beep -- it says: ``Your heart rate is rising
+faster than normal for this activity, see a doctor soon.'' That last part
+-- the \emph{explanation} -- is what makes our project more than a simple
+alarm.
+\end{simplebox}
+
+\paragraph{A few words you will see everywhere}
+\begin{description}[leftmargin=1.4em, style=nextline, font=\normalfont\bfseries]
+  \item[Telemetry] The stream of measurements from the engine (RPM,
+        temperatures, oil pressure, vibration\dots). Like the vitals monitor
+        in a hospital.
+  \item[Sensor] A small measuring device (a thermometer, a vibration meter).
+  \item[Digital twin] A live, computer-game-style copy of the real engine
+        running inside our software. The copy mirrors what the engine is
+        doing right now.
+  \item[Fault] Something going wrong (engine too hot, oil leaking, a sensor
+        lying to us).
+  \item[Fault injection] A button that makes our \emph{fake} engine sick on
+        purpose, so we can test whether the AI notices. Essential for the
+        demo.
+  \item[Model / ML] A math program that learns patterns from examples.
+        ``Training'' it means showing it lots of examples.
+  \item[Anomaly] ``Something weird.'' Not a specific disease -- just a
+        ``this does not look normal'' alarm.
+  \item[RUL (Remaining Useful Life)] Our best guess of how much longer the
+        engine (or part) can safely keep running.
+\end{description}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{How The Whole System Is Built}
+% ════════════════════════════════════════════════════════════════════════
+
+The system is a relay race. Data flows through four runners, left to right:
+
+\begin{verbatim}
+  [1] ENGINE SIMULATOR   ->  [2] AI BRAIN   ->  [3] SERVER  ->  [4] DASHBOARD
+  (fake engine, sends      (checks the        (mailman:      (pretty screens
+   vitals 10x/second)      vitals, spots      saves data     the judges see)
+                           trouble,           + passes
+                           guesses RUL)       messages)
+\end{verbatim}
+
+\begin{itemize}[nosep]
+  \item \textbf{Runner 1 -- Simulator} (folder \code{simulator/}): physics
+        equations for a 4-cylinder engine, mountain air and weather effects,
+        and the fault-injection buttons.
+  \item \textbf{Runner 2 -- AI services} (folders \code{ml/} and
+        \code{fusion\_ml/}): cleans the data, compares measurements against
+        what physics says they \emph{should} be, and runs the trained models
+        (anomaly score, fault guess, wear level, RUL).
+  \item \textbf{Runner 3 -- Servers} (folders \code{backend/} Python
+        FastAPI + Node.js gateway): saves everything to a database and
+        forwards messages.
+  \item \textbf{Runner 4 -- Dashboard} (folder \code{frontend/}): a dark
+        ``mission control'' website with gauges, charts, a rotating 3D
+        engine, and replay of past missions.
+\end{itemize}
+
+\begin{simplebox}
+There are actually \emph{two} sets of runners 1--3 in this codebase (an
+older all-in-one Python version and a newer split-into-pieces version).
+Both feed the same dashboard. For the report card we treat the AI training
+pipeline (\code{ml/}) as the important one, because that is where our test
+results come from.
+\end{simplebox}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{Report Card Words (How We Grade the AI)}
+% ════════════════════════════════════════════════════════════════════════
+
+Before reading the results, you need four grading words. These matter
+because \textbf{accuracy alone can lie}.
+
+\subsection*{Accuracy -- ``percent right'' (but it can fool you)}
+If we test the AI 100 times and it answers right 86 times, accuracy is
+86\,\%. Sounds great. But imagine a test where 90 questions are ``is the
+engine healthy?'' and only 10 are about real faults. A lazy student who
+answers ``healthy'' to \emph{everything} scores 90\,\% while catching
+\emph{zero} faults. That lazy student is dangerous.
+
+\subsection*{F1 score -- ``are you actually useful?'' (0 to 1, higher = better)}
+F1 checks both: (a) when the AI shouts ``fault!'', how often is it right?
+and (b) of all the real faults, how many did it catch? A lazy
+``always healthy'' AI gets F1 near \textbf{0}. Our test 1 got
+\textbf{0.1} -- that number told us the AI was (mostly) being lazy, even
+with decent accuracy.
+
+\subsection*{Confusion matrix -- ``show me exactly what you mixed up''}
+A grid: rows = what was \emph{really} happening, columns = what the AI
+\emph{guessed}. A perfect AI has all numbers on the diagonal. Numbers off
+the diagonal show exactly which sickness it mistook for which -- like a
+teacher showing which two answers you confused.
+
+\subsection*{Anomaly score, degradation, RUL -- the three outputs}
+\begin{itemize}[nosep]
+  \item \textbf{Anomaly score} (0--100): how ``weird'' the engine looks
+        right now. 0 = totally normal, 100 = very weird.
+  \item \textbf{Degradation} (0--1): how \emph{worn out} the engine seems
+        (0 = fresh, 1 = about to fail).
+  \item \textbf{RUL}: estimated hours/days left before maintenance is due.
+\end{itemize}
+
+\begin{simplebox}
+Accuracy is like counting how many baskets you scored, even if you never
+played defense. F1 is the coach's honest grade: can you score \emph{and}
+defend? That is why we report both, and why F1 matters more here -- in a
+safety project, missing a real fault (a ``false negative'') is much worse
+than one extra false alarm.
+\end{simplebox}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{Test 1: What Went Wrong}
+% ════════════════════════════════════════════════════════════════════════
+
+\subsection{The numbers we got}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Metric} & \textbf{Result} & \textbf{Verdict} \\
+\midrule
+Fault accuracy           & 86\,\%    & Looks nice but misleading (see below) \\
+Fault F1 (macro)         & 0.1       & Very bad -- the AI was mostly lazy \\
+Anomaly score quality    & poor      & One of our two worst metrics \\
+RUL estimate quality     & poor      & The other worst metric \\
+Top mix-up               & ALTERNATOR\_DEGRADATION & Most common wrong answer \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Three sicknesses were never learned}
+Three fault types --- \textbf{MISFIRE}, \textbf{LUBRICATION\_ISSUE}, and
+\textbf{ABNORMAL\_VIBRATION} --- had so few example missions that the AI
+basically never saw them during training. You cannot learn to recognize a
+dog if you have only ever seen half a dog photo. They ``were not trained''.
+
+\subsection{Why accuracy still said 86\,\%}
+The test data was lopsided: far more ``healthy'' windows than ``fault''
+windows. The AI learned the lazy trick --- ``just say healthy'' --- and
+still collected a high score. The terrible F1 (0.1) exposed the trick.
+
+\subsection{Why ALTERNATOR\_DEGRADATION was the top error}
+The battery/alternator signals are \emph{small and quiet} compared to big,
+loud signals like exhaust temperature. Their small numbers are easy to
+blur into other fault patterns, so the AI kept blaming the alternator when
+something else was wrong. (In our feature code, its ``noise budget'' is the
+smallest of all channels, so tiny overlaps confuse the model.)
+
+\begin{simplebox}
+Test 1 summary: ``Our student got a B on a test where it copied the
+answer `healthy' for most questions, never studied three chapters at all,
+and its two real skills (spotting weirdness and predicting remaining life)
+were the weakest subjects.''
+\end{simplebox}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{How We Fixed Test 1}
+% ════════════════════════════════════════════════════════════════════════
+
+Three changes, each aimed at one disease the test revealed:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Balanced the data by fault type.} We evened out the
+        examples so every sickness type got a fair number of practice
+        questions. No more ``90 healthy vs 10 sick'' tests that reward
+        laziness.
+  \item \textbf{Added more missions.} More fake flights = more examples of
+        each fault, so the three previously-untrained types finally had
+        study material.
+  \item \textbf{Added a confusion matrix.} Now we can literally see which
+        sickness gets confused with which, instead of guessing from one
+        overall grade.
+\end{enumerate}
+
+\subsection{Results after the fix}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Metric} & \textbf{Result} & \textbf{Reading} \\
+\midrule
+Anomaly value   & 0.096 & Very low false-alarm tendency (good) \\
+Degradation     & 0.0   & Correct for a healthy engine \\
+RUL estimate    & 500.3 h & Stable, no crazy numbers \\
+Fault verdict   & none  & Correct -- the test run was healthy \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{simplebox}
+Important honesty note: this check ran on a \emph{healthy} engine. A clean
+bill of health here proves we are \emph{not crying wolf}. It does not yet
+prove we \emph{catch real sicknesses} -- that needs a test where a fault is
+switched on and we watch the AI react. That is on the to-do list.
+\end{simplebox}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{Test 2: Making It Smarter}
+% ════════════════════════════════════════════════════════════════════════
+
+Test 2 attacked the remaining weak spots: anomaly detection, RUL, and fault
+verdicts. Here is every change, explained:
+
+\subsection{The seven upgrades}
+
+\begin{description}[leftmargin=0em, style=nextline, font=\normalfont\bfseries]
+  \item[1. Filter out ``transition'' windows.] When a drone changes speed
+        or climbs, the engine briefly looks weird \emph{even when healthy}
+        -- like you panting after sprinting up stairs. It is not sickness,
+        it is effort. We now throw away those in-between moments so the AI
+        does not study them as if they were faults.
+  \item[2. FFT / frequency features.] ``FFT'' is a math trick that turns a
+        wiggly line into its ``notes''. Instead of only knowing ``the
+        engine shakes a bit'', we now know \emph{which rhythm} it shakes
+        at. A loose part shakes at a different rhythm than a healthy
+        engine -- like hearing a wobbly washing machine vs a balanced one.
+  \item[3. Better window length and stride.] We changed how big each
+        ``peek'' at the data is (the window) and how often we peek (the
+        stride). Smaller, more frequent peeks catch problems sooner.
+  \item[4. Temporal smoothing after prediction.] One noisy reading should
+        not make the needle jump. We average the AI's answers over a short
+        time so the display moves like a calm needle, not a frightened
+        one.
+  \item[5. Buffer masking.] At start-up the data buffers are half-empty
+        and the numbers are garbage-ish. We now mask (ignore) that
+        warm-up period instead of letting the AI learn from nonsense.
+  \item[6. Simple extra stats (std, ptp, variance).] We added three cheap
+        ``shape'' numbers per signal: standard deviation (how much it
+        jitters), peak-to-peak (how far it swings), and variance (jitter
+        squared -- especially for vibration). Cheap features, real value.
+  \item[7. Rolling majority vote.] Instead of trusting a single answer, we
+        take the AI's verdict over several consecutive windows and keep the
+        most common one -- like asking the same question three times and
+        going with the majority. One-off mistakes get outvoted.
+\end{description}
+
+\subsection{Results after Test 2}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Metric} & \textbf{Result} & \textbf{Reading} \\
+\midrule
+Anomaly score   & 67\,\%   & Big improvement on our weakest metric \\
+Degradation     & 0.0      & Stable \\
+RUL estimate    & 499.8 h  & Stable \\
+Fault verdict   & none     & Stable \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{simplebox}
+Think of Test 2 as giving the student glasses (FFT rhythm-vision), a good
+nights sleep (smoothing), a rule to skip gym class right after running
+(transition filtering), and a friend to double-check answers (majority
+vote). Same student, much better habits.
+\end{simplebox}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{The Big DONE / TODO Table}
+% ════════════════════════════════════════════════════════════════════════
+
+\begin{longtable}{p{4.6cm} p{2.0cm} p{7.6cm}}
+\toprule
+\textbf{Part of the system} & \textbf{Status} & \textbf{Notes (plain words)} \\
+\midrule
+\endhead
+Fake engine (physics) & DONE & 4-cylinder engine with realistic temperatures, oil, fuel and vibration. \\
+Sky \& weather effects & DONE & Air gets thinner with altitude; humidity/rain/dust tweak the engine. \\
+Fault injection buttons & DONE & Can make the fake engine sick on purpose for demos. \\
+\quad Unify fault name lists & TODO & The two code generations call faults by different names (e.g.\ one says \code{LEAN\_BURN\_RUNAWAY}, the other \code{INJECTOR\_DEGRADATION}). One shared list is needed so buttons and AI agree. \\
+Telemetry streaming (10/s) & DONE & Engine vitals stream out live over the network. \\
+FastAPI server (Python) & DONE & Saves missions, replays, reports; serves the dashboard. \\
+Node gateway + TimescaleDB & DONE & Second-generation server with a proper time-series database. \\
+Dashboard website & DONE & Dark mission-control UI: gauges, charts, alerts. \\
+3D engine view & DONE & Rotating 3D engine colored by cylinder temperature. \\
+Mission replay + reports & DONE & Rewatch a past flight and export a summary. \\
+ML training pipeline & DONE & One command trains all models and prints a grade report. \\
+Balanced training data & DONE & Test-1 fix: every fault type gets fair examples. \\
+More missions & DONE & Test-1 fix: bigger dataset, previously-missing fault types now trained. \\
+Confusion matrix & DONE & We can see exactly which faults get mixed up. \\
+FFT / rhythm features & DONE & Test-2 fix: the AI can ``hear'' shake rhythms. \\
+Window/stride tuning & DONE & Test-2 fix: smaller, more frequent peeks at the data. \\
+Prediction smoothing & DONE & Test-2 fix: calm needle, no jumping. \\
+Buffer masking & DONE & Test-2 fix: ignore warm-up garbage. \\
+Extra stats (std/ptp/var) & DONE & Test-2 fix: cheap but useful signal-shape numbers. \\
+Rolling majority vote & DONE & Test-2 fix: best-of-several answers. \\
+\midrule
+\textbf{Still to do} & & \\
+\midrule
+Commit trained model files & TODO & In this copy of the repo the model folder is \emph{empty} -- the trained models from tests 1--2 live in the newer working copy and must be saved into the project (so the demo never runs ``blind''). \\
+Test RUL on a \emph{sick} engine & TODO & All our final numbers are from healthy runs. We must inject a fault and watch RUL actually count down. Until then, ``catches problems early'' is unproven. \\
+Re-grade with per-fault F1 & TODO & After the fixes, re-run the full evaluation and report F1 for \emph{each} fault type, not just the average. This proves the three once-untrained types are now caught. \\
+Confirm what ``anomaly 67\,\%'' means & TODO & Write down whether 67 is a score (0--100 weirdness) or a ``percent correct'' metric, so the numbers in the pitch match the code. \\
+Explain RUL units change & TODO & The old code measured RUL in \emph{minutes-until-fault}; the new numbers are \emph{hours-until-maintenance} ($\approx$500\,h). Both are valid, but the presentation must say which one it is showing. \\
+Demo rehearsal + fallbacks & TODO & Scripted 2-minute and 5-minute demos with screenshots as backup if live systems fail. \\
+Real-engine calibration & TODO (future) & Our engine is physics equations, not a real DRDO engine. Real data would be needed before any real-world use. \\
+\bottomrule
+\end{longtable}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{Honest Warnings (What Our Numbers Do and Do Not Prove)}
+% ════════════════════════════════════════════════════════════════════════
+
+\begin{enumerate}[nosep]
+  \item \textbf{The engine is fake.} All data comes from our own physics
+        simulator. That is perfect for learning and demos, but a real
+        engine would be messier. We must always say ``demonstrated on
+        synthetic telemetry''.
+  \item \textbf{Our best numbers come from a healthy engine.} Degradation
+        0.0, fault ``none'', stable RUL $\approx$ 500\,h -- all correct for
+        a healthy run. They prove we do not cry wolf. They do not yet
+        prove we catch real faults early. One faulted-run test would.
+  \item \textbf{The two code generations must not be mixed up.} Fault
+        names, message formats and ports differ between the old and new
+        halves. For the demo, pick one path end-to-end (recommended: the
+        new simulator $\rightarrow$ AI $\rightarrow$ gateway chain).
+  \item \textbf{Model files must be treated like precious homework.} If
+        the trained model files are not committed and the demo laptop
+        loses them, the software silently falls back to a dumb rule-based
+        mode. Always run a pre-demo check that models load.
+\end{enumerate}
+
+\begin{simplebox}
+The golden rule for the pitch: \emph{under-promise, over-deliver.} Say
+``early-warning capability, demonstrated on synthetic telemetry,
+physics-informed prototype'' -- never ``certified'' or ``guaranteed to
+prevent failure''. Judges trust honesty more than big claims.
+\end{simplebox}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{Next Steps (In Order of Importance)}
+% ════════════════════════════════════════════════════════════════════════
+
+\begin{enumerate}
+  \item \textbf{Save the trained models into the repo} (model files +
+        grade report + confusion matrix image). One hour of work, removes
+        the biggest demo risk.
+  \item \textbf{Run one faulted mission end-to-end.} Inject a fault, watch
+        anomaly rise, RUL fall, alert fire. Screenshot everything -- this
+        is the proof that our fixes actually catch sickness, not just stay
+        quiet when healthy.
+  \item \textbf{Re-run the full evaluation} and write down F1 for every
+        fault type. Confirm MISFIRE, LUBRICATION and ABNORMAL\_VIBRATION
+        are now caught.
+  \item \textbf{Unify the fault-name lists} across simulator, AI and
+        dashboard so the demo buttons match what the AI was trained on.
+  \item \textbf{Write the two demo scripts} (2-minute backup, 5-minute
+        full) and rehearse with the screenshots as fallback.
+  \item \textbf{Update the pitch slides} with the Test-1 $\rightarrow$
+        Test-2 improvement story: ``we found our AI was being lazy
+        (accuracy 86\,\%, F1 0.1), fixed the data balance, added rhythm
+        features and smoothing, and stabilized anomaly detection''.
+        Judges love a team that finds its own bugs and fixes them.
+\end{enumerate}
+
+% ════════════════════════════════════════════════════════════════════════
+\section{One-Page Summary (If You Read Nothing Else)}
+% ════════════════════════════════════════════════════════════════════════
+
+\begin{itemize}[nosep]
+  \item We built a complete fake-drone-engine health monitor: fake engine
+        $\rightarrow$ AI checks $\rightarrow$ servers $\rightarrow$
+        mission-control dashboard, with replay and reports.
+  \item \textbf{Test 1} exposed real problems: three fault types never
+        trained, the AI was ``lazy'' (86\,\% accuracy but 0.1 F1), anomaly
+        and RUL were the weakest skills, and the alternator was the
+        favorite wrong answer.
+  \item We fixed it by balancing the data, adding more missions, and
+        adding a confusion matrix. Healthy-run results became clean:
+        anomaly 0.096, degradation 0.0, RUL 500.3\,h, fault none.
+  \item \textbf{Test 2} upgraded the AI's habits: skip transition moments,
+        rhythm features (FFT), better windows, smoothing, buffer masking,
+        extra stats, and majority voting. Anomaly performance improved to
+        67\,\% with degradation 0.0 and RUL 499.8\,h.
+  \item \textbf{Still open:} commit the trained models, prove RUL/anomaly
+        on a \emph{sick} engine, re-grade per-fault F1, unify fault names,
+        rehearse the demo.
+  \item \textbf{Always say:} software demonstrator on synthetic telemetry
+        -- an early-warning decision-support prototype, not a certified
+        safety system.
+\end{itemize}
+
+\end{document}

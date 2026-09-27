@@ -1,0 +1,1 @@
+AeroTwin — a digital twin that watches a DRDO Tapas-BH-201 UAV engine tick by tick and predicts system failures minutes before they happen: fault class, severity, RUL, and a return-to-base window you can audit.

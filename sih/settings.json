@@ -1,0 +1,6 @@
+{"claude-code.env": {
+  "ANTHROPIC_BASE_URL": "http://localhost:11434",
+  "ANTHROPIC_API_KEY": "ollama",
+  "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
+}
+}

@@ -1,0 +1,31 @@
+MEMORANDUM OF UNDERSTANDING / OPERATIONAL AGREEMENT
+
+This Agreement is entered into on this ___ day of ____________, 2026, by and between:
+1. Ridhesh Shripad Walavalkar (holding 50% equity stake)
+2. Astuti Priya (holding 50% equity stake)
+(Hereinafter jointly referred to as the "Founders")
+AND
+3. ________________________ (Hereinafter referred to as the "Contractor/Employee")
+
+1. EQUITY STRUCTURE & OWNERSHIP
+1.1. The equity and ownership of the agency/business shall be split strictly as:
+     - Ridhesh Shripad Walavalkar: 50%
+     - Astuti Priya: 50%
+1.2. All core intellectual property, source code, domain ownership, and agency branding shall be jointly owned by the Founders in accordance with their equity percentages.
+
+2. PROJECT ROYALTY TERMS FOR CONTRACTOR
+2.1. The Contractor shall be engaged to assist with the initial pipeline of projects.
+2.2. For the first three (3) client projects secured and delivered by the agency with the Contractor's active technical/operational contribution, the Contractor shall receive a project royalty/commission equal to thirty percent (30%) of the net profit (or gross revenue, as mutually agreed) received from those specific three projects.
+2.3. This 30% royalty applies strictly and exclusively to the first three (3) projects and shall automatically expire upon the successful completion and final payout of the third project. It does not confer any equity ownership or ongoing claim to subsequent agency revenue.
+
+3. INTELLECTUAL PROPERTY & CONFIDENTIALITY
+3.1. Any code, designs, documentation, or client deliverables created by any party (including the Contractor) during this arrangement shall immediately become the exclusive property of the agency.
+3.2. All parties agree to maintain strict confidentiality regarding client data, business operations, and financial records.
+
+4. GOVERNING LAW
+This agreement shall be governed by and construed in accordance with the laws of India.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first above written.
+
+___________________________         ___________________________         ___________________________
+Ridhesh Shripad Walavalkar          Astuti Priya                        Contractor Signature

@@ -1,0 +1,35 @@
+# ── local backups too large for GitHub (100 MB file limit) ──
+archive_cleanup_2026-09-20.zip
+backup_full_2026-09-20.zip
+*.zip
+
+# ── python ──
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# ── node ──
+node_modules/
+
+# ── secrets / local config ──
+sih/.env
+*.pem
+
+# ── runtime data ──
+sih/logs/
+sih/data/*.db
+sih/data/*.db-*
+*.log
+
+# ── editor / tooling ──
+.agentic_tools/
+.vscode/
+.idea/
+
+# ── macOS metadata junk (AppleDouble forks on external drives) ──
+._*
+.DS_Store
+
+
+*.db
